@@ -1,0 +1,7 @@
+{
+  "catalog_path": "/home/ubuntu/token_parse_sys/configs/data_assets/published_products.json",
+  "snapshot_input_path": "/home/ubuntu/token_parse_sys/runtime/daily_snapshot_production/input.json",
+  "output_path": "/home/ubuntu/token_parse_sys/runtime/daily_snapshot_production/snapshots.json",
+  "job_result_path": "/home/ubuntu/token_parse_sys/runtime/daily_snapshot_production/result.json",
+  "analysis_version": "analysis_v1"
+}

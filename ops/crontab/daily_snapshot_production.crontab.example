@@ -1,0 +1,3 @@
+# Example cron entry for token_parse_sys L1 snapshot production.
+# Run after fact production and quality/data-asset export have completed.
+45 18 * * 1-5 cd /home/ubuntu/token_parse_sys && /usr/bin/python3 /home/ubuntu/token_parse_sys/workflows/jobs/daily_snapshot_production.py --schedule-config-path /home/ubuntu/token_parse_sys/configs/schedules/daily_snapshot_production.json >> /home/ubuntu/token_parse_sys/runtime/daily_snapshot_production/cron.log 2>&1

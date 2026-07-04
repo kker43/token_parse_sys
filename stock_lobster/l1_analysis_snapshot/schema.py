@@ -16,6 +16,15 @@ class AnalysisSnapshotDependency:
     query_version: str
     query_params: Mapping[str, str] = field(default_factory=dict)
 
+    def to_mapping(self) -> dict[str, object]:
+        """Render this dependency as a stable JSON-friendly mapping."""
+
+        return {
+            "asset_id": self.asset_id,
+            "query_version": self.query_version,
+            "query_params": dict(self.query_params),
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class AnalysisSnapshot:
@@ -27,3 +36,15 @@ class AnalysisSnapshot:
     run_id: RunId
     features: Mapping[str, object]
     dependencies: tuple[AnalysisSnapshotDependency, ...] = field(default_factory=tuple)
+
+    def to_mapping(self) -> dict[str, object]:
+        """Render this snapshot as a stable JSON-friendly mapping."""
+
+        return {
+            "stock_code": self.stock_code,
+            "snapshot_date": self.snapshot_date,
+            "analysis_version": self.analysis_version,
+            "run_id": str(self.run_id),
+            "features": dict(self.features),
+            "dependencies": [dependency.to_mapping() for dependency in self.dependencies],
+        }

@@ -1,0 +1,11 @@
+[Unit]
+Description=token_parse_sys daily L1 analysis snapshot production
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu/token_parse_sys
+ExecStart=/usr/bin/python3 /home/ubuntu/token_parse_sys/workflows/jobs/daily_snapshot_production.py --schedule-config-path /home/ubuntu/token_parse_sys/configs/schedules/daily_snapshot_production.json
+User=ubuntu
+Group=ubuntu
+
