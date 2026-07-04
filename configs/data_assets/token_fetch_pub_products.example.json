@@ -1,0 +1,468 @@
+{
+  "schema_version": 1,
+  "producer": "token_fetch",
+  "products": [
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true
+      },
+      "data_asset_id": "token_fetch.pub_data_quality_status",
+      "data_product": "pub_data_quality_status",
+      "data_version": "v1",
+      "field_schema": {
+        "asset_type": "string",
+        "data_date": "date_yyyymmdd",
+        "data_product": "string",
+        "data_version": "string",
+        "error_message": "string",
+        "expected_min_records": "integer",
+        "market": "string",
+        "published_at": "timestamp",
+        "quality_level": "string",
+        "record_count": "integer",
+        "source_end_date": "date_yyyymmdd",
+        "source_tables": "string_list",
+        "status": "string"
+      },
+      "grain": "product_data_date",
+      "market": "multi_market",
+      "primary_key": [
+        "data_product",
+        "data_date",
+        "market",
+        "asset_type"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "data_product",
+        "data_date",
+        "market",
+        "asset_type",
+        "status",
+        "quality_level",
+        "record_count",
+        "expected_min_records",
+        "source_tables",
+        "source_end_date",
+        "published_at",
+        "data_version",
+        "error_message"
+      ],
+      "source_name": "token_fetch",
+      "source_tables": [
+        "task_tracker",
+        "quality_check_results"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "after_each_publish"
+    },
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true,
+        "date_semantics": "market_local_trade_date",
+        "no_future_data": true
+      },
+      "data_asset_id": "token_fetch.pub_stock_daily_kline",
+      "data_product": "pub_stock_daily_kline",
+      "data_version": "v1",
+      "field_schema": {
+        "amount": "numeric",
+        "asset_id": "string",
+        "asset_type": "string",
+        "close": "numeric",
+        "data_version": "string",
+        "high": "numeric",
+        "low": "numeric",
+        "market": "string",
+        "open": "numeric",
+        "published_at": "timestamp",
+        "quality_status": "string",
+        "source": "string",
+        "source_end_date": "date_yyyymmdd",
+        "trade_date": "date_yyyymmdd",
+        "vol": "numeric"
+      },
+      "grain": "asset_trade_date",
+      "market": "CN_A",
+      "primary_key": [
+        "asset_id",
+        "trade_date"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "asset_id",
+        "market",
+        "asset_type",
+        "trade_date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "vol",
+        "amount",
+        "source",
+        "source_end_date",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
+      "source_name": "token_fetch",
+      "source_tables": [
+        "token_daily_details"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "daily"
+    },
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true,
+        "period_date_semantics": "actual_period_end_trade_date"
+      },
+      "data_asset_id": "token_fetch.pub_stock_weekly_kline",
+      "data_product": "pub_stock_weekly_kline",
+      "data_version": "v1",
+      "field_schema": {
+        "amount": "numeric",
+        "asset_id": "string",
+        "asset_type": "string",
+        "close": "numeric",
+        "data_version": "string",
+        "high": "numeric",
+        "low": "numeric",
+        "market": "string",
+        "open": "numeric",
+        "period_end_date": "date_yyyymmdd",
+        "published_at": "timestamp",
+        "quality_status": "string",
+        "source": "string",
+        "source_end_date": "date_yyyymmdd",
+        "vol": "numeric"
+      },
+      "grain": "asset_period_end_date",
+      "market": "CN_A",
+      "primary_key": [
+        "asset_id",
+        "period_end_date"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "asset_id",
+        "market",
+        "asset_type",
+        "period_end_date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "vol",
+        "amount",
+        "source",
+        "source_end_date",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
+      "source_name": "token_fetch",
+      "source_tables": [
+        "token_weekly_details"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "weekly"
+    },
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true,
+        "period_date_semantics": "actual_period_end_trade_date"
+      },
+      "data_asset_id": "token_fetch.pub_stock_monthly_kline",
+      "data_product": "pub_stock_monthly_kline",
+      "data_version": "v1",
+      "field_schema": {
+        "amount": "numeric",
+        "asset_id": "string",
+        "asset_type": "string",
+        "close": "numeric",
+        "data_version": "string",
+        "high": "numeric",
+        "low": "numeric",
+        "market": "string",
+        "open": "numeric",
+        "period_end_date": "date_yyyymmdd",
+        "published_at": "timestamp",
+        "quality_status": "string",
+        "source": "string",
+        "source_end_date": "date_yyyymmdd",
+        "vol": "numeric"
+      },
+      "grain": "asset_period_end_date",
+      "market": "CN_A",
+      "primary_key": [
+        "asset_id",
+        "period_end_date"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "asset_id",
+        "market",
+        "asset_type",
+        "period_end_date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "vol",
+        "amount",
+        "source",
+        "source_end_date",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
+      "source_name": "token_fetch",
+      "source_tables": [
+        "token_monthly_details"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "monthly"
+    },
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true,
+        "date_semantics": "market_local_trade_date"
+      },
+      "data_asset_id": "token_fetch.pub_stock_daily_basic",
+      "data_product": "pub_stock_daily_basic",
+      "data_version": "v1",
+      "field_schema": {
+        "asset_id": "string",
+        "asset_type": "string",
+        "circ_mv": "numeric",
+        "close": "numeric",
+        "data_version": "string",
+        "market": "string",
+        "pb": "numeric",
+        "pe_ttm": "numeric",
+        "published_at": "timestamp",
+        "quality_status": "string",
+        "source_end_date": "date_yyyymmdd",
+        "total_mv": "numeric",
+        "trade_date": "date_yyyymmdd",
+        "turnover_rate": "numeric"
+      },
+      "grain": "asset_trade_date",
+      "market": "CN_A",
+      "primary_key": [
+        "asset_id",
+        "trade_date"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "asset_id",
+        "market",
+        "asset_type",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "pe_ttm",
+        "pb",
+        "total_mv",
+        "circ_mv",
+        "source_end_date",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
+      "source_name": "token_fetch",
+      "source_tables": [
+        "token_daily_basic",
+        "token_valuation_daily"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "daily"
+    },
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true,
+        "snapshot_policy": "current_snapshot_only"
+      },
+      "data_asset_id": "token_fetch.pub_stock_asset_basic",
+      "data_product": "pub_stock_asset_basic",
+      "data_version": "v1",
+      "field_schema": {
+        "asset_id": "string",
+        "asset_type": "string",
+        "data_version": "string",
+        "exchange": "string",
+        "list_status": "string",
+        "market": "string",
+        "name": "string",
+        "published_at": "timestamp",
+        "quality_status": "string",
+        "snapshot_date": "date_yyyymmdd",
+        "source_end_date": "date_yyyymmdd",
+        "symbol": "string"
+      },
+      "grain": "asset_snapshot_date",
+      "market": "CN_A",
+      "primary_key": [
+        "asset_id",
+        "snapshot_date"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "asset_id",
+        "symbol",
+        "name",
+        "market",
+        "asset_type",
+        "exchange",
+        "list_status",
+        "snapshot_date",
+        "source_end_date",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
+      "source_name": "token_fetch",
+      "source_tables": [
+        "token_stock_basic",
+        "token_type"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "snapshot"
+    },
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true,
+        "no_trading_judgement": true,
+        "select_indicator_by_name_version_hash": true
+      },
+      "data_asset_id": "token_fetch.pub_stock_daily_indicator",
+      "data_product": "pub_stock_daily_indicator",
+      "data_version": "v1",
+      "field_schema": {
+        "asset_id": "string",
+        "asset_type": "string",
+        "available_time": "timestamp",
+        "calculation_date": "date_yyyymmdd",
+        "data_version": "string",
+        "indicator_name": "string",
+        "indicator_value": "numeric",
+        "indicator_version": "string",
+        "market": "string",
+        "params_hash": "string",
+        "published_at": "timestamp",
+        "quality_status": "string",
+        "source_column": "string",
+        "source_end_date": "date_yyyymmdd",
+        "source_start_date": "date_yyyymmdd",
+        "source_table": "string",
+        "trade_date": "date_yyyymmdd"
+      },
+      "grain": "asset_indicator_trade_date",
+      "market": "CN_A",
+      "primary_key": [
+        "asset_id",
+        "trade_date",
+        "indicator_name",
+        "indicator_version",
+        "params_hash"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "asset_id",
+        "market",
+        "asset_type",
+        "trade_date",
+        "indicator_name",
+        "indicator_version",
+        "params_hash",
+        "indicator_value",
+        "source_table",
+        "source_column",
+        "source_start_date",
+        "source_end_date",
+        "calculation_date",
+        "available_time",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
+      "source_name": "token_fetch",
+      "source_tables": [
+        "close_price_daily_statistic",
+        "amount_daily_statistic",
+        "volatility_daily_statistic",
+        "ma_price_daily_statistic",
+        "convergence_score_daily",
+        "convergence_score_daily_percentile",
+        "short_term_anomaly_daily"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "daily"
+    }
+  ]
+}

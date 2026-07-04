@@ -9,5 +9,8 @@ description = "A-share strategy research, signal, backtest, and observation syst
 requires-python = ">=3.11"
 dependencies = []
 
+[project.scripts]
+data-foundation = "interfaces.cli.data_foundation:main"
+
 [tool.setuptools.packages.find]
-include = ["stock_lobster*"]
+include = ["stock_lobster*", "data_foundation*", "shared*", "interfaces*", "workflows*"]

@@ -16,6 +16,17 @@ class DataAsset:
     field_schema: Mapping[str, str]
     update_frequency: str
     quality_status: str
+    data_product: str | None = None
+    market: str = "CN_A"
+    asset_type: str = "stock"
+    grain: str | None = None
+    required_fields: tuple[str, ...] = field(default_factory=tuple)
+    primary_key: tuple[str, ...] = field(default_factory=tuple)
+    source_tables: tuple[str, ...] = field(default_factory=tuple)
+    data_version: str | None = None
+    allowed_statuses: tuple[str, ...] = field(default_factory=tuple)
+    allowed_quality_levels: tuple[str, ...] = field(default_factory=tuple)
+    consumer_contract: Mapping[str, object] = field(default_factory=dict)
     owner_layer: str = "L0"
     table_name: str | None = None
     storage_path: str | None = None
