@@ -12,6 +12,8 @@ architecture decisions are made.
 - M1 has a minimal Python package scaffold with strict import-boundary tests.
 - Standard system structure and model guidance is documented in
   `docs/standards/001-system-structure-and-model-guidance.md`.
+- Data foundation integration guidance is documented in
+  `docs/standards/002-data-foundation-integration.md`.
 - The next implementation step should define the first data asset contracts and
   the research workflow objects that turn real pattern samples into registered
   experience artifacts.

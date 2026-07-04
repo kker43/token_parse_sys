@@ -11,7 +11,8 @@ Before making changes, read:
 2. `sys_command.md`
 3. `PLANS.md`
 4. `docs/standards/001-system-structure-and-model-guidance.md`
-5. The nearest relevant source files and tests, once code exists
+5. `docs/standards/002-data-foundation-integration.md`
+6. The nearest relevant source files and tests, once code exists
 
 If any instruction conflicts, prefer this order:
 
@@ -20,7 +21,8 @@ If any instruction conflicts, prefer this order:
 3. `requirements.md`
 4. `PLANS.md`
 5. `docs/standards/001-system-structure-and-model-guidance.md`
-6. This file
+6. `docs/standards/002-data-foundation-integration.md`
+7. This file
 
 ## Project Mission
 
