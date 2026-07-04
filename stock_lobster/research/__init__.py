@@ -16,6 +16,21 @@ from stock_lobster.research.single_stock_strategy import (
     PrimitiveBuildRequirement,
     PrimitiveHypothesis,
 )
+from stock_lobster.research.trend_breakout_scan import (
+    KlineBar,
+    TrendBreakoutMetrics,
+    TrendBreakoutScanPolicy,
+    read_kline_tsv,
+    scan_trend_breakouts,
+    summarize_breakout_scan,
+)
+from stock_lobster.research.steady_uptrend_breakout_case import (
+    STEADY_UPTREND_BREAKOUT_LABELS,
+    STEADY_UPTREND_BREAKOUT_PRIMITIVES,
+    build_steady_uptrend_breakout_request,
+    run_steady_uptrend_breakout_case,
+    snapshot_from_trend_breakout_metrics,
+)
 
 __all__ = [
     "BacktestAcceptancePolicy",
@@ -32,4 +47,15 @@ __all__ = [
     "PrimitiveAssessment",
     "PrimitiveBuildRequirement",
     "PrimitiveHypothesis",
+    "KlineBar",
+    "TrendBreakoutMetrics",
+    "TrendBreakoutScanPolicy",
+    "read_kline_tsv",
+    "scan_trend_breakouts",
+    "summarize_breakout_scan",
+    "STEADY_UPTREND_BREAKOUT_LABELS",
+    "STEADY_UPTREND_BREAKOUT_PRIMITIVES",
+    "build_steady_uptrend_breakout_request",
+    "run_steady_uptrend_breakout_case",
+    "snapshot_from_trend_breakout_metrics",
 ]

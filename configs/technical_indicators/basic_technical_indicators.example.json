@@ -12,6 +12,42 @@
       "description": "20-trading-day moving average of close price"
     },
     {
+      "name": "ma5",
+      "version": "candidate_v1",
+      "params": {"window": 5, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "5-trading-day moving average of close price"
+    },
+    {
+      "name": "ma10",
+      "version": "candidate_v1",
+      "params": {"window": 10, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "10-trading-day moving average of close price"
+    },
+    {
+      "name": "ma60",
+      "version": "candidate_v1",
+      "params": {"window": 60, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "60-trading-day moving average of close price"
+    },
+    {
+      "name": "ma120",
+      "version": "candidate_v1",
+      "params": {"window": 120, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "120-trading-day moving average of close price"
+    },
+    {
       "name": "close_above_ma20_flag",
       "version": "v1",
       "params": {"price_field": "close", "ma_indicator": "ma20"},
@@ -55,6 +91,24 @@
       "source_product": "pub_stock_daily_indicator",
       "source_column": "indicator_value",
       "description": "MA5/MA10/MA20 convergence percentage"
+    },
+    {
+      "name": "ma20_slope_20d",
+      "version": "candidate_v1",
+      "params": {"ma_indicator": "ma20", "lookback": 20},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Relative MA20 slope over the latest 20 trading days"
+    },
+    {
+      "name": "max_drawdown_60d",
+      "version": "candidate_v1",
+      "params": {"window": 60, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Maximum close-to-close drawdown over the latest 60 trading days"
     }
   ]
 }

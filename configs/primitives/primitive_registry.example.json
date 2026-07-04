@@ -43,6 +43,97 @@
       "notes": "价格是否站上 MA20，只表达均线位置状态，不表达趋势形态。"
     },
     {
+      "primitive_id": "moving_average.close_above_ma60",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "moving_average",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_kline.close",
+        "indicator:ma60"
+      ],
+      "params": {
+        "operator": ">"
+      },
+      "calculation": "close > ma60",
+      "valid_when": "目标日期存在 ma60 指标",
+      "missing_policy": "block",
+      "evidence": [
+        "603256.SH 宏和科技样本",
+        "301217.SZ 铜冠铜箔样本"
+      ],
+      "owner": "stock_lobster",
+      "notes": "价格是否站上 MA60，用于稳健趋势股的中期支撑刻画。"
+    },
+    {
+      "primitive_id": "moving_average.ma20_above_ma60",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "moving_average",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:ma20",
+        "indicator:ma60"
+      ],
+      "params": {
+        "operator": ">"
+      },
+      "calculation": "ma20 > ma60",
+      "valid_when": "目标日期存在 ma20 和 ma60 指标",
+      "missing_policy": "block",
+      "evidence": [
+        "603256.SH 宏和科技样本",
+        "301217.SZ 铜冠铜箔样本"
+      ],
+      "owner": "stock_lobster",
+      "notes": "中短期均线多头排列原子状态。"
+    },
+    {
+      "primitive_id": "moving_average.ma60_above_ma120",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "moving_average",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:ma60",
+        "indicator:ma120"
+      ],
+      "params": {
+        "operator": ">"
+      },
+      "calculation": "ma60 > ma120",
+      "valid_when": "目标日期存在 ma60 和 ma120 指标",
+      "missing_policy": "block",
+      "evidence": [
+        "603256.SH 宏和科技样本",
+        "301217.SZ 铜冠铜箔样本"
+      ],
+      "owner": "stock_lobster",
+      "notes": "中长期均线多头排列原子状态。"
+    },
+    {
+      "primitive_id": "trend.ma20_rising_20d",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "trend",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:ma20_slope_20d"
+      ],
+      "params": {
+        "min_slope": 0
+      },
+      "calculation": "ma20_slope_20d > min_slope",
+      "valid_when": "目标日期存在 ma20_slope_20d 指标",
+      "missing_policy": "block",
+      "evidence": [
+        "603256.SH 宏和科技样本",
+        "301217.SZ 铜冠铜箔样本"
+      ],
+      "owner": "stock_lobster",
+      "notes": "趋势斜率原子状态，用于区分横盘震荡和趋势抬升。"
+    },
+    {
       "primitive_id": "structure.ma_5_10_20_converged",
       "version": "v1",
       "status": "candidate",
@@ -101,6 +192,28 @@
       "evidence": [],
       "owner": "stock_lobster",
       "notes": "60 日波动率处于低位，属于波动状态，不直接表示机会。"
+    },
+    {
+      "primitive_id": "risk.max_drawdown_60d_controlled",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "risk",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:max_drawdown_60d"
+      ],
+      "params": {
+        "max_abs_drawdown": 0.40
+      },
+      "calculation": "abs(max_drawdown_60d) <= max_abs_drawdown",
+      "valid_when": "目标日期存在 max_drawdown_60d 指标",
+      "missing_policy": "block",
+      "evidence": [
+        "603256.SH 宏和科技样本",
+        "301217.SZ 铜冠铜箔样本"
+      ],
+      "owner": "stock_lobster",
+      "notes": "稳健趋势股的回撤控制原子状态，阈值需要在样本组中继续校准。"
     },
     {
       "primitive_id": "level_breakout.close_new_high_60d",

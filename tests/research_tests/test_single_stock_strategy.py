@@ -6,8 +6,12 @@ import unittest
 
 from stock_lobster.core.ids import RunId
 from stock_lobster.l1_analysis_snapshot.schema import AnalysisSnapshot
-from stock_lobster.l2_primitives import PrimitiveDefinition, PrimitiveRegistry
-from stock_lobster.l3_labels import LabelDefinition, LabelRegistry
+from stock_lobster.l2_primitives import (
+    PrimitiveDefinition,
+    PrimitiveRegistry,
+    build_default_primitive_registry,
+)
+from stock_lobster.l3_labels import LabelDefinition, LabelRegistry, build_default_label_registry
 from stock_lobster.l6_backtest_engine.result import BacktestResult
 from stock_lobster.research import (
     BacktestAcceptancePolicy,
@@ -181,6 +185,113 @@ class IndividualStockStrategyResearchWorkflowTest(unittest.TestCase):
         self.assertEqual(("technical_pattern.uptrend_support",), result.strategy.label_fields)
         self.assertTrue(result.backtest_decision.passed)
         self.assertFalse(result.experience_build_plan.has_gaps)
+
+    def test_default_registries_support_row_expanded_trend_breakout_sample(self) -> None:
+        snapshot = AnalysisSnapshot(
+            stock_code="301217.SZ",
+            snapshot_date="20260703",
+            analysis_version="analysis_v1",
+            run_id=RunId("run_fixture"),
+            features={
+                "pub_stock_daily_kline.close": 154.63,
+                "pub_stock_daily_kline.amount": 67030093972.5,
+                "pub_stock_daily_indicator.1.indicator_name": "ma20",
+                "pub_stock_daily_indicator.1.indicator_value": 140.0,
+                "pub_stock_daily_indicator.2.indicator_name": "ma60",
+                "pub_stock_daily_indicator.2.indicator_value": 103.192,
+                "pub_stock_daily_indicator.3.indicator_name": "ma120",
+                "pub_stock_daily_indicator.3.indicator_value": 70.242,
+                "pub_stock_daily_indicator.4.indicator_name": "ma20_slope_20d",
+                "pub_stock_daily_indicator.4.indicator_value": 0.15,
+                "pub_stock_daily_indicator.5.indicator_name": "max_drawdown_60d",
+                "pub_stock_daily_indicator.5.indicator_value": -0.18,
+                "pub_stock_daily_indicator.6.indicator_name": "convergence_5_10_20_pct",
+                "pub_stock_daily_indicator.6.indicator_value": 0.02,
+                "pub_stock_daily_indicator.7.indicator_name": "close_new_high_60d_flag",
+                "pub_stock_daily_indicator.7.indicator_value": 1,
+                "pub_stock_daily_indicator.8.indicator_name": "amount_ratio_20d",
+                "pub_stock_daily_indicator.8.indicator_value": 1.8,
+            },
+        )
+
+        result = IndividualStockStrategyResearchWorkflow(
+            primitive_registry=build_default_primitive_registry(),
+            label_registry=build_default_label_registry(),
+        ).run(
+            IndividualStockStrategyResearchRequest(
+                case_id="case_003",
+                title="稳健上升趋势突破样本",
+                thesis="样本处于均线多头趋势，整理后尝试突破。",
+                snapshot=snapshot,
+                primitive_hypotheses=(
+                    PrimitiveHypothesis(
+                        primitive_id="moving_average.close_above_ma20",
+                        category="moving_average",
+                        proposed_logic="close > ma20",
+                        reason="确认价格在短中期均线上方。",
+                        required_features=("pub_stock_daily_kline.close", "indicator:ma20"),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="moving_average.close_above_ma60",
+                        category="moving_average",
+                        proposed_logic="close > ma60",
+                        reason="确认价格在中期均线上方。",
+                        required_features=("pub_stock_daily_kline.close", "indicator:ma60"),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="moving_average.ma20_above_ma60",
+                        category="moving_average",
+                        proposed_logic="ma20 > ma60",
+                        reason="确认短中期均线多头排列。",
+                        required_features=("indicator:ma20", "indicator:ma60"),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="moving_average.ma60_above_ma120",
+                        category="moving_average",
+                        proposed_logic="ma60 > ma120",
+                        reason="确认中长期均线多头排列。",
+                        required_features=("indicator:ma60", "indicator:ma120"),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="trend.ma20_rising_20d",
+                        category="trend",
+                        proposed_logic="ma20_slope_20d > 0",
+                        reason="确认趋势均线抬升。",
+                        required_features=("indicator:ma20_slope_20d",),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="risk.max_drawdown_60d_controlled",
+                        category="risk",
+                        proposed_logic="abs(max_drawdown_60d) <= 0.25",
+                        reason="确认趋势推进相对稳健。",
+                        required_features=("indicator:max_drawdown_60d",),
+                    ),
+                ),
+                label_hypotheses=(
+                    LabelHypothesis(
+                        label_id="technical_pattern.steady_uptrend_stock",
+                        category="technical_pattern",
+                        primitive_ids=(
+                            "moving_average.close_above_ma20",
+                            "moving_average.close_above_ma60",
+                            "moving_average.ma20_above_ma60",
+                            "moving_average.ma60_above_ma120",
+                            "trend.ma20_rising_20d",
+                            "risk.max_drawdown_60d_controlled",
+                        ),
+                        proposed_logic="all steady trend primitives are true",
+                        reason="沉淀稳健趋势股标签。",
+                    ),
+                ),
+                strategy_id="strategy.steady_uptrend_breakout_watch",
+                strategy_name="稳健上升趋势突破关注策略",
+            )
+        )
+
+        self.assertEqual(6, len(result.primitive_assessments))
+        self.assertFalse(result.experience_build_plan.has_gaps)
+        self.assertTrue(result.label_assessments[0].matched)
+        self.assertEqual("draft", result.strategy.status)
 
 
 if __name__ == "__main__":

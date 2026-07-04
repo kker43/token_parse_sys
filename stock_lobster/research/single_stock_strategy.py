@@ -6,6 +6,10 @@ from dataclasses import dataclass, field
 from typing import Mapping
 
 from stock_lobster.l1_analysis_snapshot.schema import AnalysisSnapshot
+from stock_lobster.l1_analysis_snapshot.feature_access import (
+    FeatureNotFoundError,
+    has_requirement,
+)
 from stock_lobster.l2_primitives.registry import PrimitiveRegistry
 from stock_lobster.l3_labels.registry import LabelRegistry
 from stock_lobster.l4_strategy_dsl.candidate_pool import CandidatePoolPolicy
@@ -110,6 +114,7 @@ class LabelAssessment:
     version: str
     primitive_ids: tuple[str, ...]
     primitive_values: Mapping[str, bool | float]
+    matched: bool
     source: str = "existing_registry"
 
 
@@ -216,9 +221,50 @@ class IndividualStockStrategyResearchWorkflow:
         threshold_questions: list[str] = []
 
         for hypothesis in request.primitive_hypotheses:
+            missing_features = _missing_features(
+                request.snapshot,
+                hypothesis.required_features,
+            )
+            if missing_features:
+                primitive_requirements.append(
+                    PrimitiveBuildRequirement(
+                        primitive_id=hypothesis.primitive_id,
+                        category=hypothesis.category,
+                        proposed_logic=hypothesis.proposed_logic,
+                        reason=hypothesis.reason,
+                        required_features=hypothesis.required_features,
+                        missing_features=missing_features,
+                        threshold_refs=hypothesis.threshold_refs,
+                        data_status="need_l1_features",
+                        version=hypothesis.version,
+                        output_type=hypothesis.output_type,
+                    )
+                )
+                threshold_questions.extend(
+                    _threshold_questions(hypothesis.primitive_id, hypothesis.threshold_refs)
+                )
+                continue
+
             if hypothesis.primitive_id in self.primitive_registry.primitives:
                 definition = self.primitive_registry.get(hypothesis.primitive_id)
-                value = definition.function(request.snapshot)
+                try:
+                    value = definition.function(request.snapshot)
+                except FeatureNotFoundError:
+                    primitive_requirements.append(
+                        PrimitiveBuildRequirement(
+                            primitive_id=hypothesis.primitive_id,
+                            category=hypothesis.category,
+                            proposed_logic=hypothesis.proposed_logic,
+                            reason=hypothesis.reason,
+                            required_features=hypothesis.required_features,
+                            missing_features=hypothesis.required_features,
+                            threshold_refs=hypothesis.threshold_refs,
+                            data_status="need_l1_features",
+                            version=hypothesis.version,
+                            output_type=hypothesis.output_type,
+                        )
+                    )
+                    continue
                 primitive_values[hypothesis.primitive_id] = value
                 primitive_assessments.append(
                     PrimitiveAssessment(
@@ -229,11 +275,6 @@ class IndividualStockStrategyResearchWorkflow:
                 )
                 continue
 
-            missing_features = _missing_features(
-                request.snapshot.features,
-                hypothesis.required_features,
-            )
-            data_status = "data_ready" if not missing_features else "need_l1_features"
             primitive_requirements.append(
                 PrimitiveBuildRequirement(
                     primitive_id=hypothesis.primitive_id,
@@ -241,9 +282,9 @@ class IndividualStockStrategyResearchWorkflow:
                     proposed_logic=hypothesis.proposed_logic,
                     reason=hypothesis.reason,
                     required_features=hypothesis.required_features,
-                    missing_features=missing_features,
+                    missing_features=(),
                     threshold_refs=hypothesis.threshold_refs,
-                    data_status=data_status,
+                    data_status="data_ready",
                     version=hypothesis.version,
                     output_type=hypothesis.output_type,
                 )
@@ -257,26 +298,32 @@ class IndividualStockStrategyResearchWorkflow:
         strategy_label_fields: list[str] = []
 
         for hypothesis in request.label_hypotheses:
+            definition = self.label_registry.labels.get(hypothesis.label_id)
+            required_primitive_ids = (
+                definition.primitive_ids if definition is not None else hypothesis.primitive_ids
+            )
             missing_primitives = tuple(
                 primitive_id
-                for primitive_id in hypothesis.primitive_ids
+                for primitive_id in required_primitive_ids
                 if primitive_id not in primitive_values
             )
-            if hypothesis.label_id in self.label_registry.labels and not missing_primitives:
-                definition = self.label_registry.get(hypothesis.label_id)
+            if definition is not None and not missing_primitives:
                 values = {
                     primitive_id: primitive_values[primitive_id]
                     for primitive_id in definition.primitive_ids
                 }
+                matched = _label_matched(values)
                 label_assessments.append(
                     LabelAssessment(
                         label_id=definition.label_id,
                         version=definition.version,
                         primitive_ids=definition.primitive_ids,
                         primitive_values=values,
+                        matched=matched,
                     )
                 )
-                strategy_label_fields.append(definition.label_id)
+                if matched:
+                    strategy_label_fields.append(definition.label_id)
                 continue
 
             label_requirements.append(
@@ -368,10 +415,18 @@ def _build_factor_observations(
 
 
 def _missing_features(
-    features: Mapping[str, object],
+    snapshot: AnalysisSnapshot,
     required_features: tuple[str, ...],
 ) -> tuple[str, ...]:
-    return tuple(feature_name for feature_name in required_features if feature_name not in features)
+    return tuple(
+        feature_name
+        for feature_name in required_features
+        if not has_requirement(snapshot, feature_name)
+    )
+
+
+def _label_matched(values: Mapping[str, bool | float]) -> bool:
+    return all(bool(value) for value in values.values())
 
 
 def _threshold_questions(

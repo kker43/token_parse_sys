@@ -1,0 +1,59 @@
+{
+  "strategy_id": "strategy.steady_uptrend_breakout_watch",
+  "version": "candidate_v1",
+  "status": "draft",
+  "name": "稳健上升趋势突破关注策略",
+  "description": "从宏和科技、铜冠铜箔样本沉淀出的候选策略：股票处于稳健上升趋势，短中长期均线多头排列，回撤受控，整理后向上突破并伴随量能放大。",
+  "candidate_pool": {
+    "policy_id": "strategy.steady_uptrend_breakout_watch.pool",
+    "version": "candidate_v1",
+    "source_type": "l3_label_recall",
+    "parameters": {
+      "labels": [
+        "composite_setup.steady_uptrend_breakout_watch"
+      ],
+      "market": "CN_A"
+    }
+  },
+  "pipeline": [
+    {
+      "stage_id": "quality_gate",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "quality_gate.snapshot_consumable == true"
+      ]
+    },
+    {
+      "stage_id": "steady_trend_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "technical_pattern.steady_uptrend_stock == true"
+      ]
+    },
+    {
+      "stage_id": "breakout_recall",
+      "stage_type": "recall",
+      "pass_conditions": [
+        "composite_setup.steady_uptrend_breakout_watch == true"
+      ]
+    },
+    {
+      "stage_id": "rank_by_trend_quality",
+      "stage_type": "rank",
+      "score_fields": [
+        "trend_strength_score",
+        "drawdown_control_score",
+        "breakout_volume_score"
+      ]
+    }
+  ],
+  "backtest_gate": {
+    "min_sample_size": 30,
+    "min_win_rate": 0.55,
+    "return_metric_name": "annual_return",
+    "min_return_metric": 0.0,
+    "drawdown_metric_name": "max_drawdown",
+    "max_abs_drawdown": 0.4
+  },
+  "notes": "当前是候选草案。需要补齐 MA60、MA120、ma20_slope_20d、max_drawdown_60d、close_new_high_60d_flag 等生产指标后，再进行样本组回测。max_abs_drawdown=0.4 是高弹性趋势股候选阈值，后续需要用正负样本和回测校准。"
+}

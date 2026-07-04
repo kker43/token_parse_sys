@@ -115,6 +115,160 @@
       "notes": "放量突破类技术形态标签，后续可作为 L4 召回条件。"
     },
     {
+      "label_id": "technical_pattern.steady_uptrend_stock",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "technical_pattern",
+      "primitive_refs": [
+        {"primitive_id": "moving_average.close_above_ma20", "version": "v1", "required": true, "alias": "above_ma20"},
+        {"primitive_id": "moving_average.close_above_ma60", "version": "candidate_v1", "required": true, "alias": "above_ma60"},
+        {"primitive_id": "moving_average.ma20_above_ma60", "version": "candidate_v1", "required": true, "alias": "ma20_above_ma60"},
+        {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
+        {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
+        {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"}
+      ],
+      "logic": {
+        "all": [
+          "above_ma20 == true",
+          "above_ma60 == true",
+          "ma20_above_ma60 == true",
+          "ma60_above_ma120 == true",
+          "ma20_rising == true",
+          "drawdown_controlled == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "趋势、均线和回撤控制类 L2 原语可计算",
+      "evidence": [
+        "603256.SH 宏和科技截图样本",
+        "301217.SZ 铜冠铜箔截图样本"
+      ],
+      "promotion_policy": "需要扩展正负样本并完成回测准入后才能升级为 approved",
+      "owner": "stock_lobster",
+      "notes": "稳健趋势股标签，只表达股票走势质量，不表达买入动作。"
+    },
+    {
+      "label_id": "technical_pattern.uptrend_consolidation_breakout",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "technical_pattern",
+      "primitive_refs": [
+        {"primitive_id": "moving_average.close_above_ma20", "version": "v1", "required": true, "alias": "above_ma20"},
+        {"primitive_id": "moving_average.close_above_ma60", "version": "candidate_v1", "required": true, "alias": "above_ma60"},
+        {"primitive_id": "moving_average.ma20_above_ma60", "version": "candidate_v1", "required": true, "alias": "ma20_above_ma60"},
+        {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
+        {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
+        {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"},
+        {"primitive_id": "structure.ma_5_10_20_converged", "version": "v1", "required": true, "alias": "ma_converged"},
+        {"primitive_id": "level_breakout.close_new_high_60d", "version": "v1", "required": true, "alias": "new_high"}
+      ],
+      "logic": {
+        "all": [
+          "above_ma20 == true",
+          "above_ma60 == true",
+          "ma20_above_ma60 == true",
+          "ma60_above_ma120 == true",
+          "ma20_rising == true",
+          "drawdown_controlled == true",
+          "ma_converged == true",
+          "new_high == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "稳健趋势、整理收敛、突破类 L2 原语可计算",
+      "evidence": [
+        "603256.SH 宏和科技截图样本",
+        "301217.SZ 铜冠铜箔截图样本"
+      ],
+      "promotion_policy": "需要补齐 MA60/MA120/回撤/收敛/新高生产字段并完成回测",
+      "owner": "stock_lobster",
+      "notes": "上升趋势中的中继整理突破标签，表达可复用形态语义，不表达交易动作。"
+    },
+    {
+      "label_id": "technical_pattern.steady_uptrend_new_high_breakout",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "technical_pattern",
+      "primitive_refs": [
+        {"primitive_id": "moving_average.close_above_ma20", "version": "v1", "required": true, "alias": "above_ma20"},
+        {"primitive_id": "moving_average.close_above_ma60", "version": "candidate_v1", "required": true, "alias": "above_ma60"},
+        {"primitive_id": "moving_average.ma20_above_ma60", "version": "candidate_v1", "required": true, "alias": "ma20_above_ma60"},
+        {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
+        {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
+        {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"},
+        {"primitive_id": "level_breakout.close_new_high_60d", "version": "v1", "required": true, "alias": "new_high"}
+      ],
+      "logic": {
+        "all": [
+          "above_ma20 == true",
+          "above_ma60 == true",
+          "ma20_above_ma60 == true",
+          "ma60_above_ma120 == true",
+          "ma20_rising == true",
+          "drawdown_controlled == true",
+          "new_high == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "稳健趋势和突破类 L2 原语可计算",
+      "evidence": [
+        "603256.SH 宏和科技截图样本",
+        "301217.SZ 铜冠铜箔截图样本"
+      ],
+      "promotion_policy": "需要扩展样本并完成回测准入后才能升级为 approved",
+      "owner": "stock_lobster",
+      "notes": "稳健趋势股的新高突破标签，不强制要求均线收敛。"
+    },
+    {
+      "label_id": "composite_setup.steady_uptrend_breakout_watch",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "composite_setup",
+      "primitive_refs": [
+        {"primitive_id": "moving_average.close_above_ma20", "version": "v1", "required": true, "alias": "above_ma20"},
+        {"primitive_id": "moving_average.close_above_ma60", "version": "candidate_v1", "required": true, "alias": "above_ma60"},
+        {"primitive_id": "moving_average.ma20_above_ma60", "version": "candidate_v1", "required": true, "alias": "ma20_above_ma60"},
+        {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
+        {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
+        {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"},
+        {"primitive_id": "level_breakout.close_new_high_60d", "version": "v1", "required": true, "alias": "new_high"},
+        {"primitive_id": "volume_liquidity.amount_ratio_20d_high", "version": "v1", "required": true, "alias": "volume_high"}
+      ],
+      "logic": {
+        "all": [
+          "above_ma20 == true",
+          "above_ma60 == true",
+          "ma20_above_ma60 == true",
+          "ma60_above_ma120 == true",
+          "ma20_rising == true",
+          "drawdown_controlled == true",
+          "new_high == true",
+          "volume_high == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "趋势、突破、量能 L2 原语可计算",
+      "evidence": [
+        "603256.SH 宏和科技截图样本",
+        "301217.SZ 铜冠铜箔截图样本"
+      ],
+      "promotion_policy": "满足样本扩展、阈值校准、回测准入后才能进入 L4 测试跟踪",
+      "owner": "stock_lobster",
+      "notes": "这次两个样本沉淀出的复合准备态，用于 L4 策略候选召回；整理收敛作为子形态或加分项，不作为第一版硬条件。"
+    },
+    {
       "label_id": "composite_setup.low_valuation_bottoming_reversal",
       "version": "v1",
       "status": "candidate",
