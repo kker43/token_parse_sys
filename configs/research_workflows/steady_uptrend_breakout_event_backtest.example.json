@@ -1,0 +1,22 @@
+{
+  "workflow_id": "steady_uptrend_breakout_event_backtest",
+  "version": "candidate_v1",
+  "description": "稳健上升趋势突破策略的事件回测 workflow：读取候选突破事件和基础日线，按 5/10/20 日持有期计算收益、最大回撤、胜率和样本数，并输出 L6 BacktestResult。",
+  "inputs": {
+    "kline_tsv_path": "MySQL -B -N 导出的基础日线，字段顺序为 asset_id, trade_date, open, high, low, close, amount。",
+    "scan_result_path": "steady_uptrend_breakout_research_scan.py 输出的候选事件文件。"
+  },
+  "execution_policy": {
+    "entry_offset": 1,
+    "entry_price_field": "open",
+    "exit_price_field": "close",
+    "holding_horizons": [5, 10, 20],
+    "description": "信号日后第 1 个交易日开盘买入，持有 N 个交易日，退出日收盘卖出。"
+  },
+  "outputs": [
+    "EventTradeResult",
+    "EventBacktestReport",
+    "BacktestResult"
+  ],
+  "promotion_rule": "将选定 holding_horizon 的 BacktestResult 回灌 single_stock_strategy_research workflow；只有样本数、胜率、收益、回撤全部满足 BacktestAcceptancePolicy 时，L4 策略才能进入 test_tracking。"
+}

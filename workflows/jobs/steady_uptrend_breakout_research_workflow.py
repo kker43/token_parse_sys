@@ -13,6 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from stock_lobster.research import run_steady_uptrend_breakout_case
+from stock_lobster.l6_backtest_engine import BacktestResult
 from stock_lobster.research.trend_breakout_scan import TrendBreakoutMetrics
 from workflows.jobs.support import write_json_payload
 
@@ -23,6 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="steady_uptrend_breakout_research_workflow")
     parser.add_argument("--scan-result-path", required=True)
     parser.add_argument("--output-path", required=True)
+    parser.add_argument("--event-backtest-path")
+    parser.add_argument("--holding-horizon", type=int, default=20)
     parser.add_argument("--max-cases", type=int)
     return parser
 
@@ -35,18 +38,28 @@ def main(argv: Sequence[str] | None = None) -> int:
     candidates = payload.get("breakout_candidates", ())
     if args.max_cases is not None:
         candidates = candidates[: args.max_cases]
+    backtest_result = (
+        _backtest_result_from_event_report(args.event_backtest_path, args.holding_horizon)
+        if args.event_backtest_path
+        else None
+    )
 
     cases = []
     for candidate in candidates:
         if not isinstance(candidate, Mapping):
             raise ValueError("each breakout candidate must be a JSON object")
-        result = run_steady_uptrend_breakout_case(_metrics_from_mapping(candidate))
+        result = run_steady_uptrend_breakout_case(
+            _metrics_from_mapping(candidate),
+            backtest_result=backtest_result,
+        )
         cases.append(_result_to_mapping(result))
 
     output_payload = {
         "schema_version": 1,
         "workflow": "steady_uptrend_breakout_research_workflow",
         "source_scan_result_path": args.scan_result_path,
+        "event_backtest_path": args.event_backtest_path,
+        "holding_horizon": args.holding_horizon,
         "case_count": len(cases),
         "cases": cases,
     }
@@ -73,6 +86,41 @@ def _metrics_from_mapping(payload: Mapping[str, object]) -> TrendBreakoutMetrics
         steady_uptrend=bool(payload["steady_uptrend"]),
         breakout_watch=bool(payload["breakout_watch"]),
     )
+
+
+def _backtest_result_from_event_report(path: str, holding_horizon: int) -> BacktestResult:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    reports = payload.get("reports", ())
+    for report in reports:
+        if not isinstance(report, Mapping):
+            continue
+        result_payload = report.get("result")
+        if not isinstance(result_payload, Mapping):
+            continue
+        if int(result_payload["holding_horizon"]) != holding_horizon:
+            continue
+        return BacktestResult(
+            strategy_id=str(result_payload["strategy_id"]),
+            strategy_version=str(result_payload["strategy_version"]),
+            backtest_period=(
+                str(result_payload["backtest_period"][0]),
+                str(result_payload["backtest_period"][1]),
+            ),
+            benchmark=str(result_payload["benchmark"]),
+            holding_horizon=int(result_payload["holding_horizon"]),
+            return_metrics={
+                str(key): float(value)
+                for key, value in dict(result_payload["return_metrics"]).items()
+            },
+            drawdown_metrics={
+                str(key): float(value)
+                for key, value in dict(result_payload["drawdown_metrics"]).items()
+            },
+            win_rate=float(result_payload["win_rate"]),
+            sample_size=int(result_payload["sample_size"]),
+            failure_cases=tuple(str(item) for item in result_payload.get("failure_cases", ())),
+        )
+    raise ValueError(f"holding horizon {holding_horizon} not found in {path}")
 
 
 def _result_to_mapping(result) -> dict[str, object]:

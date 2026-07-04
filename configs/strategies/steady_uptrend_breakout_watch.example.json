@@ -47,13 +47,19 @@
       ]
     }
   ],
+  "candidate_scan_policy": {
+    "min_amount_ratio_20d": 1.5,
+    "max_abs_drawdown_60d": 0.4,
+    "start_date": null,
+    "notes": "这是候选召回阈值，用于识别高弹性趋势股；不是 L6 策略准入阈值。"
+  },
   "backtest_gate": {
     "min_sample_size": 30,
     "min_win_rate": 0.55,
     "return_metric_name": "annual_return",
     "min_return_metric": 0.0,
     "drawdown_metric_name": "max_drawdown",
-    "max_abs_drawdown": 0.4
+    "max_abs_drawdown": 0.25
   },
-  "notes": "当前是候选草案。需要补齐 MA60、MA120、ma20_slope_20d、max_drawdown_60d、close_new_high_60d_flag 等生产指标后，再进行样本组回测。max_abs_drawdown=0.4 是高弹性趋势股候选阈值，后续需要用正负样本和回测校准。"
+  "notes": "当前是候选草案。需要补齐 MA60、MA120、ma20_slope_20d、max_drawdown_60d、close_new_high_60d_flag 等生产指标后，再进行样本组回测。candidate_scan_policy.max_abs_drawdown_60d=0.4 是高弹性趋势股候选阈值；backtest_gate.max_abs_drawdown=0.25 是更严格的测试跟踪准入阈值。"
 }

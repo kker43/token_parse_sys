@@ -6,6 +6,7 @@ from stock_lobster.core.ids import RunId
 from stock_lobster.l1_analysis_snapshot.schema import AnalysisSnapshot
 from stock_lobster.l2_primitives import build_default_primitive_registry
 from stock_lobster.l3_labels import build_default_label_registry
+from stock_lobster.l6_backtest_engine import BacktestResult
 from stock_lobster.research.single_stock_strategy import (
     IndividualStockStrategyResearchRequest,
     IndividualStockStrategyResearchResult,
@@ -164,6 +165,7 @@ def snapshot_from_trend_breakout_metrics(
 
 def build_steady_uptrend_breakout_request(
     metrics: TrendBreakoutMetrics,
+    backtest_result: BacktestResult | None = None,
 ) -> IndividualStockStrategyResearchRequest:
     """Build a research workflow request from scanner metrics."""
 
@@ -176,16 +178,18 @@ def build_steady_uptrend_breakout_request(
         label_hypotheses=STEADY_UPTREND_BREAKOUT_LABELS,
         strategy_id="strategy.steady_uptrend_breakout_watch",
         strategy_name="稳健上升趋势突破关注策略",
+        backtest_result=backtest_result,
         notes=("由 steady_uptrend_breakout_research_scan 扫描候选生成。",),
     )
 
 
 def run_steady_uptrend_breakout_case(
     metrics: TrendBreakoutMetrics,
+    backtest_result: BacktestResult | None = None,
 ) -> IndividualStockStrategyResearchResult:
     """Run the standard research workflow for one scanner candidate."""
 
     return IndividualStockStrategyResearchWorkflow(
         primitive_registry=build_default_primitive_registry(),
         label_registry=build_default_label_registry(),
-    ).run(build_steady_uptrend_breakout_request(metrics))
+    ).run(build_steady_uptrend_breakout_request(metrics, backtest_result=backtest_result))
