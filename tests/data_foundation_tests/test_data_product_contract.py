@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import unittest
 
-from data_foundation.catalog_export import TokenFetchDataAssetExporter
-from data_foundation.token_fetch_bridge import RegistryReader, TokenFetchProductCatalog
+from data_foundation.catalog_export import PublishedDataAssetExporter
+from data_foundation.provider_bridge import RegistryReader, PublishedProductCatalog
 from shared.contracts import PublishedProductRef
 
 
@@ -123,11 +123,11 @@ class DataProductContractTest(unittest.TestCase):
         snapshot = reader.from_mapping(
             registry_name="data_product_registry",
             payload=SAMPLE_PRODUCT_REGISTRY,
-            source_commit="b598b34",
-            source_path="/home/ubuntu/token_fetch/config/data_product_registry.yaml",
+            source_commit="commit-1234567",
+            source_path="/data/external_provider/config/data_product_registry.yaml",
         )
 
-        catalog = TokenFetchProductCatalog()
+        catalog = PublishedProductCatalog()
         contracts = catalog.build_product_contracts(
             snapshot,
             field_types_by_product=FIELD_TYPES_BY_PRODUCT,
@@ -146,39 +146,39 @@ class DataProductContractTest(unittest.TestCase):
         snapshot = reader.from_mapping(
             registry_name="data_product_registry",
             payload=SAMPLE_PRODUCT_REGISTRY,
-            source_commit="b598b34",
-            source_path="/home/ubuntu/token_fetch/config/data_product_registry.yaml",
+            source_commit="commit-1234567",
+            source_path="/data/external_provider/config/data_product_registry.yaml",
         )
-        contracts = TokenFetchProductCatalog().build_product_contracts(
+        contracts = PublishedProductCatalog().build_product_contracts(
             snapshot,
             field_types_by_product=FIELD_TYPES_BY_PRODUCT,
         )
 
-        exporter = TokenFetchDataAssetExporter()
+        exporter = PublishedDataAssetExporter()
         payload = exporter.export_catalog(
             contracts,
             source_ref=PublishedProductRef(
-                producer="token_fetch",
+                producer="external_provider",
                 product_name="data_product_registry",
-                source_path="/home/ubuntu/token_fetch/config/data_product_registry.yaml",
-                source_commit="b598b34",
+                source_path="/data/external_provider/config/data_product_registry.yaml",
+                source_commit="commit-1234567",
                 registry_version="1",
             ),
         )
 
-        self.assertEqual("token_fetch", payload["producer"])
+        self.assertEqual("external_provider", payload["producer"])
         self.assertEqual(2, len(payload["products"]))
         first_product = payload["products"][0]
-        self.assertEqual("token_fetch.pub_stock_daily_kline", first_product["data_asset_id"])
+        self.assertEqual("external_provider.pub_stock_daily_kline", first_product["data_asset_id"])
         self.assertEqual("pub_data_quality_status", first_product["quality_gate"]["status_product"])
 
         rendered = exporter.render_catalog_json(
             contracts,
             source_ref=PublishedProductRef(
-                producer="token_fetch",
+                producer="external_provider",
                 product_name="data_product_registry",
-                source_path="/home/ubuntu/token_fetch/config/data_product_registry.yaml",
-                source_commit="b598b34",
+                source_path="/data/external_provider/config/data_product_registry.yaml",
+                source_commit="commit-1234567",
                 registry_version="1",
             ),
         )

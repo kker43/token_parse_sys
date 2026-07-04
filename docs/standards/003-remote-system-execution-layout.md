@@ -47,7 +47,7 @@ out of production until ownership is clear.
     enums/
 
   data_foundation/
-    token_fetch_bridge/
+    provider_bridge/
     sources/
     ingestion/
     normalization/
@@ -141,7 +141,7 @@ Put here:
 - basic statistics and basic indicators
 - quality checks
 - `pub_*` catalog export
-- wrappers around the existing `/home/ubuntu/token_fetch` project
+- wrappers around the existing `<external_producer_root>` project
 
 Do not put:
 
@@ -155,12 +155,12 @@ Do not put:
 Current transition rule:
 
 ```text
-/home/ubuntu/token_fetch remains the running producer.
-/home/ubuntu/token_parse_sys/data_foundation/token_fetch_bridge wraps or mirrors
-stable contracts from token_fetch when needed.
+<external_producer_root> remains the running data producer.
+/home/ubuntu/token_parse_sys/data_foundation/provider_bridge wraps or mirrors
+stable contracts from the external factual producer when needed.
 ```
 
-Do not copy `token_fetch` runtime artifacts into the new root.
+Do not copy external factual-producer runtime artifacts into the new root.
 
 ### `stock_lobster/`
 
@@ -339,8 +339,9 @@ Each job should:
 6. preserve `run_id`
 7. write audit or status records
 
-Existing `token_fetch/cron_script` remains valid during transition, but new
-cross-system jobs should live under `token_parse_sys/workflows/jobs/`.
+Existing schedulers under the external factual-producer project remain valid
+during transition, but new cross-system jobs should live under
+`token_parse_sys/workflows/jobs/`.
 
 ## Cross-Context Import Rules
 
@@ -375,9 +376,9 @@ interfaces -> direct database writes bypassing services
 Use this order:
 
 1. Create `/home/ubuntu/token_parse_sys` with the top-level directories.
-2. Keep `/home/ubuntu/token_fetch` as the running data producer.
-3. Add `data_foundation/token_fetch_bridge/` only when reading stable contracts
-   from `token_fetch`.
+2. Keep `<external_producer_root>` as the running data producer.
+3. Add `data_foundation/provider_bridge/` only when reading stable contracts
+   from the external factual producer.
 4. Add first `configs/data_assets/` entries for `pub_*` products.
 5. Implement Stock Lobster L0 catalog loading from those configs.
 6. Implement one L1 `AnalysisSnapshot` builder.

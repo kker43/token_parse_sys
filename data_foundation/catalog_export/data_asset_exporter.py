@@ -8,10 +8,10 @@ from typing import Iterable
 from shared.contracts import DataProductContract, PublishedProductRef
 
 
-class TokenFetchDataAssetExporter:
-    """Build JSON-friendly data-asset configs from token_fetch product contracts."""
+class PublishedDataAssetExporter:
+    """Build JSON-friendly data-asset configs from published product contracts."""
 
-    def __init__(self, producer_name: str = "token_fetch") -> None:
+    def __init__(self, producer_name: str = "external_provider") -> None:
         self.producer_name = producer_name
 
     def contract_to_data_asset(self, contract: DataProductContract) -> dict[str, object]:

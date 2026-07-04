@@ -7,17 +7,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from data_foundation.catalog_export.data_asset_exporter import TokenFetchDataAssetExporter
+from data_foundation.catalog_export.data_asset_exporter import PublishedDataAssetExporter
 from data_foundation.quality.readiness import (
     DataProductReadinessChecker,
     DataProductReadinessInputs,
     DataProductReadinessResult,
 )
-from data_foundation.token_fetch_bridge.registry_reader import (
+from data_foundation.provider_bridge.registry_reader import (
     RegistryReader,
     RegistrySnapshot,
-    TokenFetchProductCatalog,
-    TokenFetchQualityReader,
+    PublishedProductCatalog,
+    PublishedQualityReader,
 )
 from shared.contracts import DataProductContract, DataQualityStatus, PublishedProductRef
 
@@ -71,7 +71,7 @@ def load_field_types_by_product(path: str | Path | None) -> dict[str, dict[str, 
 def load_product_registry_bundle(
     registry_path: str | Path,
     source_commit: str = "unknown",
-    source_path: str = "/home/ubuntu/token_fetch",
+    source_path: str = "unknown",
     registry_name: str = "data_product_registry",
     field_types_by_product: Mapping[str, Mapping[str, str]] | None = None,
 ) -> ProductRegistryBundle:
@@ -83,7 +83,7 @@ def load_product_registry_bundle(
         source_commit=source_commit,
         source_path=source_path,
     )
-    contracts = TokenFetchProductCatalog().build_product_contracts(
+    contracts = PublishedProductCatalog().build_product_contracts(
         snapshot=snapshot,
         field_types_by_product=field_types_by_product,
     )
@@ -113,11 +113,11 @@ def list_product_summaries(bundle: ProductRegistryBundle) -> list[dict[str, obje
 def export_data_asset_catalog(
     bundle: ProductRegistryBundle,
     output_path: str | Path,
-    producer_name: str = "token_fetch",
+    producer_name: str = "external_provider",
 ) -> dict[str, object]:
     """Export data-asset config JSON for the current product bundle."""
 
-    exporter = TokenFetchDataAssetExporter(producer_name=producer_name)
+    exporter = PublishedDataAssetExporter(producer_name=producer_name)
     payload = exporter.export_catalog(bundle.contracts, source_ref=bundle.source_ref(producer_name))
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -139,7 +139,7 @@ def load_quality_statuses(path: str | Path) -> tuple[DataQualityStatus, ...]:
     if not isinstance(rows, Iterable):
         raise ValueError("Quality status rows must be iterable")
 
-    reader = TokenFetchQualityReader()
+    reader = PublishedQualityReader()
     statuses: list[DataQualityStatus] = []
     for row in rows:
         if not isinstance(row, Mapping):

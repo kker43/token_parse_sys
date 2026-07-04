@@ -28,8 +28,8 @@ architecture decisions are made.
   strategy candidates, evaluation evidence, approval records, and observation
   records.
 - External data comes through registered `DataAsset` contracts.
-- `token_fetch` remains an external producer; this project builds adapters and
-  catalogs instead of merging that repository.
+- An external factual producer remains external; this project builds adapters
+  and catalogs instead of merging that codebase.
 - `StrategyDSL` cannot reference raw price or volume tables directly.
 - Agents cannot create facts, approved primitives, approved labels, approved
   strategies, formal signals, or backtest results by themselves.
@@ -103,7 +103,7 @@ stock_lobster/
     repositories.py
     adapters/
       __init__.py
-      token_fetch_mysql.py
+      external_mysql.py
   l1_analysis_snapshot/
     __init__.py
     schema.py
@@ -182,7 +182,7 @@ Initial deliverables:
 - `ExternalDataContract`
 - `DataAsset`
 - `DataAssetCatalog`
-- `token_fetch` MySQL adapter draft
+- external factual-producer MySQL adapter draft
 - catalog examples for daily, weekly, monthly, MA, volatility, amount, and
   basic stock tables
 
@@ -351,11 +351,11 @@ Done when:
 Deliverables:
 
 - shared data product and quality contracts
-- `data_foundation/token_fetch_bridge` skeleton
+- `data_foundation/provider_bridge` skeleton
 - deterministic product readiness checker
 - `data_foundation/catalog_export` exporter
 - L0 contract models
-- first token_fetch catalog draft
+- first external factual-producer catalog draft
 - table and field metadata
 - quality/update metadata placeholders
 
@@ -513,5 +513,5 @@ Recommended next action:
 1. Decide whether to initialize Git here.
 2. Create the M1 Python scaffold.
 3. Add import-boundary tests before adding business logic.
-4. Use a read-only S1 session to inspect `token_fetch` data contracts and draft
-   the first `configs/data_assets/` entries.
+4. Use a read-only S1 session to inspect external factual-producer contracts
+   and draft the first `configs/data_assets/` entries.

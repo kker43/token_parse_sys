@@ -1,4 +1,4 @@
-"""Adapter boundary for the external token_fetch MySQL producer."""
+"""Adapter boundary for an external MySQL factual-data producer."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from stock_lobster.l0_data_access.contracts import DataAsset
 
 
 @dataclass(frozen=True, slots=True)
-class TokenFetchMysqlAdapter:
-    """Read-only adapter descriptor for token_fetch MySQL data assets."""
+class ExternalMysqlAdapter:
+    """Read-only adapter descriptor for external MySQL data assets."""
 
     connection_name: str
 

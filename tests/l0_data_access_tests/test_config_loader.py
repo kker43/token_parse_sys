@@ -13,20 +13,20 @@ from stock_lobster.l0_data_access import DataAssetCatalogLoader
 def sample_catalog_payload() -> dict[str, object]:
     return {
         "schema_version": 1,
-        "producer": "token_fetch",
+        "producer": "external_provider",
         "source_ref": {
-            "producer": "token_fetch",
+            "producer": "external_provider",
             "product_name": "data_product_registry",
-            "source_path": "/home/ubuntu/token_fetch/config/data_product_registry.yaml",
-            "source_commit": "b598b34",
+            "source_path": "/data/external_provider/config/data_product_registry.yaml",
+            "source_commit": "commit-1234567",
             "registry_version": "1",
         },
         "products": [
             {
-                "data_asset_id": "token_fetch.pub_stock_daily_kline",
+                "data_asset_id": "external_provider.pub_stock_daily_kline",
                 "data_product": "pub_stock_daily_kline",
                 "source_type": "published_product",
-                "source_name": "token_fetch",
+                "source_name": "external_provider",
                 "market": "CN_A",
                 "asset_type": "stock",
                 "grain": "asset_trade_date",
@@ -61,8 +61,8 @@ class DataAssetCatalogLoaderTest(unittest.TestCase):
 
             snapshot = DataAssetCatalogLoader().load_json(path)
 
-        asset = snapshot.catalog.get("token_fetch.pub_stock_daily_kline")
-        self.assertEqual("token_fetch", snapshot.producer)
+        asset = snapshot.catalog.get("external_provider.pub_stock_daily_kline")
+        self.assertEqual("external_provider", snapshot.producer)
         self.assertEqual("pub_stock_daily_kline", asset.data_product)
         self.assertEqual(("ready",), asset.allowed_statuses)
         self.assertEqual(("pass", "warning"), asset.allowed_quality_levels)

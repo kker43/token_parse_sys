@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "producer": "token_fetch",
+  "producer": "external_provider",
   "products": [
     {
       "consumer_contract": {
         "check_quality_status_before_query": true
       },
-      "data_asset_id": "token_fetch.pub_data_quality_status",
+      "data_asset_id": "external_provider.pub_data_quality_status",
       "data_product": "pub_data_quality_status",
       "data_version": "v1",
       "field_schema": {
@@ -57,7 +57,7 @@
         "data_version",
         "error_message"
       ],
-      "source_name": "token_fetch",
+      "source_name": "external_provider",
       "source_tables": [
         "task_tracker",
         "quality_check_results"
@@ -71,7 +71,7 @@
         "date_semantics": "market_local_trade_date",
         "no_future_data": true
       },
-      "data_asset_id": "token_fetch.pub_stock_daily_kline",
+      "data_asset_id": "external_provider.pub_stock_daily_kline",
       "data_product": "pub_stock_daily_kline",
       "data_version": "v1",
       "field_schema": {
@@ -124,7 +124,7 @@
         "data_version",
         "quality_status"
       ],
-      "source_name": "token_fetch",
+      "source_name": "external_provider",
       "source_tables": [
         "token_daily_details"
       ],
@@ -136,7 +136,7 @@
         "check_quality_status_before_query": true,
         "period_date_semantics": "actual_period_end_trade_date"
       },
-      "data_asset_id": "token_fetch.pub_stock_weekly_kline",
+      "data_asset_id": "external_provider.pub_stock_weekly_kline",
       "data_product": "pub_stock_weekly_kline",
       "data_version": "v1",
       "field_schema": {
@@ -189,7 +189,7 @@
         "data_version",
         "quality_status"
       ],
-      "source_name": "token_fetch",
+      "source_name": "external_provider",
       "source_tables": [
         "token_weekly_details"
       ],
@@ -201,7 +201,7 @@
         "check_quality_status_before_query": true,
         "period_date_semantics": "actual_period_end_trade_date"
       },
-      "data_asset_id": "token_fetch.pub_stock_monthly_kline",
+      "data_asset_id": "external_provider.pub_stock_monthly_kline",
       "data_product": "pub_stock_monthly_kline",
       "data_version": "v1",
       "field_schema": {
@@ -254,7 +254,7 @@
         "data_version",
         "quality_status"
       ],
-      "source_name": "token_fetch",
+      "source_name": "external_provider",
       "source_tables": [
         "token_monthly_details"
       ],
@@ -266,7 +266,7 @@
         "check_quality_status_before_query": true,
         "date_semantics": "market_local_trade_date"
       },
-      "data_asset_id": "token_fetch.pub_stock_daily_basic",
+      "data_asset_id": "external_provider.pub_stock_daily_basic",
       "data_product": "pub_stock_daily_basic",
       "data_version": "v1",
       "field_schema": {
@@ -317,7 +317,7 @@
         "data_version",
         "quality_status"
       ],
-      "source_name": "token_fetch",
+      "source_name": "external_provider",
       "source_tables": [
         "token_daily_basic",
         "token_valuation_daily"
@@ -330,7 +330,7 @@
         "check_quality_status_before_query": true,
         "snapshot_policy": "current_snapshot_only"
       },
-      "data_asset_id": "token_fetch.pub_stock_asset_basic",
+      "data_asset_id": "external_provider.pub_stock_asset_basic",
       "data_product": "pub_stock_asset_basic",
       "data_version": "v1",
       "field_schema": {
@@ -377,7 +377,7 @@
         "data_version",
         "quality_status"
       ],
-      "source_name": "token_fetch",
+      "source_name": "external_provider",
       "source_tables": [
         "token_stock_basic",
         "token_type"
@@ -391,7 +391,7 @@
         "no_trading_judgement": true,
         "select_indicator_by_name_version_hash": true
       },
-      "data_asset_id": "token_fetch.pub_stock_daily_indicator",
+      "data_asset_id": "external_provider.pub_stock_daily_indicator",
       "data_product": "pub_stock_daily_indicator",
       "data_version": "v1",
       "field_schema": {
@@ -451,7 +451,7 @@
         "data_version",
         "quality_status"
       ],
-      "source_name": "token_fetch",
+      "source_name": "external_provider",
       "source_tables": [
         "close_price_daily_statistic",
         "amount_daily_statistic",

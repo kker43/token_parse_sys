@@ -125,13 +125,13 @@ class DataFoundationCliTest(unittest.TestCase):
                     "--field-types-path",
                     str(self.field_types_path),
                     "--source-commit",
-                    "b598b34",
+                    "commit-1234567",
                 ]
             )
 
         payload = json.loads(stdout.getvalue())
         self.assertEqual(0, exit_code)
-        self.assertEqual("b598b34", payload["source_commit"])
+        self.assertEqual("commit-1234567", payload["source_commit"])
         self.assertEqual("pub_stock_daily_kline", payload["products"][0]["name"])
 
     def test_export_data_assets_writes_catalog_json(self) -> None:
@@ -152,7 +152,7 @@ class DataFoundationCliTest(unittest.TestCase):
 
         self.assertEqual(0, exit_code)
         payload = json.loads(output_path.read_text(encoding="utf-8"))
-        self.assertEqual("token_fetch.pub_stock_daily_kline", payload["products"][0]["data_asset_id"])
+        self.assertEqual("external_provider.pub_stock_daily_kline", payload["products"][0]["data_asset_id"])
 
     def test_check_readiness_returns_non_zero_for_blocked_product(self) -> None:
         self.quality_path.write_text(

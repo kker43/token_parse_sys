@@ -47,20 +47,19 @@ The upstream factual producer is:
 
 ```text
 host: ubuntu@111.229.103.59
-path: /home/ubuntu/token_fetch
-branch: dev/basic_fetch_20260704
-latest inspected commit: b598b34
+path: <external_producer_root>
+inspection snapshot: external factual producer inspected on 2026-07-04
 ```
 
-`token_fetch` remains the running producer during this MVP. This project should
-not rewrite or move it yet.
+The external factual producer remains the running producer during this MVP.
+This project should not rewrite or move it yet.
 
 `token_parse_sys` consumes stable contracts and readiness state from it.
 
 ## Target Boundary
 
 ```text
-token_fetch
+external factual producer
   -> produces factual tables and pub_* products
   -> exposes registry files and quality status
 
@@ -72,8 +71,8 @@ token_parse_sys/data_foundation
 
 token_parse_sys/stock_lobster/l0_data_access
   -> consumes DataAsset configs
-  -> never reads token_fetch internals directly unless explicitly marked
-     transitional
+  -> never reads external factual-producer internals directly unless
+     explicitly marked transitional
 ```
 
 ## MVP Components
@@ -108,33 +107,33 @@ Non-goals:
 - production scheduling
 - strategy semantics
 
-### 2. Token Fetch Bridge
+### 2. Provider Bridge
 
 Location:
 
 ```text
-data_foundation/token_fetch_bridge/
+data_foundation/provider_bridge/
 ```
 
 Initial services:
 
 ```text
 RegistryReader
-TokenFetchProductCatalog
-TokenFetchQualityReader
+PublishedProductCatalog
+PublishedQualityReader
 ```
 
 Responsibilities:
 
-- read or mirror selected registry files from `/home/ubuntu/token_fetch`
+- read or mirror selected registry files from `<external_producer_root>`
 - expose normalized contract objects
 - keep source path, branch, commit, and registry version in metadata
 
 Non-goals:
 
 - direct strategy use
-- moving `token_fetch`
-- rewriting `token_fetch` tasks
+- moving the external factual producer
+- rewriting external factual-producer tasks
 - writing to upstream tables
 
 ### 3. Data Asset Export
@@ -150,7 +149,7 @@ stock_lobster/l0_data_access/
 Initial output:
 
 ```text
-configs/data_assets/token_fetch_pub_products.yaml
+configs/data_assets/published_products.example.json
 ```
 
 Initial products:
@@ -199,8 +198,8 @@ Responsibilities:
 Transition behavior:
 
 - `daily_fact_data_production.py` may wrap the existing
-  `/home/ubuntu/token_fetch` scheduler during the transition.
-- It must not inline `token_fetch` production logic.
+  `<external_producer_root>` scheduler during the transition.
+- It must not inline external factual-producer logic.
 - It must record which upstream commit or contract snapshot was used.
 
 ### 5. Public Interfaces
@@ -265,7 +264,7 @@ experience artifacts.
 | Area | Routine? | First location |
 | --- | --- | --- |
 | contract dataclasses | no | `shared/contracts/` |
-| registry reader | no | `data_foundation/token_fetch_bridge/` |
+| registry reader | no | `data_foundation/provider_bridge/` |
 | readiness checker | no | `data_foundation/quality/` |
 | data asset exporter | on demand or scheduled | `data_foundation/catalog_export/` |
 | fact production wrapper | yes | `workflows/jobs/daily_fact_data_production.py` |
@@ -286,7 +285,7 @@ shared/contracts/
 
 data_foundation/
   __init__.py
-  token_fetch_bridge/
+  provider_bridge/
     __init__.py
     registry_reader.py
   quality/
@@ -297,7 +296,7 @@ data_foundation/
     data_asset_exporter.py
 
 configs/data_assets/
-  token_fetch_pub_products.example.json
+  published_products.example.json
 
 tests/
   test_import_boundaries.py
@@ -336,17 +335,17 @@ MVP is done when:
 - L0 `DataAsset` config can be exported from those contracts.
 - A readiness checker can deterministically approve or block a product/date.
 - Routine job entrypoints exist for quality monitoring and data asset export.
-- No Stock Lobster strategy layer reads `token_fetch` internals.
+- No Stock Lobster strategy layer reads external factual-producer internals.
 - Import-boundary tests prevent lower layers from importing orchestration code.
 - All tests pass locally.
 
 ## Open Decisions
 
 - Should production configs be JSON first, or should the project add PyYAML?
-- Should the bridge read `/home/ubuntu/token_fetch/config/*.yaml` directly on
+- Should the bridge read `<external_producer_root>/config/*.yaml` directly on
   the server, or should those registries be exported into this project first?
-- Should `daily_fact_data_production.py` call the existing `token_fetch`
-  scheduler, or only monitor its output in the first phase?
+- Should `daily_fact_data_production.py` call the existing external
+  factual-producer scheduler, or only monitor its output in the first phase?
 - Where should structured job results be persisted: file, MySQL, SQLite, or
   later application tables?
 
@@ -361,13 +360,13 @@ docs/workflows/001-data-foundation-mvp.md.
 
 Implement only the first code slice:
 - shared/contracts data product and quality models
-- data_foundation token_fetch_bridge registry reader skeleton
+- data_foundation provider_bridge registry reader skeleton
 - data_foundation quality readiness checker
 - data_foundation catalog_export data asset exporter
 - example JSON data asset config
 - focused tests
 
-Do not modify token_fetch.
+Do not modify the external factual producer.
 Do not implement strategy, primitive, label, signal, backtest, or observation.
 Do not add routine jobs until the passive services pass tests.
 Run unittest and report layer boundary status.

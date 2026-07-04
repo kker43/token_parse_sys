@@ -1,4 +1,4 @@
-"""Read normalized product and indicator registries from token_fetch exports."""
+"""Read normalized product and indicator registries from external factual-producer exports."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ class RegistrySnapshot:
 
 
 class RegistryReader:
-    """Load JSON registry snapshots exported from token_fetch."""
+    """Load JSON registry snapshots exported from an external factual producer."""
 
     def read_json(
         self,
@@ -62,15 +62,15 @@ class RegistryReader:
         )
 
 
-class TokenFetchProductCatalog:
-    """Translate token_fetch registry payloads into shared product contracts."""
+class PublishedProductCatalog:
+    """Translate published registry payloads into shared product contracts."""
 
     def build_product_contracts(
         self,
         snapshot: RegistrySnapshot,
         field_types_by_product: Mapping[str, Mapping[str, str]] | None = None,
     ) -> tuple[DataProductContract, ...]:
-        """Build product contracts from a token_fetch data product registry snapshot."""
+        """Build product contracts from a published data product registry snapshot."""
 
         products = snapshot.payload.get("products", ())
         return tuple(
@@ -83,7 +83,7 @@ class TokenFetchProductCatalog:
         )
 
     def build_indicator_contracts(self, snapshot: RegistrySnapshot) -> tuple[IndicatorContract, ...]:
-        """Build indicator contracts from a token_fetch indicator registry snapshot."""
+        """Build indicator contracts from a published indicator registry snapshot."""
 
         indicators = snapshot.payload.get("indicators", ())
         return tuple(
@@ -102,7 +102,7 @@ class TokenFetchProductCatalog:
         )
 
 
-class TokenFetchQualityReader:
+class PublishedQualityReader:
     """Normalize query rows for the published product quality-status product."""
 
     def parse_status_row(self, payload: Mapping[str, Any]) -> DataQualityStatus:

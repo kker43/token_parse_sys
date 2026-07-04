@@ -8,12 +8,10 @@ larger Stock Lobster system.
 It is based on a read-only inspection of:
 
 - remote host: `ubuntu@111.229.103.59`
-- upstream path: `/home/ubuntu/token_fetch`
-- branch: `dev/basic_fetch_20260704`
-- inspected commit: `b598b34 Refine fact data product structure`
+- configured producer root: `<external_producer_root>`
 - inspection date: 2026-07-04
 
-The inspected branch was clean at the time of the latest check.
+The inspected source checkout was clean at the time of the latest check.
 
 ## Remote Deployment Target
 
@@ -28,18 +26,18 @@ This name matches the large-project structure from
 
 Do not overwrite existing remote projects such as:
 
-- `/home/ubuntu/token_fetch`
+- `<external_producer_root>`
 - `/home/ubuntu/token_parse`
 - `/home/ubuntu/token_parse_recall`
 - `/home/ubuntu/token_recall`
 
 When the project is deployed to the server, create a new directory under
-`/home/ubuntu` and copy or clone this repository there. Do not move the existing
-`token_fetch` directory until the integration plan is complete.
+`/home/ubuntu` and copy or clone this repository there. Do not move the
+configured producer checkout until the integration plan is complete.
 
 ## Upstream Current Direction
 
-The inspected `token_fetch` branch already matches the desired separation:
+The inspected external factual producer already matches the desired separation:
 
 ```text
 source/raw -> fact -> statistic/basic_indicator -> publish/pub_*
@@ -72,7 +70,7 @@ If this repository evolves into `token_parse_sys`, place the upstream project as
 ```text
 token_parse_sys/
   data_foundation/
-    token_fetch_legacy/
+    provider_bridge/
     sources/
     ingestion/
     normalization/
@@ -98,15 +96,15 @@ token_parse_sys/
 
 Migration should be gradual:
 
-1. Keep `/home/ubuntu/token_fetch` running independently.
-2. Export stable contracts from `token_fetch`.
+1. Keep `<external_producer_root>` running independently.
+2. Export stable contracts from the external factual producer.
 3. Consume those contracts in Stock Lobster L0.
 4. Move or mirror selected source files into `data_foundation` only after the
    contract is stable.
 
 ## Do Not Migrate Runtime Artifacts
 
-Do not copy these from `token_fetch` into the clean project:
+Do not copy these from the external factual producer into the clean project:
 
 - `venv/`
 - `logs/`
@@ -283,7 +281,7 @@ returns `publisher_not_implemented`, so it is not production-ready.
 
 Recommended next steps:
 
-1. Stabilize and commit the working `token_fetch` branch.
+1. Stabilize and version the external factual-producer contracts.
 2. Implement `pub_data_quality_status`.
 3. Fix the SQL draft issues above.
 4. Export `data_product_registry.yaml` as the first shared contract.

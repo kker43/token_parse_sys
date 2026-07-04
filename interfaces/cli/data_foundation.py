@@ -30,8 +30,8 @@ def build_parser() -> argparse.ArgumentParser:
         subparser.add_argument("--field-types-path")
         subparser.add_argument("--registry-name", default="data_product_registry")
         subparser.add_argument("--source-commit", default="unknown")
-        subparser.add_argument("--source-path", default="/home/ubuntu/token_fetch")
-        subparser.add_argument("--producer-name", default="token_fetch")
+        subparser.add_argument("--source-path", default="unknown")
+        subparser.add_argument("--producer-name", default="external_provider")
 
     export_parser = subparsers.choices["export-data-assets"]
     export_parser.add_argument("--output-path", required=True)

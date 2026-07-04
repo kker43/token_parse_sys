@@ -27,25 +27,27 @@ def init_git_repo(root: Path) -> None:
 
 
 class DailyFactDataProductionJobTest(unittest.TestCase):
-    def test_job_wraps_upstream_master_scheduler(self) -> None:
+    def test_job_wraps_external_producer_command(self) -> None:
         with TemporaryDirectory() as tempdir:
-            upstream_root = Path(tempdir)
-            (upstream_root / "cron_script").mkdir()
-            (upstream_root / "cron_script" / "daily_master_scheduler.py").write_text(
-                "print('master scheduler success')\n",
+            producer_root = Path(tempdir)
+            (producer_root / "producer_task.py").write_text(
+                "print('producer success')\n",
                 encoding="utf-8",
             )
-            init_git_repo(upstream_root)
-            job_result_path = upstream_root / "job_result.json"
+            init_git_repo(producer_root)
+            job_result_path = producer_root / "job_result.json"
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
                 exit_code = main(
                     [
-                        "--upstream-root",
-                        str(upstream_root),
-                        "--upstream-python",
+                        "--producer-name",
+                        "sample_provider",
+                        "--producer-root",
+                        str(producer_root),
+                        "--producer-command",
                         sys.executable,
+                        str(producer_root / "producer_task.py"),
                         "--job-result-path",
                         str(job_result_path),
                     ]
@@ -55,30 +57,28 @@ class DailyFactDataProductionJobTest(unittest.TestCase):
 
         self.assertEqual(0, exit_code)
         self.assertEqual("success", payload["status"])
-        self.assertEqual("main", payload["upstream"]["branch"])
-        self.assertIn("--now", payload["upstream"]["command"])
+        self.assertEqual("sample_provider", payload["producer"]["name"])
+        self.assertEqual("main", payload["producer"]["branch"])
 
     def test_job_returns_non_zero_when_upstream_fails(self) -> None:
         with TemporaryDirectory() as tempdir:
-            upstream_root = Path(tempdir)
-            (upstream_root / "cron_script").mkdir()
-            (upstream_root / "cron_script" / "daily_master_scheduler.py").write_text(
+            producer_root = Path(tempdir)
+            (producer_root / "producer_task.py").write_text(
                 "import sys\nsys.exit(5)\n",
                 encoding="utf-8",
             )
-            init_git_repo(upstream_root)
-            job_result_path = upstream_root / "job_result.json"
+            init_git_repo(producer_root)
+            job_result_path = producer_root / "job_result.json"
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
                 exit_code = main(
                     [
-                        "--upstream-root",
-                        str(upstream_root),
-                        "--upstream-python",
+                        "--producer-root",
+                        str(producer_root),
+                        "--producer-command",
                         sys.executable,
-                        "--run-mode",
-                        "schedule",
+                        str(producer_root / "producer_task.py"),
                         "--job-result-path",
                         str(job_result_path),
                     ]
@@ -88,19 +88,17 @@ class DailyFactDataProductionJobTest(unittest.TestCase):
 
         self.assertEqual(1, exit_code)
         self.assertEqual("failed", payload["status"])
-        self.assertEqual(5, payload["upstream"]["returncode"])
-        self.assertNotIn("--now", payload["upstream"]["command"])
+        self.assertEqual(5, payload["producer"]["returncode"])
 
     def test_job_script_runs_as_direct_file_entrypoint(self) -> None:
         with TemporaryDirectory() as tempdir:
-            upstream_root = Path(tempdir)
-            (upstream_root / "cron_script").mkdir()
-            (upstream_root / "cron_script" / "daily_master_scheduler.py").write_text(
+            producer_root = Path(tempdir)
+            (producer_root / "producer_task.py").write_text(
                 "print('direct script entrypoint ok')\n",
                 encoding="utf-8",
             )
-            init_git_repo(upstream_root)
-            job_result_path = upstream_root / "job_result.json"
+            init_git_repo(producer_root)
+            job_result_path = producer_root / "job_result.json"
             repo_root = Path(__file__).resolve().parents[2]
             script_path = repo_root / "workflows" / "jobs" / "daily_fact_data_production.py"
 
@@ -108,10 +106,11 @@ class DailyFactDataProductionJobTest(unittest.TestCase):
                 (
                     sys.executable,
                     str(script_path),
-                    "--upstream-root",
-                    str(upstream_root),
-                    "--upstream-python",
+                    "--producer-root",
+                    str(producer_root),
+                    "--producer-command",
                     sys.executable,
+                    str(producer_root / "producer_task.py"),
                     "--job-result-path",
                     str(job_result_path),
                 ),

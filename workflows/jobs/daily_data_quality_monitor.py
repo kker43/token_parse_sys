@@ -36,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--observed-inputs-path")
     parser.add_argument("--registry-name", default="data_product_registry")
     parser.add_argument("--source-commit", default="unknown")
-    parser.add_argument("--source-path", default="/home/ubuntu/token_fetch")
+    parser.add_argument("--source-path", default="unknown")
     parser.add_argument("--product", action="append", dest="products", default=[])
     return parser
 

@@ -66,7 +66,7 @@ class DataProductContract:
         item: Mapping[str, object],
         field_types: Mapping[str, str] | None = None,
     ) -> "DataProductContract":
-        """Build a contract from a registry item exported by token_fetch."""
+        """Build a contract from a registry item exported by an external factual producer."""
 
         required_field_names = tuple(str(name) for name in item.get("required_fields", ()))
         fields = tuple(

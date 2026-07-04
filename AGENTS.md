@@ -32,7 +32,7 @@ Stock Lobster is an A-share strategy research, analysis orchestration, signal
 generation, backtesting, and observation system.
 
 It does not produce canonical factual market data. External systems such as
-`/home/ubuntu/token_fetch` produce factual data and expose data contracts.
+`<external_producer_root>` produce factual data and expose data contracts.
 Stock Lobster consumes those contracts, builds reproducible analytical
 snapshots, derives deterministic labels, runs white-box strategy DSLs, produces
 signals, backtests them, and tracks future performance.
@@ -72,7 +72,7 @@ Rules:
 
 ## External Data Boundary
 
-Initial data access may adapt the remote `/home/ubuntu/token_fetch` project, but
+Initial data access may adapt the remote `<external_producer_root>` project, but
 do not merge that repository wholesale.
 
 Do not import or copy:
