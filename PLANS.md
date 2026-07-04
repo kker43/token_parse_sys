@@ -14,6 +14,9 @@ architecture decisions are made.
   `docs/standards/001-system-structure-and-model-guidance.md`.
 - Data foundation integration guidance is documented in
   `docs/standards/002-data-foundation-integration.md`.
+- Remote execution layout is documented in
+  `docs/standards/003-remote-system-execution-layout.md`.
+- Remote empty skeleton exists at `/home/ubuntu/token_parse_sys`.
 - The next implementation step should define the first data asset contracts and
   the research workflow objects that turn real pattern samples into registered
   experience artifacts.

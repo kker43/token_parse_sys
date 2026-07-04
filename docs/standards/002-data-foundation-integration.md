@@ -10,18 +10,17 @@ It is based on a read-only inspection of:
 - remote host: `ubuntu@111.229.103.59`
 - upstream path: `/home/ubuntu/token_fetch`
 - branch: `dev/basic_fetch_20260704`
-- inspected commit: `207fcf9 Prepare production data pipeline baseline`
+- inspected commit: `b598b34 Refine fact data product structure`
 - inspection date: 2026-07-04
 
-The inspected branch has uncommitted and untracked changes. Treat the findings
-as the latest working state, not as a clean release snapshot.
+The inspected branch was clean at the time of the latest check.
 
 ## Remote Deployment Target
 
 Preferred future project directory:
 
 ```text
-/home/ubuntu/lobster_system
+/home/ubuntu/token_parse_sys
 ```
 
 This name matches the large-project structure from
@@ -68,10 +67,10 @@ data_foundation
 
 ## Recommended Placement
 
-If this repository evolves into `lobster_system`, place the upstream project as:
+If this repository evolves into `token_parse_sys`, place the upstream project as:
 
 ```text
-lobster_system/
+token_parse_sys/
   data_foundation/
     token_fetch_legacy/
     sources/

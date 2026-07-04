@@ -12,7 +12,8 @@ Before making changes, read:
 3. `PLANS.md`
 4. `docs/standards/001-system-structure-and-model-guidance.md`
 5. `docs/standards/002-data-foundation-integration.md`
-6. The nearest relevant source files and tests, once code exists
+6. `docs/standards/003-remote-system-execution-layout.md`
+7. The nearest relevant source files and tests, once code exists
 
 If any instruction conflicts, prefer this order:
 
@@ -22,7 +23,8 @@ If any instruction conflicts, prefer this order:
 4. `PLANS.md`
 5. `docs/standards/001-system-structure-and-model-guidance.md`
 6. `docs/standards/002-data-foundation-integration.md`
-7. This file
+7. `docs/standards/003-remote-system-execution-layout.md`
+8. This file
 
 ## Project Mission
 

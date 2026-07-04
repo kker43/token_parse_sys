@@ -64,7 +64,7 @@ Layer mapping:
 If the repository evolves into a large project, use this shape:
 
 ```text
-lobster_system/
+token_parse_sys/
   shared/
     contracts/
     schemas/
