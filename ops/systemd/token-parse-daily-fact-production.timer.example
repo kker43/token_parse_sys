@@ -1,0 +1,9 @@
+[Unit]
+Description=Run token_parse_sys daily fact production wrapper on weekdays
+
+[Timer]
+OnCalendar=Mon..Fri 18:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

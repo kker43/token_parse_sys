@@ -1,0 +1,3 @@
+# Example cron entry for token_parse_sys fact production wrapper.
+# Adjust schedule, python path, and project root for the target server.
+15 18 * * 1-5 cd /home/ubuntu/token_parse_sys && /usr/bin/python3 /home/ubuntu/token_parse_sys/workflows/jobs/daily_fact_data_production.py --schedule-config-path /home/ubuntu/token_parse_sys/configs/schedules/daily_fact_data_production.json >> /home/ubuntu/token_parse_sys/runtime/daily_fact_data_production/cron.log 2>&1

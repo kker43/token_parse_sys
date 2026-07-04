@@ -27,6 +27,43 @@ def init_git_repo(root: Path) -> None:
 
 
 class DailyFactDataProductionJobTest(unittest.TestCase):
+    def test_job_reads_schedule_config(self) -> None:
+        with TemporaryDirectory() as tempdir:
+            root = Path(tempdir)
+            producer_root = root / "producer_repo"
+            producer_root.mkdir()
+            (producer_root / "producer_task.py").write_text(
+                "print('configured producer success')\n",
+                encoding="utf-8",
+            )
+            init_git_repo(producer_root)
+            job_result_path = root / "job_result.json"
+            schedule_path = root / "daily_fact_job.json"
+            schedule_path.write_text(
+                json.dumps(
+                    {
+                        "producer_name": "configured_provider",
+                        "producer_root": str(producer_root),
+                        "producer_command": [sys.executable, "producer_task.py"],
+                        "timeout_seconds": 900,
+                        "job_result_path": str(job_result_path),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(["--schedule-config-path", str(schedule_path)])
+
+            payload = json.loads(job_result_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(0, exit_code)
+        self.assertEqual("success", payload["status"])
+        self.assertEqual("configured_provider", payload["producer"]["name"])
+        self.assertEqual(str(schedule_path.resolve()), payload["schedule_config_path"])
+        self.assertEqual(900, payload["timeout_seconds"])
+
     def test_job_wraps_external_producer_command(self) -> None:
         with TemporaryDirectory() as tempdir:
             producer_root = Path(tempdir)

@@ -1,0 +1,10 @@
+{
+  "producer_name": "fact_producer",
+  "producer_root": "/home/ubuntu/external_fact_producer",
+  "producer_command": [
+    "python3",
+    "cron_script/daily_master_scheduler.py"
+  ],
+  "timeout_seconds": 14400,
+  "job_result_path": "/home/ubuntu/token_parse_sys/runtime/daily_fact_data_production/result.json"
+}
