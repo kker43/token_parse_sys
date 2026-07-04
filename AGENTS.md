@@ -10,7 +10,8 @@ Before making changes, read:
 1. `requirements.md`
 2. `sys_command.md`
 3. `PLANS.md`
-4. The nearest relevant source files and tests, once code exists
+4. `docs/standards/001-system-structure-and-model-guidance.md`
+5. The nearest relevant source files and tests, once code exists
 
 If any instruction conflicts, prefer this order:
 
@@ -18,7 +19,8 @@ If any instruction conflicts, prefer this order:
 2. `sys_command.md`
 3. `requirements.md`
 4. `PLANS.md`
-5. This file
+5. `docs/standards/001-system-structure-and-model-guidance.md`
+6. This file
 
 ## Project Mission
 
@@ -102,6 +104,7 @@ configs/
   strategies/
 docs/
   decisions/
+  standards/
   examples/
 tests/
   l0_data_access/
@@ -148,6 +151,9 @@ Do not run two sessions that modify the same files at the same time.
   supporting tasks.
 - Use GPT-5.3-Codex-Spark only for near-instant small iterations or quick
   local questions.
+
+For larger handoffs, follow
+`docs/standards/001-system-structure-and-model-guidance.md`.
 
 ## Implementation Standards
 

@@ -10,6 +10,8 @@ architecture decisions are made.
   and this plan.
 - The workspace is initialized as a Git repository on `main`.
 - M1 has a minimal Python package scaffold with strict import-boundary tests.
+- Standard system structure and model guidance is documented in
+  `docs/standards/001-system-structure-and-model-guidance.md`.
 - The next implementation step should define the first data asset contracts and
   the research workflow objects that turn real pattern samples into registered
   experience artifacts.
@@ -144,6 +146,7 @@ configs/
   strategies/
 docs/
   decisions/
+  standards/
   examples/
 tests/
   test_import_boundaries.py
