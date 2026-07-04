@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Mapping
 
 from stock_lobster.l0_data_access.catalog import DataAssetCatalog
 from stock_lobster.l0_data_access.contracts import DataAsset
 from stock_lobster.l0_data_access.repositories import DataAssetRowReader
+
+
+def _json_safe_value(value: object) -> object:
+    if isinstance(value, Decimal):
+        return int(value) if value == value.to_integral_value() else float(value)
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    return value
+
+
+def _json_safe_row(row: Mapping[str, object]) -> dict[str, object]:
+    return {str(key): _json_safe_value(value) for key, value in row.items()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,7 +74,7 @@ class SnapshotInputBuilder:
                         "asset_id": request.asset_id,
                         "query_version": request.query_version,
                         "query_params": {str(key): str(value) for key, value in filters.items()},
-                        "rows": [dict(row) for row in rows],
+                        "rows": [_json_safe_row(row) for row in rows],
                     }
                 )
             snapshots.append({"stock_code": stock_code, "snapshot_date": snapshot_date, "sources": sources})

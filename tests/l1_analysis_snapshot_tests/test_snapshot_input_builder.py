@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Mapping
 import unittest
 
@@ -23,8 +24,8 @@ class FakeRowReader:
             {
                 "asset_id": filters["asset_id"],
                 "trade_date": filters["trade_date"],
-                "close": 12.34,
-                "amount": 1000000,
+                "close": Decimal("12.34"),
+                "amount": Decimal("1000000.00"),
                 "quality_status": "pass",
             },
         )
@@ -51,6 +52,7 @@ class SnapshotInputBuilderTest(unittest.TestCase):
         self.assertEqual("20260704", payload["snapshot_date"])
         self.assertEqual("external_provider.pub_stock_daily_kline", source["asset_id"])
         self.assertEqual(12.34, source["rows"][0]["close"])
+        self.assertEqual(1000000, source["rows"][0]["amount"])
         self.assertEqual("000001.SZ", source["query_params"]["asset_id"])
 
 
