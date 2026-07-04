@@ -94,6 +94,7 @@ stock_lobster/
   l4_strategy_dsl/
   l5_signal_engine/
   l6_backtest_engine/
+  research/
   app/
 configs/
   data_assets/
@@ -113,7 +114,8 @@ tests/
 ```
 
 Layer packages may import from `stock_lobster.core` and lower-numbered layers
-only. Tests should enforce this once implementation begins.
+only. L0-L6 must not import `stock_lobster.research` or `stock_lobster.app`.
+Tests should enforce this once implementation begins.
 
 ## Multi-Session Work Rules
 
@@ -126,6 +128,8 @@ Recommended sessions:
   only unless writing catalog drafts.
 - S2 Engineering scaffold: package layout, test setup, dependency checks.
 - S3 L0/L1: data contracts, catalog, adapters, analysis snapshots.
+- S4R Pattern research: sample cases, factor observations, candidates, and
+  approval evidence for experience data.
 - S4 L2/L3: primitives, labels, registries.
 - S5 L4: strategy DSL, candidate pool policy, stage pipeline, validators.
 - S6 L5: signal execution, explanations, ranking.

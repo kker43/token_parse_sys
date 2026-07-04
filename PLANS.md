@@ -8,14 +8,19 @@ architecture decisions are made.
 
 - Existing project files: `requirements.md`, `sys_command.md`, `AGENTS.md`,
   and this plan.
-- No application code exists yet in this workspace.
-- The workspace is currently not initialized as a Git repository.
-- The first implementation step should be a small, testable Python package
-  scaffold unless the user chooses a different runtime.
+- The workspace is initialized as a Git repository on `main`.
+- M1 has a minimal Python package scaffold with strict import-boundary tests.
+- The next implementation step should define the first data asset contracts and
+  the research workflow objects that turn real pattern samples into registered
+  experience artifacts.
 
 ## Non-Negotiable Boundaries
 
 - Stock Lobster does not produce canonical factual data.
+- Stock Lobster does produce versioned experience data, such as pattern cases,
+  primitive candidates, approved primitive contracts, label definitions,
+  strategy candidates, evaluation evidence, approval records, and observation
+  records.
 - External data comes through registered `DataAsset` contracts.
 - `token_fetch` remains an external producer; this project builds adapters and
   catalogs instead of merging that repository.
@@ -25,6 +30,52 @@ architecture decisions are made.
 - User confirmation is required before a candidate strategy becomes approved,
   enters the observation pool, replaces an approved version, or publishes formal
   signals.
+
+## Pattern Research to Experience Production
+
+Stock Lobster has a production research workflow in addition to the L0-L6
+execution layers. This workflow starts from real stock pattern samples and
+turns research evidence into versioned experience artifacts.
+
+Reference decision: `docs/decisions/001-pattern-research-to-experience-production.md`.
+
+Core flow:
+
+```text
+PatternCase
+-> FactorObservation
+-> PrimitiveCandidate
+-> LabelCandidate
+-> StrategyCandidate
+-> EvaluationProfile
+-> BacktestEvidence
+-> ApprovalDecision
+-> RegisteredArtifact or ScheduledProduction
+-> ObservationRecord
+-> ReviewFinding
+-> NewCandidateVersion
+```
+
+Responsibilities:
+
+- Research orchestration owns sample cases, factor observations, candidate
+  semantics, approval evidence, and review findings.
+- L2 owns approved primitive definitions and pure primitive execution.
+- L3 owns approved label definitions and repeatable label snapshot production.
+- L4 owns approved strategy DSL versions and candidate strategy schemas.
+- L5 owns formal signal production.
+- L6 owns formal backtest results.
+
+Rules:
+
+- Research artifacts are experience data, not canonical factual data.
+- Candidate primitives, labels, and strategies are not production artifacts
+  until approved and registered.
+- Scheduled production is allowed only for approved layer artifacts.
+- Every approved artifact must preserve links to sample evidence, upstream
+  `DataAsset` dependencies, version, and `run_id`.
+- Research orchestration may coordinate L0-L6, but L0-L6 must not depend on
+  research orchestration.
 
 ## Target Directory Layout
 
@@ -78,6 +129,12 @@ stock_lobster/
     engine.py
     metrics.py
     result.py
+  research/
+    __init__.py
+    pattern_case.py
+    factor_observation.py
+    candidates.py
+    approval.py
   app/
     __init__.py
     cli.py
@@ -314,12 +371,16 @@ Done when:
 
 Deliverables:
 
+- research workflow objects for `PatternCase`, `FactorObservation`,
+  `PrimitiveCandidate`, and `LabelCandidate`
 - primitive registry
 - label registry
 - first deterministic label snapshot generator
 
 Done when:
 
+- One real or synthetic pattern case can produce candidate primitive and label
+  definitions without becoming approved automatically.
 - A label can be reproduced from the same analysis snapshot and version.
 
 ### M5 Strategy DSL MVP
@@ -375,6 +436,7 @@ Run sessions with non-overlapping file ownership.
 | S1 | GPT-5.4-Mini | Read-only or `configs/data_assets/` | Discover external data contracts |
 | S2 | GPT-5.5 | package scaffold, tests | Create engineering foundation |
 | S3 | GPT-5.5 | `l0_data_access/`, `l1_analysis_snapshot/` | Data contracts and snapshots |
+| S4R | GPT-5.5 | `research/`, research docs | Pattern research and experience candidates |
 | S4 | GPT-5.4 | `l2_primitives/`, `l3_labels/` | Primitives and labels |
 | S5 | GPT-5.5 | `l4_strategy_dsl/` | DSL, candidate pools, pipelines |
 | S6 | GPT-5.5 | `l5_signal_engine/` | Signal execution and explanation |

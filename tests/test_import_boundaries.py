@@ -20,6 +20,8 @@ LAYER_ORDER = {
     "l6_backtest_engine": 6,
 }
 
+ORCHESTRATION_PACKAGES = {"app", "research"}
+
 
 def layer_for_path(path: Path) -> str | None:
     for part in path.relative_to(PACKAGE_ROOT).parts:
@@ -36,6 +38,8 @@ def imported_layer(module_name: str) -> str | None:
         return None
     if parts[1] == "core":
         return "core"
+    if parts[1] in ORCHESTRATION_PACKAGES:
+        return parts[1]
     return parts[1] if parts[1] in LAYER_ORDER else None
 
 
@@ -68,6 +72,8 @@ class ImportBoundaryTest(unittest.TestCase):
                 if current_layer in LAYER_ORDER and target_layer in LAYER_ORDER:
                     if LAYER_ORDER[target_layer] > LAYER_ORDER[current_layer]:
                         violations.append(f"{path}: upward import {module_name}")
+                if current_layer in LAYER_ORDER and target_layer in ORCHESTRATION_PACKAGES:
+                    violations.append(f"{path}: layer imports orchestration {module_name}")
 
         self.assertEqual([], violations)
 
