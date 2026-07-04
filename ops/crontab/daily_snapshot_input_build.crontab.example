@@ -1,0 +1,2 @@
+# Example cron entry for building L1 snapshot input from L0 MySQL assets.
+35 18 * * 1-5 cd /home/ubuntu/token_parse_sys && /usr/bin/python3 /home/ubuntu/token_parse_sys/workflows/jobs/daily_snapshot_input_build.py --schedule-config-path /home/ubuntu/token_parse_sys/configs/schedules/daily_snapshot_input_build.json >> /home/ubuntu/token_parse_sys/runtime/daily_snapshot_input_build/cron.log 2>&1

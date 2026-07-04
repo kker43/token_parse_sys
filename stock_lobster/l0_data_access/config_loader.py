@@ -80,4 +80,12 @@ class DataAssetCatalogLoader:
                 str(value) for value in quality_gate.get("allowed_quality_levels", ())
             ),
             consumer_contract=dict(item.get("consumer_contract", {})),
+            table_name=str(item["table_name"]) if item.get("table_name") is not None else None,
+            storage_path=str(item["storage_path"]) if item.get("storage_path") is not None else None,
+            first_available_date=(
+                str(item["first_available_date"]) if item.get("first_available_date") is not None else None
+            ),
+            latest_available_date=(
+                str(item["latest_available_date"]) if item.get("latest_available_date") is not None else None
+            ),
         )

@@ -1,0 +1,9 @@
+[Unit]
+Description=Run token_parse_sys daily L1 snapshot input build on weekdays
+
+[Timer]
+OnCalendar=Mon..Fri 18:35:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

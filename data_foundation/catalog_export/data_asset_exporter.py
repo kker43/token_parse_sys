@@ -22,6 +22,7 @@ class PublishedDataAssetExporter:
             "data_product": contract.name,
             "source_type": "published_product",
             "source_name": self.producer_name,
+            "table_name": contract.name,
             "market": contract.market,
             "asset_type": contract.asset_type,
             "grain": contract.grain,

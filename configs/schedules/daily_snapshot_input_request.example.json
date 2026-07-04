@@ -1,0 +1,29 @@
+{
+  "analysis_version": "analysis_v1",
+  "snapshot_date": "20260704",
+  "stock_codes": ["000001.SZ"],
+  "source_assets": [
+    {
+      "asset_id": "external_provider.pub_stock_daily_kline",
+      "fields": ["asset_id", "trade_date", "close", "amount", "quality_status"],
+      "query_version": "l0_mysql_v1",
+      "limit": 1
+    },
+    {
+      "asset_id": "external_provider.pub_stock_daily_indicator",
+      "fields": [
+        "asset_id",
+        "trade_date",
+        "indicator_name",
+        "indicator_version",
+        "params_hash",
+        "indicator_value",
+        "quality_status"
+      ],
+      "query_version": "l0_mysql_v1",
+      "extra_filters": {
+        "indicator_version": "v1"
+      }
+    }
+  ]
+}

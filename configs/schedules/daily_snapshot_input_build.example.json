@@ -1,0 +1,7 @@
+{
+  "catalog_path": "/home/ubuntu/token_parse_sys/configs/data_assets/published_products.json",
+  "mysql_config_path": "/home/ubuntu/token_parse_sys/ops/env/external_mysql.json",
+  "request_path": "/home/ubuntu/token_parse_sys/configs/schedules/daily_snapshot_input_request.json",
+  "output_path": "/home/ubuntu/token_parse_sys/runtime/daily_snapshot_production/input.json",
+  "job_result_path": "/home/ubuntu/token_parse_sys/runtime/daily_snapshot_input_build/result.json"
+}

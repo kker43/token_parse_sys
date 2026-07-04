@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "indicator_registry": "basic_technical_indicators",
+  "indicators": [
+    {
+      "name": "ma20",
+      "version": "v1",
+      "params": {"window": 20, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "20-trading-day moving average of close price"
+    },
+    {
+      "name": "close_above_ma20_flag",
+      "version": "v1",
+      "params": {"price_field": "close", "ma_indicator": "ma20"},
+      "value_type": "boolean",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Whether close price is above MA20 on the snapshot date"
+    },
+    {
+      "name": "volatility_60d",
+      "version": "v1",
+      "params": {"window": 60, "return_field": "pct_change"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "60-trading-day realized volatility"
+    },
+    {
+      "name": "amount_ratio_20d",
+      "version": "v1",
+      "params": {"window": 20, "amount_field": "amount"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Current amount divided by 20-day average amount"
+    },
+    {
+      "name": "close_new_high_60d_flag",
+      "version": "v1",
+      "params": {"window": 60, "price_field": "close"},
+      "value_type": "boolean",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Whether close price reaches a 60-trading-day high"
+    },
+    {
+      "name": "convergence_5_10_20_pct",
+      "version": "v1",
+      "params": {"windows": [5, 10, 20], "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "MA5/MA10/MA20 convergence percentage"
+    }
+  ]
+}
