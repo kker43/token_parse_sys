@@ -86,6 +86,9 @@ Do not import or copy:
 
 Prefer adapters, catalogs, registries, and reproducible query contracts.
 
+For data foundation work, also read
+`docs/workflows/001-data-foundation-mvp.md`.
+
 ## Suggested Initial Code Layout
 
 Use this layout unless a later architecture decision changes it:
@@ -134,7 +137,8 @@ Recommended sessions:
 - S1 Data contract reconnaissance: external table and field discovery, read
   only unless writing catalog drafts.
 - S2 Engineering scaffold: package layout, test setup, dependency checks.
-- S3 L0/L1: data contracts, catalog, adapters, analysis snapshots.
+- S3 Data foundation and L0/L1: shared contracts, `data_foundation` bridge,
+  L0 data assets, and analysis snapshots.
 - S4R Pattern research: sample cases, factor observations, candidates, and
   approval evidence for experience data.
 - S4 L2/L3: primitives, labels, registries.

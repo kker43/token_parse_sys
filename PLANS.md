@@ -17,9 +17,8 @@ architecture decisions are made.
 - Remote execution layout is documented in
   `docs/standards/003-remote-system-execution-layout.md`.
 - Remote empty skeleton exists at `/home/ubuntu/token_parse_sys`.
-- The next implementation step should define the first data asset contracts and
-  the research workflow objects that turn real pattern samples into registered
-  experience artifacts.
+- The next implementation step is Workflow 001:
+  `docs/workflows/001-data-foundation-mvp.md`.
 
 ## Non-Negotiable Boundaries
 
@@ -351,6 +350,10 @@ Done when:
 
 Deliverables:
 
+- shared data product and quality contracts
+- `data_foundation/token_fetch_bridge` skeleton
+- deterministic product readiness checker
+- `data_foundation/catalog_export` exporter
 - L0 contract models
 - first token_fetch catalog draft
 - table and field metadata
@@ -358,6 +361,7 @@ Deliverables:
 
 Done when:
 
+- Workflow 001 first code slice passes tests.
 - At least one real external table is represented as a `DataAsset`.
 - No business layer reads external data directly.
 
