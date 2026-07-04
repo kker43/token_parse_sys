@@ -5,7 +5,23 @@
   "source_assets": [
     {
       "asset_id": "external_provider.pub_stock_daily_kline",
-      "fields": ["asset_id", "trade_date", "close", "amount", "quality_status"],
+      "fields": [
+        "asset_id",
+        "market",
+        "asset_type",
+        "trade_date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "vol",
+        "amount",
+        "source",
+        "source_end_date",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
       "query_version": "l0_mysql_v1",
       "limit": 1
     },
