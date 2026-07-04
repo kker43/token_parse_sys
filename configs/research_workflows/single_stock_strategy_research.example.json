@@ -1,0 +1,30 @@
+{
+  "workflow_id": "single_stock_strategy_research",
+  "version": "v1",
+  "description": "个股研究策略沉淀 workflow：从给定个股和日期的 L1 快照出发，检查 L2/L3 是否已有，识别需要新建的经验数据和阈值，生成 L4 策略候选，并通过 L6 回测结果决定是否进入测试跟踪。",
+  "input_contract": {
+    "snapshot": "stock_lobster.l1_analysis_snapshot.schema.AnalysisSnapshot",
+    "primitive_hypotheses": "L2 原语假设列表，可以引用已存在 primitive_id，也可以提出新 primitive_id。",
+    "label_hypotheses": "L3 标签假设列表，可以引用已存在 label_id，也可以提出新 label_id。",
+    "backtest_result": "可选。没有回测结果时只能生成 draft 策略，不能进入 test_tracking。"
+  },
+  "acceptance_policy": {
+    "min_sample_size": 30,
+    "min_win_rate": 0.55,
+    "return_metric_name": "annual_return",
+    "min_return_metric": 0.0,
+    "drawdown_metric_name": "max_drawdown",
+    "max_abs_drawdown": 0.25
+  },
+  "outputs": [
+    "PatternCase",
+    "FactorObservation",
+    "PrimitiveAssessment",
+    "PrimitiveBuildRequirement",
+    "LabelAssessment",
+    "LabelBuildRequirement",
+    "StrategyDSL",
+    "BacktestGateDecision"
+  ],
+  "promotion_rule": "只有当 L2/L3 没有缺口，并且 L6 回测满足 acceptance_policy 时，L4 StrategyDSL.status 才能变为 test_tracking。"
+}
