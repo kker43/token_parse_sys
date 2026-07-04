@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "registry": "atomic_state_primitive_registry",
+  "description": "L2 原子状态原语注册表示例。L2 只表达单一维度状态，不表达完整形态或策略动作。",
+  "primitives": [
+    {
+      "primitive_id": "data_quality.basic_snapshot_ready",
+      "version": "v1",
+      "status": "candidate",
+      "category": "data_quality",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_kline.close",
+        "pub_stock_daily_kline.amount"
+      ],
+      "params": {},
+      "calculation": "required input features exist and are non-null",
+      "valid_when": "目标股票和日期存在 L1 AnalysisSnapshot",
+      "missing_policy": "return_false",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "基础快照可用性原语，用作 L3 quality_gate 的前置条件。"
+    },
+    {
+      "primitive_id": "moving_average.close_above_ma20",
+      "version": "v1",
+      "status": "candidate",
+      "category": "moving_average",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_kline.close",
+        "pub_stock_daily_indicator.indicator_value"
+      ],
+      "params": {
+        "indicator_name": "ma20",
+        "operator": ">"
+      },
+      "calculation": "close > ma20",
+      "valid_when": "目标日期存在 ma20 指标",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "价格是否站上 MA20，只表达均线位置状态，不表达趋势形态。"
+    },
+    {
+      "primitive_id": "structure.ma_5_10_20_converged",
+      "version": "v1",
+      "status": "candidate",
+      "category": "structure",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_indicator.indicator_value"
+      ],
+      "params": {
+        "indicator_name": "convergence_5_10_20_pct",
+        "max_pct": 0.03
+      },
+      "calculation": "convergence_5_10_20_pct <= max_pct",
+      "valid_when": "目标日期存在 convergence_5_10_20_pct 指标",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "均线收敛原子状态，可用于低波动蓄势或盘整突破类 L3 标签。"
+    },
+    {
+      "primitive_id": "volume_liquidity.amount_ratio_20d_high",
+      "version": "v1",
+      "status": "candidate",
+      "category": "volume_liquidity",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_indicator.indicator_value"
+      ],
+      "params": {
+        "indicator_name": "amount_ratio_20d",
+        "min_ratio": 1.5
+      },
+      "calculation": "amount_ratio_20d >= min_ratio",
+      "valid_when": "目标日期存在 amount_ratio_20d 指标",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "成交额相对 20 日均值明显放大，属于量能状态。"
+    },
+    {
+      "primitive_id": "volatility.volatility_60d_low",
+      "version": "v1",
+      "status": "candidate",
+      "category": "volatility",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_indicator.indicator_value"
+      ],
+      "params": {
+        "indicator_name": "volatility_60d",
+        "max_value": 0.35
+      },
+      "calculation": "volatility_60d <= max_value",
+      "valid_when": "目标日期存在 volatility_60d 指标",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "60 日波动率处于低位，属于波动状态，不直接表示机会。"
+    },
+    {
+      "primitive_id": "level_breakout.close_new_high_60d",
+      "version": "v1",
+      "status": "candidate",
+      "category": "level_breakout",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_indicator.indicator_value"
+      ],
+      "params": {
+        "indicator_name": "close_new_high_60d_flag"
+      },
+      "calculation": "close_new_high_60d_flag == true",
+      "valid_when": "目标日期存在 close_new_high_60d_flag 指标",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "收盘价创 60 日新高，属于突破/位置事件。"
+    }
+  ]
+}

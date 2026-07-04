@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "registry": "semantic_label_registry",
+  "description": "L3 语义标签注册表示例。L3 由 L2 原子状态组合而来，可包含技术形态、基本面画像、环境、风险和复合准备态。",
+  "labels": [
+    {
+      "label_id": "quality_gate.snapshot_consumable",
+      "version": "v1",
+      "status": "candidate",
+      "category": "quality_gate",
+      "primitive_refs": [
+        {
+          "primitive_id": "data_quality.basic_snapshot_ready",
+          "version": "v1",
+          "required": true,
+          "alias": "snapshot_ready"
+        }
+      ],
+      "logic": {
+        "all": ["snapshot_ready == true"]
+      },
+      "output_fields": {
+        "matched": "boolean"
+      },
+      "valid_when": "L1 AnalysisSnapshot 存在",
+      "evidence": [],
+      "promotion_policy": "需要正样本和反例样本验证",
+      "owner": "stock_lobster",
+      "notes": "判断样本是否可以进入后续 L2/L3/L4 研究链路。"
+    },
+    {
+      "label_id": "technical_pattern.low_volatility_convergence",
+      "version": "v1",
+      "status": "candidate",
+      "category": "technical_pattern",
+      "primitive_refs": [
+        {
+          "primitive_id": "data_quality.basic_snapshot_ready",
+          "version": "v1",
+          "required": true,
+          "alias": "snapshot_ready"
+        },
+        {
+          "primitive_id": "structure.ma_5_10_20_converged",
+          "version": "v1",
+          "required": true,
+          "alias": "ma_converged"
+        },
+        {
+          "primitive_id": "volatility.volatility_60d_low",
+          "version": "v1",
+          "required": true,
+          "alias": "low_volatility"
+        }
+      ],
+      "logic": {
+        "all": [
+          "snapshot_ready == true",
+          "ma_converged == true",
+          "low_volatility == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "所需 L2 原语均可计算",
+      "evidence": [],
+      "promotion_policy": "需要样本证据和回测证据后才能被 L4 策略使用",
+      "owner": "stock_lobster",
+      "notes": "低波动均线收敛形态，只表示技术形态语义，不表示买入。"
+    },
+    {
+      "label_id": "technical_pattern.volume_breakout",
+      "version": "v1",
+      "status": "candidate",
+      "category": "technical_pattern",
+      "primitive_refs": [
+        {
+          "primitive_id": "moving_average.close_above_ma20",
+          "version": "v1",
+          "required": true,
+          "alias": "above_ma20"
+        },
+        {
+          "primitive_id": "volume_liquidity.amount_ratio_20d_high",
+          "version": "v1",
+          "required": true,
+          "alias": "volume_high"
+        },
+        {
+          "primitive_id": "level_breakout.close_new_high_60d",
+          "version": "v1",
+          "required": false,
+          "alias": "new_high"
+        }
+      ],
+      "logic": {
+        "all": [
+          "above_ma20 == true",
+          "volume_high == true"
+        ],
+        "optional": [
+          "new_high == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "趋势、量能、突破类 L2 原语可计算",
+      "evidence": [],
+      "promotion_policy": "需要样本证据和未来观察验证后才能进入生产策略",
+      "owner": "stock_lobster",
+      "notes": "放量突破类技术形态标签，后续可作为 L4 召回条件。"
+    },
+    {
+      "label_id": "composite_setup.low_valuation_bottoming_reversal",
+      "version": "v1",
+      "status": "candidate",
+      "category": "composite_setup",
+      "primitive_refs": [
+        {
+          "primitive_id": "fundamental_value.pb_low",
+          "version": "v1",
+          "required": true,
+          "alias": "pb_low"
+        },
+        {
+          "primitive_id": "price_position.low_position",
+          "version": "v1",
+          "required": true,
+          "alias": "low_position"
+        },
+        {
+          "primitive_id": "return_momentum.momentum_recovering",
+          "version": "v1",
+          "required": true,
+          "alias": "momentum_recovering"
+        }
+      ],
+      "logic": {
+        "all": [
+          "pb_low == true",
+          "low_position == true",
+          "momentum_recovering == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "基本面估值、价格位置和动量恢复类 L2 原语可计算",
+      "evidence": [],
+      "promotion_policy": "需要跨样本验证，确认不是单纯超跌反弹噪声",
+      "owner": "stock_lobster",
+      "notes": "复合准备态标签，融合基本面和技术状态，但仍不表达交易动作。"
+    }
+  ]
+}
