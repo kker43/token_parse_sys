@@ -15,7 +15,9 @@ if str(PROJECT_ROOT) not in sys.path:
 from stock_lobster.research import (
     TrendBreakoutScanPolicy,
     read_kline_tsv,
+    read_stock_signal_context_tsv,
     scan_trend_breakouts,
+    select_candidates,
     summarize_breakout_scan,
 )
 from workflows.jobs.support import write_json_payload
@@ -26,11 +28,35 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(prog="steady_uptrend_breakout_research_scan")
     parser.add_argument("--kline-tsv-path", required=True)
+    parser.add_argument("--weekly-kline-tsv-path")
+    parser.add_argument("--stock-context-tsv-path")
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--start-date")
     parser.add_argument("--min-amount-ratio-20d", type=float, default=1.5)
     parser.add_argument("--max-abs-drawdown-60d", type=float, default=0.40)
+    parser.add_argument("--max-abs-drawdown-120d", type=float, default=0.55)
+    parser.add_argument("--min-red-k-ratio-20d", type=float, default=0.45)
+    parser.add_argument("--max-long-shadow-ratio-20d", type=float, default=0.65)
+    parser.add_argument("--allow-close-below-ma30", action="store_true")
+    parser.add_argument("--allow-missing-weekly-context", action="store_true")
+    parser.add_argument("--max-abs-weekly-drawdown-26w", type=float, default=0.55)
+    parser.add_argument("--max-weekly-ma20-deviation-pct", type=float)
+    parser.add_argument("--max-ma30-deviation-pct", type=float, default=0.35)
+    parser.add_argument("--min-sustained-ma30-hold-ratio-90d", type=float, default=0.75)
+    parser.add_argument("--min-recent-ma30-hold-ratio-30d", type=float, default=0.75)
+    parser.add_argument("--min-recent-ma30-hold-ratio-60d", type=float, default=0.55)
+    parser.add_argument("--min-base-breakout-ma30-hold-ratio-60d", type=float, default=0.50)
+    parser.add_argument("--min-base-breakout-return-20d", type=float, default=0.20)
+    parser.add_argument("--allow-pre-breakout-without-sustained-ma30", action="store_true")
+    parser.add_argument("--require-normal-listing", action="store_true")
+    parser.add_argument("--min-total-mv", type=float)
+    parser.add_argument("--min-avg-amount-20d", type=float)
+    parser.add_argument("--max-turnover-rate-20d", type=float)
+    parser.add_argument("--max-turnover-spike-ratio-20d", type=float)
+    parser.add_argument("--require-context-strength", action="store_true")
     parser.add_argument("--max-convergence-5-10-20-pct", type=float)
+    parser.add_argument("--candidate-mode", choices=("breakout", "pre_breakout", "all"), default="breakout")
+    parser.add_argument("--top-n-per-date", type=int)
     return parser
 
 
@@ -41,20 +67,74 @@ def main(argv: Sequence[str] | None = None) -> int:
     policy = TrendBreakoutScanPolicy(
         min_amount_ratio_20d=args.min_amount_ratio_20d,
         max_abs_drawdown_60d=args.max_abs_drawdown_60d,
+        max_abs_drawdown_120d=args.max_abs_drawdown_120d,
+        min_red_k_ratio_20d=args.min_red_k_ratio_20d,
+        max_long_shadow_ratio_20d=args.max_long_shadow_ratio_20d,
+        require_close_above_ma30=not args.allow_close_below_ma30,
+        require_weekly_uptrend=bool(args.weekly_kline_tsv_path) and not args.allow_missing_weekly_context,
+        max_abs_weekly_drawdown_26w=args.max_abs_weekly_drawdown_26w,
+        max_weekly_ma20_deviation_pct=args.max_weekly_ma20_deviation_pct,
+        max_ma30_deviation_pct=args.max_ma30_deviation_pct,
+        min_sustained_ma30_hold_ratio_90d=args.min_sustained_ma30_hold_ratio_90d,
+        min_recent_ma30_hold_ratio_30d=args.min_recent_ma30_hold_ratio_30d,
+        min_recent_ma30_hold_ratio_60d=args.min_recent_ma30_hold_ratio_60d,
+        min_base_breakout_ma30_hold_ratio_60d=args.min_base_breakout_ma30_hold_ratio_60d,
+        min_base_breakout_return_20d=args.min_base_breakout_return_20d,
+        require_pre_breakout_sustained_ma30=not args.allow_pre_breakout_without_sustained_ma30,
+        require_normal_listing=args.require_normal_listing,
+        min_total_mv=args.min_total_mv,
+        min_avg_amount_20d=args.min_avg_amount_20d,
+        max_turnover_rate_20d=args.max_turnover_rate_20d,
+        max_turnover_spike_ratio_20d=args.max_turnover_spike_ratio_20d,
+        require_context_strength=args.require_context_strength,
         max_convergence_5_10_20_pct=args.max_convergence_5_10_20_pct,
         start_date=args.start_date,
     )
+    weekly_bars = read_kline_tsv(args.weekly_kline_tsv_path) if args.weekly_kline_tsv_path else None
+    stock_contexts = read_stock_signal_context_tsv(args.stock_context_tsv_path) if args.stock_context_tsv_path else None
     metrics = scan_trend_breakouts(
         bars=read_kline_tsv(args.kline_tsv_path),
         policy=policy,
+        weekly_bars=weekly_bars,
+        stock_contexts=stock_contexts,
     )
-    breakout_candidates = [metric for metric in metrics if metric.breakout_watch]
+    breakout_candidates = select_candidates(
+        metrics,
+        mode=args.candidate_mode,
+        top_n_per_date=args.top_n_per_date,
+    )
     payload = {
         "schema_version": 1,
         "scanner": "steady_uptrend_breakout_research_scan",
+        "candidate_mode": args.candidate_mode,
+        "top_n_per_date": args.top_n_per_date,
         "policy": {
             "min_amount_ratio_20d": policy.min_amount_ratio_20d,
             "max_abs_drawdown_60d": policy.max_abs_drawdown_60d,
+            "max_abs_drawdown_120d": policy.max_abs_drawdown_120d,
+            "min_red_k_ratio_20d": policy.min_red_k_ratio_20d,
+            "max_long_shadow_ratio_20d": policy.max_long_shadow_ratio_20d,
+            "require_close_above_ma30": policy.require_close_above_ma30,
+            "require_weekly_uptrend": policy.require_weekly_uptrend,
+            "max_abs_weekly_drawdown_26w": policy.max_abs_weekly_drawdown_26w,
+            "max_weekly_ma20_deviation_pct": policy.max_weekly_ma20_deviation_pct,
+            "min_close_to_high_60d_pct": policy.min_close_to_high_60d_pct,
+            "max_close_to_high_60d_pct": policy.max_close_to_high_60d_pct,
+            "min_pre_breakout_amount_ratio_20d": policy.min_pre_breakout_amount_ratio_20d,
+            "max_ma20_deviation_pct": policy.max_ma20_deviation_pct,
+            "max_ma30_deviation_pct": policy.max_ma30_deviation_pct,
+            "min_sustained_ma30_hold_ratio_90d": policy.min_sustained_ma30_hold_ratio_90d,
+            "min_recent_ma30_hold_ratio_30d": policy.min_recent_ma30_hold_ratio_30d,
+            "min_recent_ma30_hold_ratio_60d": policy.min_recent_ma30_hold_ratio_60d,
+            "min_base_breakout_ma30_hold_ratio_60d": policy.min_base_breakout_ma30_hold_ratio_60d,
+            "min_base_breakout_return_20d": policy.min_base_breakout_return_20d,
+            "require_pre_breakout_sustained_ma30": policy.require_pre_breakout_sustained_ma30,
+            "require_normal_listing": policy.require_normal_listing,
+            "min_total_mv": policy.min_total_mv,
+            "min_avg_amount_20d": policy.min_avg_amount_20d,
+            "max_turnover_rate_20d": policy.max_turnover_rate_20d,
+            "max_turnover_spike_ratio_20d": policy.max_turnover_spike_ratio_20d,
+            "require_context_strength": policy.require_context_strength,
             "max_convergence_5_10_20_pct": policy.max_convergence_5_10_20_pct,
             "start_date": policy.start_date,
         },

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "requirements": [
+    {
+      "name": "weekly_max_drawdown_26w",
+      "meaning": "最近 26 根周 K 收盘价滚动最大回撤",
+      "timeframe": "weekly",
+      "window": 26,
+      "reuse_family": "rolling_max_drawdown(close, window)"
+    }
+  ]
+}

@@ -16,6 +16,10 @@ docs/standards/
   003-remote-system-execution-layout.md
   004-experience-primitive-label-standard.md
   005-production-promotion-standard.md
+  006-factor-reuse-policy.md
+  007-layer-construction-gates.md
+  008-workflow-construction-standard.md
+  009-parallel-session-delivery-standard.md
   layer-standard-template.md
   layers/
     010-data-foundation-layer-standard.md
@@ -69,10 +73,14 @@ deprecated
 ```text
 1. 先判断属于哪一层。
 2. 阅读对应层级标准。
-3. 判断是 research_only、candidate 还是 production_candidate。
-4. 如果要进入生产，必须运行 production_promotion_review。
-5. 修改 registry 或 workflow 后补测试。
-6. 文档、代码、配置必须同步更新。
+3. 阅读 `006-factor-reuse-policy.md`，先判断是否能复用已有因子或同类口径。
+4. 阅读 `007-layer-construction-gates.md`，确认准入准出。
+5. 如果是横向业务链路，阅读 `008-workflow-construction-standard.md`。
+6. 如果有并行会话或文件冲突风险，阅读 `009-parallel-session-delivery-standard.md`。
+7. 判断是 research_only、candidate 还是 production_candidate。
+8. 如果要进入生产，必须运行 production_promotion_review。
+9. 修改 registry 或 workflow 后补测试。
+10. 文档、代码、配置必须同步更新。
 ```
 
 当 agent 不确定归属时：

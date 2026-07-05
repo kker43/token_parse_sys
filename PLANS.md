@@ -1,51 +1,35 @@
-# Stock Lobster Execution Plan
+# Stock Lobster 执行计划
 
-This plan turns `requirements.md` and `sys_command.md` into an implementation
-sequence. It is the working map for Codex sessions and should be updated when
-architecture decisions are made.
+本计划把 `requirements.md` 和 `sys_command.md` 转化为实现顺序。它是 Codex 会话的工作地图，应在架构决策形成后持续更新。
 
-## Current State
+## 当前状态
 
-- Existing project files: `requirements.md`, `sys_command.md`, `AGENTS.md`,
-  and this plan.
-- The workspace is initialized as a Git repository on `main`.
-- M1 has a minimal Python package scaffold with strict import-boundary tests.
-- Standard system structure and model guidance is documented in
-  `docs/standards/001-system-structure-and-model-guidance.md`.
-- Data foundation integration guidance is documented in
-  `docs/standards/002-data-foundation-integration.md`.
-- Remote execution layout is documented in
-  `docs/standards/003-remote-system-execution-layout.md`.
-- Remote empty skeleton exists at `/home/ubuntu/token_parse_sys`.
-- The next implementation step is Workflow 001:
-  `docs/workflows/001-data-foundation-mvp.md`.
+- 已有项目文件：`requirements.md`、`sys_command.md`、`AGENTS.md` 和本计划。
+- 工作区已经在 `main` 分支初始化为 Git 仓库。
+- M1 已经具备最小 Python 包脚手架，并有严格的导入边界测试。
+- 标准系统结构和模型指导记录在 `docs/standards/001-system-structure-and-model-guidance.md`。
+- 数据基础集成指导记录在 `docs/standards/002-data-foundation-integration.md`。
+- 远程执行布局记录在 `docs/standards/003-remote-system-execution-layout.md`。
+- 远程空骨架位于 `/home/ubuntu/token_parse_sys`。
+- 下一步实现是 Workflow 001：`docs/workflows/001-data-foundation-mvp.md`。
 
-## Non-Negotiable Boundaries
+## 不可协商边界
 
-- Stock Lobster does not produce canonical factual data.
-- Stock Lobster does produce versioned experience data, such as pattern cases,
-  primitive candidates, approved primitive contracts, label definitions,
-  strategy candidates, evaluation evidence, approval records, and observation
-  records.
-- External data comes through registered `DataAsset` contracts.
-- An external factual producer remains external; this project builds adapters
-  and catalogs instead of merging that codebase.
-- `StrategyDSL` cannot reference raw price or volume tables directly.
-- Agents cannot create facts, approved primitives, approved labels, approved
-  strategies, formal signals, or backtest results by themselves.
-- User confirmation is required before a candidate strategy becomes approved,
-  enters the observation pool, replaces an approved version, or publishes formal
-  signals.
+- Stock Lobster 不生产权威事实数据。
+- Stock Lobster 会生产版本化经验数据，例如形态案例、原语候选、已批准原语契约、标签定义、策略候选、评估证据、审批记录和观察记录。
+- 外部数据通过已注册的 `DataAsset` 契约进入系统。
+- 外部事实生产者保持外部身份；本项目构建适配器和目录，而不是合并那套代码库。
+- `StrategyDSL` 不能直接引用原始价格表或成交量表。
+- Agent 不能自行创建事实、已批准原语、已批准标签、已批准策略、正式信号或回测结果。
+- 候选策略变为已批准、进入观察池、替换已批准版本或发布正式信号之前，必须经过用户确认。
 
-## Pattern Research to Experience Production
+## 从形态研究到经验生产
 
-Stock Lobster has a production research workflow in addition to the L0-L6
-execution layers. This workflow starts from real stock pattern samples and
-turns research evidence into versioned experience artifacts.
+除 L0-L6 执行层外，Stock Lobster 还有一条生产级研究工作流。该工作流从真实股票形态样本开始，把研究证据转化为版本化经验 artifact。
 
-Reference decision: `docs/decisions/001-pattern-research-to-experience-production.md`.
+参考决策：`docs/decisions/001-pattern-research-to-experience-production.md`。
 
-Core flow:
+核心流程：
 
 ```text
 PatternCase
@@ -62,30 +46,26 @@ PatternCase
 -> NewCandidateVersion
 ```
 
-Responsibilities:
+职责：
 
-- Research orchestration owns sample cases, factor observations, candidate
-  semantics, approval evidence, and review findings.
-- L2 owns approved primitive definitions and pure primitive execution.
-- L3 owns approved label definitions and repeatable label snapshot production.
-- L4 owns approved strategy DSL versions and candidate strategy schemas.
-- L5 owns formal signal production.
-- L6 owns formal backtest results.
+- 研究编排负责样本案例、因子观察、候选语义、审批证据和复盘发现。
+- L2 负责已批准原语定义和纯原语执行。
+- L3 负责已批准标签定义和可重复的标签快照生产。
+- L4 负责已批准策略 DSL 版本和候选策略 schema。
+- L5 负责正式信号生产。
+- L6 负责正式回测结果。
 
-Rules:
+规则：
 
-- Research artifacts are experience data, not canonical factual data.
-- Candidate primitives, labels, and strategies are not production artifacts
-  until approved and registered.
-- Scheduled production is allowed only for approved layer artifacts.
-- Every approved artifact must preserve links to sample evidence, upstream
-  `DataAsset` dependencies, version, and `run_id`.
-- Research orchestration may coordinate L0-L6, but L0-L6 must not depend on
-  research orchestration.
+- 研究 artifact 是经验数据，不是权威事实数据。
+- 候选原语、标签和策略在批准并注册前，不是生产 artifact。
+- 只有已批准的层级 artifact 才允许进入定时生产。
+- 每个已批准 artifact 都必须保留指向样本证据、上游 `DataAsset` 依赖、版本和 `run_id` 的链接。
+- 研究编排可以协调 L0-L6，但 L0-L6 不得依赖研究编排。
 
-## Target Directory Layout
+## 目标目录布局
 
-First code scaffold:
+第一版代码脚手架：
 
 ```text
 stock_lobster/
@@ -163,355 +143,336 @@ tests/
   l6_backtest_engine/
 ```
 
-The initial scaffold should include only minimal models, validators, and tests.
-Avoid building a full database schema before the first DataAsset catalog is
-clear.
+初始脚手架只应包含最小模型、校验器和测试。在第一个 DataAsset 目录明确前，避免构建完整数据库 schema。
 
-## Layer Ownership
+## 层级所有权
 
-### L0 Data Access Contract Layer
+### L0 数据访问契约层（Data Access Contract Layer）
 
-Purpose:
+目的：
 
-- Describe external tables, files, APIs, schemas, quality status, and update
-  frequency.
-- Provide safe query contracts for downstream layers.
+- 描述外部表、文件、API、schema、质量状态和更新频率。
+- 为下游层提供安全查询契约。
 
-Initial deliverables:
+初始交付物：
 
 - `ExternalDataContract`
 - `DataAsset`
 - `DataAssetCatalog`
-- external factual-producer MySQL adapter draft
-- catalog examples for daily, weekly, monthly, MA, volatility, amount, and
-  basic stock tables
+- 外部事实生产者 MySQL 适配器草稿。
+- 日线、周线、月线、MA、波动率、成交额和股票基础表的目录示例。
 
-Acceptance:
+验收：
 
-- L0 never imports L1-L6.
-- Every external field has source, type, date semantics, and quality status.
-- No factual data is modified.
+- L0 绝不导入 L1-L6。
+- 每个外部字段都有来源、类型、日期语义和质量状态。
+- 不修改事实数据。
 
-### L1 Analysis Snapshot Layer
+### L1 分析快照层（Analysis Snapshot Layer）
 
-Purpose:
+目的：
 
-- Build reproducible analytical snapshots from L0 contracts.
-- Record source dependencies and query parameters.
+- 从 L0 契约构建可复现的分析快照。
+- 记录来源依赖和查询参数。
 
-Initial deliverables:
+初始交付物：
 
 - `AnalysisSnapshot`
 - `AnalysisSnapshotDependency`
-- snapshot builder interface
-- in-memory repository for tests
+- 快照构建器接口。
+- 用于测试的内存 repository。
 
-Acceptance:
+验收：
 
-- L1 imports L0 only through public contract objects.
-- Every snapshot has `analysis_version`, `run_id`, `stock_code`, and
-  `snapshot_date`.
-- Snapshot output is traceable to DataAsset dependencies.
+- L1 只通过公开契约对象导入 L0。
+- 每个快照都有 `analysis_version`、`run_id`、`stock_code` 和 `snapshot_date`。
+- 快照输出可以追溯到 DataAsset 依赖。
 
-### L2 Primitive Function Layer
+### L2 原语函数层（Primitive Function Layer）
 
-Purpose:
+目的：
 
-- Define pure functions over `AnalysisSnapshot`.
+- 定义作用于 `AnalysisSnapshot` 的纯函数。
 
-Initial deliverables:
+初始交付物：
 
 - `PrimitiveDefinition`
-- primitive registry
-- first candidate primitive examples, such as MA convergence and volume
-  expansion, using synthetic test snapshots
+- 原语 registry。
+- 第一批候选原语示例，例如基于合成测试快照的均线收敛和放量。
 
-Acceptance:
+验收：
 
-- No external data access.
-- No stateful behavior.
-- Primitive outputs are boolean or numeric scores.
+- 不访问外部数据。
+- 没有有状态行为。
+- 原语输出为 boolean 或数值 score。
 
-### L3 Label Snapshot Layer
+### L3 标签快照层（Label Snapshot Layer）
 
-Purpose:
+目的：
 
-- Build deterministic versioned labels from registered primitives.
+- 从已注册原语构建确定性的版本化标签。
 
-Initial deliverables:
+初始交付物：
 
 - `LabelDefinition`
 - `LabelSnapshot`
-- label registry
-- label generator
+- 标签 registry。
+- 标签生成器。
 
-Acceptance:
+验收：
 
-- Labels depend on L2 primitive results, not raw data.
-- Label snapshots include `label_version` and `run_id`.
-- Label generation is reproducible from the same input snapshot.
+- 标签依赖 L2 原语结果，而不是原始数据。
+- 标签快照包含 `label_version` 和 `run_id`。
+- 相同输入快照能复现相同标签生成结果。
 
-### L4 Strategy DSL Layer
+### L4 策略 DSL 层（Strategy DSL Layer）
 
-Purpose:
+目的：
 
-- Define human-readable white-box strategy rules.
+- 定义人类可读的白盒策略规则。
 
-Initial deliverables:
+初始交付物：
 
-- `StrategyDSL` schema
-- `CandidatePoolPolicy`
-- `StagePipeline`
-- recall, filter, reject, scoring, ranking, and horizon structures
-- DSL validator that rejects raw data references
+- `StrategyDSL` schema。
+- `CandidatePoolPolicy`。
+- `StagePipeline`。
+- 召回、过滤、排除、评分、排序和周期结构。
+- 拒绝原始数据引用的 DSL 校验器。
 
-Acceptance:
+验收：
 
-- DSL references approved label fields only.
-- Candidate pool policy is versioned and backtest-reproducible.
-- Strategy candidates remain separate from approved strategies.
+- DSL 只引用已批准标签字段。
+- 候选池策略版本化，并可在回测中复现。
+- 策略候选与已批准策略保持分离。
 
-### L5 Signal Engine Layer
+### L5 信号引擎层（Signal Engine Layer）
 
-Purpose:
+目的：
 
-- Execute approved or candidate DSLs over label snapshots and produce ranked
-  signal results.
+- 在标签快照上执行已批准或候选 DSL，产出排序后的信号结果。
 
-Initial deliverables:
+初始交付物：
 
 - `StrategySignal`
-- signal engine
-- ranking engine
-- explanation builder
+- 信号引擎。
+- 排序引擎。
+- 解释构建器。
 
-Acceptance:
+验收：
 
-- Formal signals are generated only here.
-- Each result explains candidate pool entry, triggered labels, filters,
-  warnings, ranking score, and rank.
-- Candidate strategies can run trial signals without becoming approved.
+- 正式信号只能在这里生成。
+- 每条结果解释候选池进入原因、触发标签、过滤、风险提示、排名分数和排名。
+- 候选策略可以运行试验信号，但不会因此变成已批准策略。
 
-### L6 Backtest Engine Layer
+### L6 回测引擎层（Backtest Engine Layer）
 
-Purpose:
+目的：
 
-- Reproduce strategy runs over historical dates and generate backtest results.
+- 在历史日期上复现策略运行，并生成回测结果。
 
-Initial deliverables:
+初始交付物：
 
 - `EvaluationProfile`
-- event-return backtest
-- fixed-horizon backtest
-- ranking bucket analysis
-- `BacktestResult`
+- 事件收益回测。
+- 固定周期回测。
+- 排名分桶分析。
+- `BacktestResult`。
 
-Acceptance:
+验收：
 
-- Formal backtest results are generated only here.
-- Candidate pool generation is reproduced, not approximated.
-- Results include benchmark, horizon, sample size, returns, drawdown, win rate,
-  and failure cases.
+- 正式回测结果只能在这里生成。
+- 候选池生成必须复现，不能近似。
+- 结果包含基准、周期、样本数、收益、回撤、胜率和失败案例。
 
-## Milestone Plan
+## 里程碑计划
 
-### M0 Project Control Baseline
+### M0 项目控制基线
 
-Status: draft complete
+状态：草稿完成
 
-Deliverables:
+交付物：
 
 - `AGENTS.md`
 - `PLANS.md`
-- initial directory and layer ownership plan
-- unresolved decision list
+- 初始目录和层级所有权计划。
+- 未决决策清单。
 
-Done when:
+完成标准：
 
-- Future sessions have clear ownership boundaries.
-- The first code scaffold is unambiguous.
+- 后续会话有清楚的所有权边界。
+- 第一版代码脚手架没有歧义。
 
-### M1 Engineering Scaffold
+### M1 工程脚手架
 
-Deliverables:
+交付物：
 
-- Python package layout
-- test runner
-- import-boundary tests
-- minimal core versioning and audit types
-- example config directories
+- Python 包布局。
+- 测试运行器。
+- 导入边界测试。
+- 最小核心版本和审计类型。
+- 示例配置目录。
 
-Done when:
+完成标准：
 
-- Tests can run locally.
-- A dependency rule prevents upward layer imports.
+- 测试可以在本地运行。
+- 依赖规则能阻止向上层导入。
 
-### M2 Data Asset Catalog
+### M2 数据资产目录
 
-Deliverables:
+交付物：
 
-- shared data product and quality contracts
-- `data_foundation/provider_bridge` skeleton
-- deterministic product readiness checker
-- `data_foundation/catalog_export` exporter
-- L0 contract models
-- first external factual-producer catalog draft
-- table and field metadata
-- quality/update metadata placeholders
+- 共享数据产品和质量契约。
+- `data_foundation/provider_bridge` 骨架。
+- 确定性产品就绪检查器。
+- `data_foundation/catalog_export` 导出器。
+- L0 契约模型。
+- 第一版外部事实生产者目录草稿。
+- 表和字段元数据。
+- 质量/更新元数据占位。
 
-Done when:
+完成标准：
 
-- Workflow 001 first code slice passes tests.
-- At least one real external table is represented as a `DataAsset`.
-- No business layer reads external data directly.
+- Workflow 001 第一段代码通过测试。
+- 至少一个真实外部表表示为 `DataAsset`。
+- 没有业务层直接读取外部数据。
 
-### M3 Analysis Snapshot MVP
+### M3 分析快照 MVP
 
-Deliverables:
+交付物：
 
-- L1 snapshot schema
-- dependency tracking
-- snapshot builder from L0 rows
-- synthetic tests
+- L1 快照 schema。
+- 依赖追踪。
+- 从 L0 行构建快照的构建器。
+- 合成测试。
 
-Done when:
+完成标准：
 
-- One stock/date snapshot can be built from cataloged data.
-- Snapshot provenance is recorded.
+- 可以为一个股票/日期从已编目的数据构建快照。
+- 快照 provenance 被记录。
 
-### M4 Primitive and Label MVP
+### M4 Primitive 和 Label MVP
 
-Deliverables:
+交付物：
 
-- research workflow objects for `PatternCase`, `FactorObservation`,
-  `PrimitiveCandidate`, and `LabelCandidate`
-- primitive registry
-- label registry
-- first deterministic label snapshot generator
+- `PatternCase`、`FactorObservation`、`PrimitiveCandidate` 和 `LabelCandidate` 的研究工作流对象。
+- 原语 registry。
+- 标签 registry。
+- 第一版确定性标签快照生成器。
 
-Done when:
+完成标准：
 
-- One real or synthetic pattern case can produce candidate primitive and label
-  definitions without becoming approved automatically.
-- A label can be reproduced from the same analysis snapshot and version.
+- 一个真实或合成形态案例可以产出候选原语和候选标签定义，并且不会自动变成已批准。
+- 标签可以从相同分析快照和版本复现。
 
-### M5 Strategy DSL MVP
+### M5 策略 DSL MVP
 
-Deliverables:
+交付物：
 
-- Strategy DSL schema
-- candidate pool policy
-- stage pipeline
-- DSL validator
-- example candidate strategy
+- 策略 DSL schema。
+- 候选池策略。
+- 阶段流水线。
+- DSL 校验器。
+- 示例候选策略。
 
-Done when:
+完成标准：
 
-- A strategy can express quality, trend, fine-filter, entry, and ranking stages.
-- Validator rejects raw data references.
+- 策略可以表达质量、趋势、精筛、介入和排序阶段。
+- 校验器会拒绝原始数据引用。
 
-### M6 Signal and Backtest MVP
+### M6 Signal 和 Backtest MVP
 
-Deliverables:
+交付物：
 
-- signal engine
-- explanation output
-- event-return and fixed-horizon backtests
-- backtest report structure
+- 信号引擎。
+- 解释输出。
+- 事件收益和固定周期回测。
+- 回测报告结构。
 
-Done when:
+完成标准：
 
-- Candidate strategy can produce trial signals and a backtest report.
-- Approved strategy flow is still gated by user confirmation.
+- 候选策略可以生成试验信号和回测报告。
+- 已批准策略流程仍然受用户确认门控。
 
-### M7 Observation and Review Loop
+### M7 观察和复盘闭环
 
-Deliverables:
+交付物：
 
-- approval state flow
-- observation pool records
-- future tracking results
-- periodic review report draft
+- 审批状态流。
+- 观察池记录。
+- 未来跟踪结果。
+- 周期复盘报告草稿。
 
-Done when:
+完成标准：
 
-- Approved strategy signals can be tracked without mutating historical strategy
-  definitions.
+- 已批准策略信号可以被跟踪，同时不修改历史策略定义。
 
-## Recommended Session Plan
+## 推荐会话计划
 
-Run sessions with non-overlapping file ownership.
+按不重叠的文件所有权运行会话。
 
-| Session | Model | File Scope | Mission |
+| 会话 | 模型 | 文件范围 | 任务 |
 | --- | --- | --- | --- |
-| S0 | GPT-5.5 | `AGENTS.md`, `PLANS.md`, `docs/decisions/` | Architecture control |
-| S1 | GPT-5.4-Mini | Read-only or `configs/data_assets/` | Discover external data contracts |
-| S2 | GPT-5.5 | package scaffold, tests | Create engineering foundation |
-| S3 | GPT-5.5 | `l0_data_access/`, `l1_analysis_snapshot/` | Data contracts and snapshots |
-| S4R | GPT-5.5 | `research/`, research docs | Pattern research and experience candidates |
-| S4 | GPT-5.4 | `l2_primitives/`, `l3_labels/` | Primitives and labels |
-| S5 | GPT-5.5 | `l4_strategy_dsl/` | DSL, candidate pools, pipelines |
-| S6 | GPT-5.5 | `l5_signal_engine/` | Signal execution and explanation |
-| S7 | GPT-5.5 | `l6_backtest_engine/` | Backtesting |
-| S8 | GPT-5.4 | `app/`, observation docs | Approval and observation workflow |
-| S9 | GPT-5.5 | review only or narrow fixes | Boundary and quality review |
+| S0 | GPT-5.5 | `AGENTS.md`, `PLANS.md`, `docs/decisions/` | 架构控制 |
+| S1 | GPT-5.4-Mini | 只读或 `configs/data_assets/` | 发现外部数据契约 |
+| S2 | GPT-5.5 | 包脚手架、测试 | 创建工程基础 |
+| S3 | GPT-5.5 | `l0_data_access/`, `l1_analysis_snapshot/` | 数据契约和快照 |
+| S4R | GPT-5.5 | `research/`, research docs | 形态研究和经验候选 |
+| S4 | GPT-5.4 | `l2_primitives/`, `l3_labels/` | 原语和标签 |
+| S5 | GPT-5.5 | `l4_strategy_dsl/` | DSL、候选池、流水线 |
+| S6 | GPT-5.5 | `l5_signal_engine/` | 信号执行和解释 |
+| S7 | GPT-5.5 | `l6_backtest_engine/` | 回测 |
+| S8 | GPT-5.4 | `app/`, observation docs | 审批和观察工作流 |
+| S9 | GPT-5.5 | 只审阅或窄范围修复 | 边界和质量审阅 |
 
-## Prompt Templates
+## Prompt 模板
 
-Architecture session:
-
-```text
-You are the S0 architecture-control session for Stock Lobster.
-Read requirements.md, sys_command.md, AGENTS.md, and PLANS.md.
-Do not implement business code unless asked.
-Clarify architecture decisions, update docs, and keep layer boundaries strict.
-```
-
-Layer implementation session:
+架构会话：
 
 ```text
-You are responsible only for <LAYER>.
-Read requirements.md, sys_command.md, AGENTS.md, and PLANS.md first.
-Only modify files in <ALLOWED PATHS>.
-Do not bypass lower-layer contracts.
-Add focused tests.
-End with changed files, validation, layer-boundary check, and open questions.
+你是 Stock Lobster 的 S0 架构控制会话。
+阅读 requirements.md、sys_command.md、AGENTS.md 和 PLANS.md。
+除非被要求，否则不要实现业务代码。
+澄清架构决策，更新文档，并保持严格层级边界。
 ```
 
-Review session:
+层级实现会话：
 
 ```text
-Review the current workspace for Stock Lobster.
-Prioritize layer violations, strategy/data boundary violations, missing tests,
-and reproducibility gaps.
-Report findings first with file and line references.
-Do not refactor unless explicitly asked.
+你只负责 <LAYER>。
+先阅读 requirements.md、sys_command.md、AGENTS.md 和 PLANS.md。
+只修改 <ALLOWED PATHS> 中的文件。
+不要绕过下层契约。
+添加聚焦测试。
+最后报告变更文件、验证、层级边界检查和未决问题。
 ```
 
-## Open Decisions
+审阅会话：
 
-Decisions to settle before or during M1/M2:
+```text
+审阅当前 Stock Lobster 工作区。
+优先关注层级违规、策略/数据边界违规、缺失测试和可复现性缺口。
+先用文件和行号报告发现的问题。
+除非明确要求，否则不要重构。
+```
 
-- Initialize this directory as the project Git repository, or move these docs
-  into an existing repository?
-- Use Python packaging with `pyproject.toml`, or another runtime?
-- Store registry and snapshot data in local files, MySQL, SQLite, or a mixed
-  approach for the first MVP?
-- Represent `StrategyDSL` as YAML, JSON, database records, Python objects, or
-  a combination?
-- What is the first stock pattern used to drive candidate strategy generation?
-- Which benchmark is the first default: CSI 300, CSI 500, CSI 1000, all-A
-  equal weight, or strategy-specific benchmarks?
-- Should first user approval be CLI-based, database-status-based, Markdown
-  review-file-based, or web-based?
-- Should observation updates run manually at first or on a daily schedule?
+## 未决决策
 
-## Immediate Next Step
+M1/M2 之前或期间需要确定：
 
-Recommended next action:
+- 在这个目录初始化项目 Git 仓库，还是把这些文档迁入已有仓库？
+- 使用带 `pyproject.toml` 的 Python 打包，还是使用其他运行时？
+- 第一版 MVP 的 registry 和 snapshot 数据存在本地文件、MySQL、SQLite，还是混合方案？
+- `StrategyDSL` 表示为 YAML、JSON、数据库记录、Python 对象，还是组合形式？
+- 第一个用于驱动候选策略生成的股票形态是什么？
+- 第一版默认基准用哪个：沪深 300、中证 500、中证 1000、全 A 等权，还是按策略类型选择？
+- 第一版用户审批使用 CLI、数据库状态、Markdown 审阅文件，还是 Web？
+- 观察更新初期手动运行，还是按日调度？
 
-1. Decide whether to initialize Git here.
-2. Create the M1 Python scaffold.
-3. Add import-boundary tests before adding business logic.
-4. Use a read-only S1 session to inspect external factual-producer contracts
-   and draft the first `configs/data_assets/` entries.
+## 立即下一步
+
+推荐下一步：
+
+1. 决定是否在这里初始化 Git。
+2. 创建 M1 Python 脚手架。
+3. 在添加业务逻辑前先加入导入边界测试。
+4. 使用只读 S1 会话检查外部事实生产者契约，并起草第一批 `configs/data_assets/` 条目。

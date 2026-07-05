@@ -463,6 +463,82 @@
       ],
       "source_type": "published_product",
       "update_frequency": "daily"
+    },
+    {
+      "consumer_contract": {
+        "check_quality_status_before_query": true,
+        "period_date_semantics": "actual_period_end_trade_date",
+        "select_indicator_by_name_version_hash": true
+      },
+      "data_asset_id": "external_provider.pub_stock_weekly_indicator",
+      "data_product": "pub_stock_weekly_indicator",
+      "data_version": "v1",
+      "field_schema": {
+        "asset_id": "string",
+        "asset_type": "string",
+        "available_time": "timestamp",
+        "calculation_date": "date_yyyymmdd",
+        "data_version": "string",
+        "indicator_name": "string",
+        "indicator_value": "numeric",
+        "indicator_version": "string",
+        "market": "string",
+        "params_hash": "string",
+        "period_end_date": "date_yyyymmdd",
+        "published_at": "timestamp",
+        "quality_status": "string",
+        "source_column": "string",
+        "source_end_date": "date_yyyymmdd",
+        "source_start_date": "date_yyyymmdd",
+        "source_table": "string"
+      },
+      "grain": "asset_indicator_period_end_date",
+      "market": "CN_A",
+      "primary_key": [
+        "asset_id",
+        "period_end_date",
+        "indicator_name",
+        "indicator_version",
+        "params_hash"
+      ],
+      "quality_gate": {
+        "allowed_quality_levels": [
+          "pass",
+          "warning"
+        ],
+        "allowed_statuses": [
+          "ready"
+        ],
+        "status_product": "pub_data_quality_status"
+      },
+      "required_fields": [
+        "asset_id",
+        "market",
+        "asset_type",
+        "period_end_date",
+        "indicator_name",
+        "indicator_version",
+        "params_hash",
+        "indicator_value",
+        "source_table",
+        "source_column",
+        "source_start_date",
+        "source_end_date",
+        "calculation_date",
+        "available_time",
+        "published_at",
+        "data_version",
+        "quality_status"
+      ],
+      "source_name": "external_provider",
+      "source_tables": [
+        "ma_price_weekly_statistic",
+        "amount_weekly_statistic",
+        "volatility_weekly_statistic",
+        "close_price_weekly_statistic"
+      ],
+      "source_type": "published_product",
+      "update_frequency": "weekly"
     }
   ]
 }

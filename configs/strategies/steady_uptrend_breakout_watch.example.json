@@ -3,7 +3,7 @@
   "version": "candidate_v1",
   "status": "draft",
   "name": "稳健上升趋势突破关注策略",
-  "description": "从宏和科技、铜冠铜箔样本沉淀出的候选策略：股票处于稳健上升趋势，短中长期均线多头排列，回撤受控，整理后向上突破并伴随量能放大。",
+  "description": "从宏和科技、铜冠铜箔、国际复材等正样本，以及强瑞技术、麦格米特等趋势质量负样本沉淀出的候选策略：股票处于周级别上升趋势背景，日线稳健上升趋势成立，短中长期均线多头排列，回撤和日线质量受控，整理后向上突破并伴随量能放大。",
   "candidate_pool": {
     "policy_id": "strategy.steady_uptrend_breakout_watch.pool",
     "version": "candidate_v1",
@@ -24,10 +24,37 @@
       ]
     },
     {
+      "stage_id": "hard_exclusion_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "asset_state.normal_listing == true",
+        "liquidity.total_mv_ge_100e == true",
+        "liquidity.avg_amount_20d_ge_2e == true",
+        "risk.turnover_rate_20d_controlled == true"
+      ]
+    },
+    {
+      "stage_id": "weekly_context_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "technical_context.weekly_uptrend_context == true"
+      ],
+      "asof_rule": "weekly.period_end_date <= signal_date 的最新一条周线；周五收盘后可使用本周五周线，非周五使用上一个周五周线。"
+    },
+    {
+      "stage_id": "industry_concept_context_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "context.strong_industry_or_concept == true"
+      ],
+      "logic": "strong_industry_hit OR strong_concept_hit"
+    },
+    {
       "stage_id": "steady_trend_filter",
       "stage_type": "filter",
       "pass_conditions": [
-        "technical_pattern.steady_uptrend_stock == true"
+        "technical_pattern.steady_uptrend_stock == true",
+        "risk.ma30_deviation_not_extreme == true"
       ]
     },
     {
@@ -43,15 +70,37 @@
       "score_fields": [
         "trend_strength_score",
         "drawdown_control_score",
-        "breakout_volume_score"
+        "breakout_volume_score",
+        "red_k_ratio_score",
+        "shadow_noise_score"
       ]
     }
   ],
   "candidate_scan_policy": {
     "min_amount_ratio_20d": 1.5,
     "max_abs_drawdown_60d": 0.4,
+    "max_abs_drawdown_120d": 0.55,
+    "min_red_k_ratio_20d": 0.45,
+    "max_long_shadow_ratio_20d": 0.65,
+    "require_close_above_ma30": true,
+    "require_weekly_uptrend": true,
+    "max_abs_weekly_drawdown_26w": 0.55,
+    "max_weekly_ma20_deviation_pct": null,
+    "max_ma30_deviation_pct": 0.35,
+    "preferred_ma30_deviation_pct": 0.25,
+    "min_sustained_ma30_hold_ratio_90d": 0.75,
+    "min_recent_ma30_hold_ratio_30d": 0.75,
+    "min_recent_ma30_hold_ratio_60d": 0.55,
+    "min_base_breakout_ma30_hold_ratio_60d": 0.5,
+    "min_base_breakout_return_20d": 0.2,
+    "require_normal_listing": true,
+    "min_total_mv": 1000000,
+    "min_avg_amount_20d": 2000000000,
+    "min_avg_amount_20d_note": "当前 token_daily_details.amount 原始值约等于实际成交额(元) * 10，因此 2,000,000,000 对应实际 20 日均成交额约 2 亿元。",
+    "max_turnover_rate_20d": 20,
+    "require_context_strength": true,
     "start_date": null,
-    "notes": "这是候选召回阈值，用于识别高弹性趋势股；不是 L6 策略准入阈值。"
+    "notes": "这是候选召回阈值，用于识别高弹性趋势股；不是 L6 策略准入阈值。新增的红绿比、影线噪声、MA30 承接和 120 日回撤用于过滤趋势质量硬负样本。周线趋势背景用于过滤大级别趋势不足的日线突破，周线 as-of 规则为取 signal_date 当天及以前最新周线。"
   },
   "backtest_gate": {
     "min_sample_size": 30,
@@ -61,5 +110,5 @@
     "drawdown_metric_name": "max_drawdown",
     "max_abs_drawdown": 0.25
   },
-  "notes": "当前是候选草案。需要补齐 MA60、MA120、ma20_slope_20d、max_drawdown_60d、close_new_high_60d_flag 等生产指标后，再进行样本组回测。candidate_scan_policy.max_abs_drawdown_60d=0.4 是高弹性趋势股候选阈值；backtest_gate.max_abs_drawdown=0.25 是更严格的测试跟踪准入阈值。"
+  "notes": "当前是候选草案。需要补齐 MA30、MA60、MA120、ma20_slope_20d、max_drawdown_60d、max_drawdown_120d、red_k_ratio_20d、long_shadow_ratio_20d、close_new_high_60d_flag，以及 weekly_ma5、weekly_ma10、weekly_ma20、weekly_ma20_slope_4w、weekly_max_drawdown_26w、weekly_trend_pass 等生产指标后，再进行样本组回测。其中 weekly_max_drawdown_26w 必须优先复用已有滚动最大回撤口径族，只作为上游同类窗口扩展缺口登记，不在本策略项目内重复建设生产任务。candidate_scan_policy.max_abs_drawdown_60d=0.4 是高弹性趋势股候选阈值；backtest_gate.max_abs_drawdown=0.25 是更严格的测试跟踪准入阈值。"
 }

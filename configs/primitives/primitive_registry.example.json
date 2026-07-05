@@ -233,6 +233,278 @@
       "evidence": [],
       "owner": "stock_lobster",
       "notes": "收盘价创 60 日新高，属于突破/位置事件。"
+    },
+    {
+      "primitive_id": "level_breakout.close_near_high_60d",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "level_breakout",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:close_to_high_60d_pct"
+      ],
+      "params": {
+        "min_close_to_high_pct": -0.08,
+        "max_close_to_high_pct": -0.002
+      },
+      "calculation": "min_close_to_high_pct <= close_to_high_60d_pct <= max_close_to_high_pct",
+      "valid_when": "60 日收盘价高点距离指标可计算",
+      "missing_policy": "block",
+      "evidence": [
+        "688017.SH 绿的谐波 202604 日级别接近前高样本",
+        "002384.SZ 东山精密 20260226 日级别长期盘整后启动样本"
+      ],
+      "owner": "stock_lobster",
+      "notes": "用于识别突破前关注状态：价格接近前高但尚未形成新高，适合少量观察池召回。"
+    },
+    {
+      "primitive_id": "risk.ma20_deviation_not_extreme",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "risk",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:ma20_deviation_pct"
+      ],
+      "params": {
+        "max_ma20_deviation_pct": 0.35
+      },
+      "calculation": "ma20_deviation_pct <= max_ma20_deviation_pct",
+      "valid_when": "MA20 偏离指标可计算",
+      "missing_policy": "block",
+      "evidence": [
+        "用户样本中对鱼尾行情和过高位置的反例讨论"
+      ],
+      "owner": "stock_lobster",
+      "notes": "避免价格相对 MA20 过度拉伸后才召回，主要服务少量高质量候选池。"
+    },
+    {
+      "primitive_id": "risk.ma30_deviation_not_extreme",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "risk",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:ma30_deviation_pct"
+      ],
+      "params": {
+        "max_ma30_deviation_pct": 0.35,
+        "preferred_ma30_deviation_pct": 0.25
+      },
+      "calculation": "ma30_deviation_pct <= max_ma30_deviation_pct",
+      "valid_when": "MA30 偏离指标可计算",
+      "missing_policy": "block",
+      "evidence": [
+        "000811.SZ、002068.SZ 等周五误召回反馈：价格距离 MA30 太远，属于拉高后偏高位"
+      ],
+      "owner": "stock_lobster",
+      "notes": "硬过滤先用 35%，25% 作为高质量区间；避免已经大幅拉高后才进入少量观察池。"
+    },
+    {
+      "primitive_id": "moving_average.ma30_hold_ratio_90d_sustained",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "moving_average",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:ma30_hold_ratio_90d"
+      ],
+      "params": {
+        "min_ratio": 0.75,
+        "quality_ratio": 0.80
+      },
+      "calculation": "ma30_hold_ratio_90d >= min_ratio",
+      "valid_when": "MA30 持续站上比例可计算",
+      "missing_policy": "block",
+      "evidence": [
+        "000551.SZ、000783.SZ、001256.SZ、002079.SZ 等误召回反馈：历史日线频繁跌破 MA30/MA60，不够稳健"
+      ],
+      "owner": "stock_lobster",
+      "notes": "预突破少量观察池优先要求 90 日站上 MA30 比例不低于 75%；80% 以上为稳健优质区间。"
+    },
+    {
+      "primitive_id": "liquidity.total_mv_ge_100e",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "liquidity",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_daily_basic.total_mv"
+      ],
+      "params": {
+        "min_total_mv_wan": 1000000
+      },
+      "calculation": "total_mv >= min_total_mv_wan",
+      "valid_when": "目标日期存在总市值字段；Tushare total_mv 单位为万元",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "总市值低于 100 亿的股票先不进入正式少量观察池。"
+    },
+    {
+      "primitive_id": "liquidity.avg_amount_20d_ge_2e",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "liquidity",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:avg_amount_20d"
+      ],
+      "params": {
+        "min_avg_amount_20d_raw": 2000000000,
+        "amount_raw_unit_note": "当前 token_daily_details.amount 原始值约等于实际成交额(元) * 10，因此 2,000,000,000 对应实际成交额约 2 亿元。"
+      },
+      "calculation": "avg_amount_20d >= min_avg_amount_20d_raw",
+      "valid_when": "20 日平均成交额可计算",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "近 20 日平均成交额低于 2 亿的股票先视为低流动性剔除。"
+    },
+    {
+      "primitive_id": "risk.turnover_rate_20d_controlled",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "risk",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:max_turnover_rate_20d"
+      ],
+      "params": {
+        "max_turnover_rate": 20
+      },
+      "calculation": "max_turnover_rate_20d <= max_turnover_rate",
+      "valid_when": "20 日最大换手率可计算",
+      "missing_policy": "block",
+      "evidence": [
+        "用户反馈：拉高后相对历史换手率爆量的股票不符合稳健强势股偏好"
+      ],
+      "owner": "stock_lobster",
+      "notes": "先用硬过滤剔除近 20 日出现换手率超过 20% 的股票。"
+    },
+    {
+      "primitive_id": "context.industry_or_concept_strength_hit",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "context",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:context_strength_pass"
+      ],
+      "params": {
+        "logic": "strong_industry_hit OR strong_concept_hit"
+      },
+      "calculation": "context_strength_pass == true",
+      "valid_when": "行业/概念强度上下文已按 signal_date as-of 生成",
+      "missing_policy": "block",
+      "evidence": [
+        "用户确认：做过滤时，只要属于强行业或者强概念都算命中"
+      ],
+      "owner": "stock_lobster",
+      "notes": "强行业/强概念由趋势强 OR 热度强得到；趋势强为 20 日涨幅排名前 30% 且指数在 MA20/MA60 上方，热度强为过去 20 日 Top200 涨幅个股的行业/概念每日 Top5 多次命中。"
+    },
+    {
+      "primitive_id": "weekly_context.close_above_weekly_ma20",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "weekly_context",
+      "output_type": "boolean",
+      "input_features": [
+        "pub_stock_weekly_kline.close",
+        "indicator:weekly_ma20"
+      ],
+      "params": {
+        "operator": ">",
+        "asof_rule": "latest period_end_date <= signal_date"
+      },
+      "calculation": "weekly_close > weekly_ma20",
+      "valid_when": "目标日期可以对齐到一条可用周线",
+      "missing_policy": "block",
+      "evidence": [
+        "用户样本中的周级别趋势背景截图"
+      ],
+      "owner": "stock_lobster",
+      "notes": "周线价格位于主要趋势均线之上；只做高周期背景过滤。"
+    },
+    {
+      "primitive_id": "weekly_context.weekly_ma10_above_ma20",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "weekly_context",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:weekly_ma10",
+        "indicator:weekly_ma20"
+      ],
+      "params": {
+        "operator": ">"
+      },
+      "calculation": "weekly_ma10 > weekly_ma20",
+      "valid_when": "目标日期可以对齐到一条可用周线并计算周线 MA10/MA20",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "周级别中短期均线方向向上。"
+    },
+    {
+      "primitive_id": "weekly_context.weekly_ma20_rising_4w",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "weekly_context",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:weekly_ma20_slope_4w"
+      ],
+      "params": {
+        "min_slope": 0
+      },
+      "calculation": "weekly_ma20_slope_4w > min_slope",
+      "valid_when": "目标日期可以对齐到一条可用周线并计算周线 MA20 斜率",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "周级别 MA20 正在抬升，用于过滤弱反弹。"
+    },
+    {
+      "primitive_id": "weekly_context.weekly_drawdown_26w_controlled",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "weekly_context",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:weekly_max_drawdown_26w"
+      ],
+      "params": {
+        "max_abs_drawdown": 0.55,
+        "reuse_family": "rolling_max_drawdown(close, window)",
+        "window": 26,
+        "timeframe": "weekly"
+      },
+      "calculation": "abs(weekly_max_drawdown_26w) <= max_abs_drawdown",
+      "valid_when": "目标日期可以对齐到一条可用周线并计算 26 周回撤",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "周级别回撤受控，避免大级别趋势已经破坏的日线突破。weekly_max_drawdown_26w 应优先复用已有滚动最大回撤口径族，只做窗口和周期扩展，不建设策略专属生产口径。"
+    },
+    {
+      "primitive_id": "weekly_context.weekly_trend_context_pass",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "weekly_context",
+      "output_type": "boolean",
+      "input_features": [
+        "indicator:weekly_trend_pass"
+      ],
+      "params": {
+        "asof_rule": "latest period_end_date <= signal_date"
+      },
+      "calculation": "weekly_trend_pass == true",
+      "valid_when": "周线背景计算结果可用",
+      "missing_policy": "block",
+      "evidence": [],
+      "owner": "stock_lobster",
+      "notes": "周线趋势背景综合结果，作为 L4 日线策略的前置过滤。"
     }
   ]
 }

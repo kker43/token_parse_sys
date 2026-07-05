@@ -30,6 +30,15 @@
       "description": "10-trading-day moving average of close price"
     },
     {
+      "name": "ma30",
+      "version": "candidate_v1",
+      "params": {"window": 30, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "30-trading-day moving average of close price"
+    },
+    {
       "name": "ma60",
       "version": "candidate_v1",
       "params": {"window": 60, "price_field": "close"},
@@ -84,6 +93,18 @@
       "description": "Whether close price reaches a 60-trading-day high"
     },
     {
+      "name": "close_to_high_60d_pct",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "rolling_high_distance(close, window)",
+      "similar_existing_indicators": ["close_new_high_60d_flag"],
+      "params": {"window": 60, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Close distance to the latest 60-trading-day close high; negative means below the high"
+    },
+    {
       "name": "convergence_5_10_20_pct",
       "version": "v1",
       "params": {"windows": [5, 10, 20], "price_field": "close"},
@@ -102,6 +123,100 @@
       "description": "Relative MA20 slope over the latest 20 trading days"
     },
     {
+      "name": "ma20_deviation_pct",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "price_ma_deviation(close, ma_window)",
+      "similar_existing_indicators": ["close_above_ma20_flag"],
+      "params": {"ma_indicator": "ma20", "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Relative deviation of close price versus MA20; used to avoid overextended entries"
+    },
+    {
+      "name": "ma30_deviation_pct",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "price_ma_deviation(close, ma_window)",
+      "similar_existing_indicators": ["ma20_deviation_pct", "close_above_ma30"],
+      "params": {"ma_indicator": "ma30", "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Relative deviation of close price versus MA30; hard cap uses 35%, preferred high-quality zone uses 25%"
+    },
+    {
+      "name": "ma30_hold_ratio_90d",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "close_above_ma_ratio(close, ma_window, lookback_window)",
+      "similar_existing_indicators": ["close_above_ma20_flag", "ma30"],
+      "params": {"ma_indicator": "ma30", "window": 90, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Ratio of recent 90 trading days where close is above MA30; pre-breakout hard threshold starts at 75%"
+    },
+    {
+      "name": "ma30_hold_ratio_30d",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "close_above_ma_ratio(close, ma_window, lookback_window)",
+      "similar_existing_indicators": ["ma30_hold_ratio_90d"],
+      "params": {"ma_indicator": "ma30", "window": 30, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Ratio of recent 30 trading days where close is above MA30; used by base-breakout/recent-repair diagnostics"
+    },
+    {
+      "name": "ma30_hold_ratio_60d",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "close_above_ma_ratio(close, ma_window, lookback_window)",
+      "similar_existing_indicators": ["ma30_hold_ratio_90d"],
+      "params": {"ma_indicator": "ma30", "window": 60, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Ratio of recent 60 trading days where close is above MA30; used to separate sustained trend from newly repaired trend"
+    },
+    {
+      "name": "avg_amount_20d",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "rolling_average(amount, window)",
+      "similar_existing_indicators": ["amount_ratio_20d"],
+      "params": {"window": 20, "amount_field": "amount"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "20-trading-day average amount; steady-uptrend watch uses at least 200 million yuan as the first liquidity gate"
+    },
+    {
+      "name": "max_turnover_rate_20d",
+      "version": "candidate_v1",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "rolling_max(turnover_rate, window)",
+      "similar_existing_indicators": ["pub_stock_daily_basic.turnover_rate"],
+      "params": {"window": 20, "field": "turnover_rate"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Maximum daily turnover rate over the latest 20 trading days; used to exclude extreme turnover spikes above 20%"
+    },
+    {
+      "name": "context_strength_pass",
+      "version": "candidate_v1",
+      "production_status": "pending_context_export",
+      "params": {"logic": "strong_industry_hit OR strong_concept_hit"},
+      "value_type": "boolean",
+      "source_product": "external_context.stock_signal_context",
+      "source_column": "context_strength_pass",
+      "description": "Whether the stock belongs to at least one strong industry or strong concept; strong means trend-strong OR heat-strong"
+    },
+    {
       "name": "max_drawdown_60d",
       "version": "candidate_v1",
       "params": {"window": 60, "price_field": "close"},
@@ -109,6 +224,100 @@
       "source_product": "pub_stock_daily_indicator",
       "source_column": "indicator_value",
       "description": "Maximum close-to-close drawdown over the latest 60 trading days"
+    },
+    {
+      "name": "max_drawdown_120d",
+      "version": "candidate_v1",
+      "params": {"window": 120, "price_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Maximum close-to-close drawdown over the latest 120 trading days"
+    },
+    {
+      "name": "red_k_ratio_20d",
+      "version": "candidate_v1",
+      "params": {"window": 20, "open_field": "open", "close_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Ratio of bars where close is greater than or equal to open over the latest 20 trading days"
+    },
+    {
+      "name": "green_k_ratio_20d",
+      "version": "candidate_v1",
+      "params": {"window": 20, "open_field": "open", "close_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Ratio of bars where close is below open over the latest 20 trading days"
+    },
+    {
+      "name": "long_shadow_ratio_20d",
+      "version": "candidate_v1",
+      "params": {"window": 20, "open_field": "open", "high_field": "high", "low_field": "low", "close_field": "close"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Average shadow-to-range ratio over the latest 20 trading days"
+    },
+    {
+      "name": "weekly_ma5",
+      "version": "candidate_v1",
+      "params": {"window": 5, "price_field": "close", "timeframe": "weekly"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_weekly_indicator",
+      "source_column": "indicator_value",
+      "description": "5-week moving average of weekly close from the published weekly statistic口径, aligned as-of signal date"
+    },
+    {
+      "name": "weekly_ma10",
+      "version": "candidate_v1",
+      "params": {"window": 10, "price_field": "close", "timeframe": "weekly"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_weekly_indicator",
+      "source_column": "indicator_value",
+      "description": "10-week moving average of weekly close from the published weekly statistic口径, aligned as-of signal date"
+    },
+    {
+      "name": "weekly_ma20",
+      "version": "candidate_v1",
+      "params": {"window": 20, "price_field": "close", "timeframe": "weekly"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_weekly_indicator",
+      "source_column": "indicator_value",
+      "description": "20-week moving average of weekly close from the published weekly statistic口径, aligned as-of signal date"
+    },
+    {
+      "name": "weekly_ma20_slope_4w",
+      "version": "candidate_v1",
+      "params": {"ma_indicator": "weekly_ma20", "lookback": 4, "timeframe": "weekly"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_weekly_indicator",
+      "source_column": "indicator_value",
+      "description": "Relative weekly MA20 slope over the latest 4 weekly bars; should reuse the same rolling MA slope口径 as existing weekly MA statistics"
+    },
+    {
+      "name": "weekly_max_drawdown_26w",
+      "version": "candidate_v1",
+      "production_status": "pending_upstream_reuse",
+      "reuse_policy": "reuse_with_window_param",
+      "reuse_family": "rolling_max_drawdown(close, window)",
+      "similar_existing_indicators": ["max_drawdown_60d", "max_drawdown_120d"],
+      "params": {"window": 26, "price_field": "close", "timeframe": "weekly"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_weekly_indicator",
+      "source_column": "indicator_value",
+      "description": "Maximum close-to-close drawdown over the latest 26 weekly bars; production should reuse the existing rolling statistic口径 family rather than a strategy-local calculation"
+    },
+    {
+      "name": "weekly_trend_pass",
+      "version": "candidate_v1",
+      "params": {"timeframe": "weekly", "asof_rule": "latest period_end_date <= signal_date"},
+      "value_type": "boolean",
+      "source_product": "pub_stock_weekly_indicator",
+      "source_column": "indicator_value",
+      "description": "Whether weekly trend context passes for the daily signal date; can be materialized upstream after weekly component indicators are published"
     }
   ]
 }

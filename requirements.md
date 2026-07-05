@@ -207,7 +207,7 @@ L6 Backtest Engine Layer
 
 ## 5. 核心对象定义
 
-### 5.1 DataAsset
+### 5.1 数据资产（DataAsset）
 
 DataAsset 描述外部数据生产系统暴露出来的源表、文件、API 产物或派生数据集。
 
@@ -226,7 +226,7 @@ DataAsset 是取数契约，不是 Stock Lobster 生产的数据事实。
 - first_available_date
 - latest_available_date
 
-### 5.2 AnalysisSnapshot
+### 5.2 分析快照（AnalysisSnapshot）
 
 AnalysisSnapshot 是某只股票在某个日期上的稳定分析快照，也可以理解为策略分析视角下的 FeatureSnapshot。
 
@@ -249,7 +249,7 @@ AnalysisSnapshot 由 Stock Lobster 根据外部数据契约读取结果后构建
 - 必须包含 `analysis_version` 和 `run_id`。
 - 必须记录来源数据依赖。
 
-### 5.3 Primitive
+### 5.3 原语（Primitive）
 
 Primitive 是作用于 AnalysisSnapshot 的纯函数。
 
@@ -272,7 +272,7 @@ is_fundamental_improving
 is_industry_heat_rising
 ```
 
-### 5.4 LabelSnapshot
+### 5.4 标签快照（LabelSnapshot）
 
 LabelSnapshot 是由 Primitive 派生出的确定性标签快照。
 
@@ -294,7 +294,7 @@ industry_rotation_candidate
 low_volatility_accumulation
 ```
 
-### 5.5 StrategyDSL
+### 5.5 策略 DSL（StrategyDSL）
 
 StrategyDSL 是白盒策略定义。
 
@@ -319,7 +319,7 @@ StrategyDSL 是白盒策略定义。
 - 必须版本化。
 - 必须人类可读。
 
-### 5.6 CandidatePoolPolicy
+### 5.6 候选池策略（CandidatePoolPolicy）
 
 CandidatePoolPolicy 定义一次策略运行的候选股票池来源。
 
@@ -336,7 +336,7 @@ CandidatePoolPolicy 必须版本化，并且必须能在回测时复现。
 
 对于异动观察池链路，进入观察池的规则本身也是 CandidatePoolPolicy 的一部分，不能只记录“来自观察池”。
 
-### 5.7 StagePipeline
+### 5.7 阶段流水线（StagePipeline）
 
 StagePipeline 定义策略执行过程中的分层过滤和分析阶段。
 
@@ -362,13 +362,13 @@ StagePipeline 定义策略执行过程中的分层过滤和分析阶段。
 
 StagePipeline 应同时支持全市场筛选和异动观察池分析。
 
-### 5.8 StrategyCandidate
+### 5.8 策略候选（StrategyCandidate）
 
 StrategyCandidate 是系统自动生成、但尚未被用户批准的候选策略。
 
 候选策略可以自动回测，但不能进入观察池，也不能生成正式生产信号。
 
-### 5.9 StrategySignal
+### 5.9 策略信号（StrategySignal）
 
 StrategySignal 是由 L5 生成的选股信号。
 
@@ -387,7 +387,7 @@ StrategySignal 是由 L5 生成的选股信号。
 - rank
 - suggested_tracking_horizons
 
-### 5.10 BacktestResult
+### 5.10 回测结果（BacktestResult）
 
 BacktestResult 是由 L6 生成的回测结果。
 
@@ -408,7 +408,7 @@ BacktestResult 是由 L6 生成的回测结果。
 - failure_cases
 - parameter_set
 
-### 5.11 ObservationRecord
+### 5.11 观察记录（ObservationRecord）
 
 ObservationRecord 记录已确认策略信号的未来跟踪结果。
 
@@ -704,40 +704,40 @@ retired
 
 ## 14. 阶段路线
 
-### Milestone 1: 需求和架构基线
+### 里程碑 1：需求和架构基线
 
 - 固化需求文档。
 - 固化分层契约。
 - 定义核心对象 schema。
 - 定义策略生命周期。
 
-### Milestone 2: 数据适配和资产目录
+### 里程碑 2：数据适配和资产目录
 
 - 接入外部事实数据生产系统产出的 MySQL 表。
 - 建立 DataAsset Catalog。
 - 定义 AnalysisSnapshot schema。
 - 将现有统计表映射为分析快照输入。
 
-### Milestone 3: Primitive 和 Label Registry
+### 里程碑 3：Primitive 和 Label Registry
 
 - 定义 Primitive 注册格式。
 - 实现第一批白盒 Primitive。
 - 定义 Label 生成规则。
 - 生成版本化 LabelSnapshot。
 
-### Milestone 4: StrategyDSL 和候选策略生成
+### 里程碑 4：StrategyDSL 和候选策略生成
 
 - 定义 DSL schema。
 - 支持从个股形态生成候选策略。
 - 支持召回、过滤、排除和排序逻辑。
 
-### Milestone 5: 回测引擎
+### 里程碑 5：回测引擎
 
 - 实现多回测口径。
 - 生成策略级和信号级回测报告。
 - 存储 BacktestResult。
 
-### Milestone 6: 观察池和跟踪系统
+### 里程碑 6：观察池和跟踪系统
 
 - 加入用户确认流程。
 - 跟踪已批准策略信号。

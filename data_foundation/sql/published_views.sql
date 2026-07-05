@@ -142,6 +142,77 @@ SELECT
   CASE WHEN volatility_60d IS NULL THEN 'warning' ELSE 'pass' END
 FROM volatility_daily_statistic;
 
+CREATE OR REPLACE VIEW pub_stock_weekly_indicator AS
+SELECT
+  ts_code AS asset_id,
+  'CN_A' AS market,
+  'stock' AS asset_type,
+  trade_date AS period_end_date,
+  'weekly_ma5' AS indicator_name,
+  'candidate_v1' AS indicator_version,
+  'window_5' AS params_hash,
+  ma5 AS indicator_value,
+  'ma_price_weekly_statistic' AS source_table,
+  'ma5' AS source_column,
+  trade_date AS source_start_date,
+  trade_date AS source_end_date,
+  trade_date AS calculation_date,
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s') AS available_time,
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s') AS published_at,
+  'v1' AS data_version,
+  CASE WHEN ma5 IS NULL THEN 'warning' ELSE 'pass' END AS quality_status
+FROM ma_price_weekly_statistic
+UNION ALL
+SELECT
+  ts_code, 'CN_A', 'stock', trade_date,
+  'weekly_ma10', 'candidate_v1', 'window_10', ma10,
+  'ma_price_weekly_statistic', 'ma10', trade_date, trade_date, trade_date,
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  'v1',
+  CASE WHEN ma10 IS NULL THEN 'warning' ELSE 'pass' END
+FROM ma_price_weekly_statistic
+UNION ALL
+SELECT
+  ts_code, 'CN_A', 'stock', trade_date,
+  'weekly_ma20', 'candidate_v1', 'window_20', ma20,
+  'ma_price_weekly_statistic', 'ma20', trade_date, trade_date, trade_date,
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  'v1',
+  CASE WHEN ma20 IS NULL THEN 'warning' ELSE 'pass' END
+FROM ma_price_weekly_statistic
+UNION ALL
+SELECT
+  ts_code, 'CN_A', 'stock', trade_date,
+  'weekly_amount_ratio', 'candidate_v1', 'window_default', amount_ratio,
+  'amount_weekly_statistic', 'amount_ratio', trade_date, trade_date, trade_date,
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  'v1',
+  CASE WHEN amount_ratio IS NULL THEN 'warning' ELSE 'pass' END
+FROM amount_weekly_statistic
+UNION ALL
+SELECT
+  ts_code, 'CN_A', 'stock', trade_date,
+  'weekly_volatility_20w', 'candidate_v1', 'window_20', volatility_20w,
+  'volatility_weekly_statistic', 'volatility_20w', trade_date, trade_date, trade_date,
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  'v1',
+  CASE WHEN volatility_20w IS NULL THEN 'warning' ELSE 'pass' END
+FROM volatility_weekly_statistic
+UNION ALL
+SELECT
+  ts_code, 'CN_A', 'stock', trade_date,
+  'weekly_volatility_30w', 'candidate_v1', 'window_30', volatility_30w,
+  'volatility_weekly_statistic', 'volatility_30w', trade_date, trade_date, trade_date,
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  STR_TO_DATE(CONCAT(trade_date, ' 23:59:59'), '%Y%m%d %H:%i:%s'),
+  'v1',
+  CASE WHEN volatility_30w IS NULL THEN 'warning' ELSE 'pass' END
+FROM volatility_weekly_statistic;
+
 CREATE OR REPLACE VIEW pub_data_quality_status AS
 SELECT
   data_product,
@@ -166,6 +237,9 @@ FROM (
   UNION ALL
   SELECT 'pub_stock_daily_indicator', trade_date, COUNT(*), 'ma_price_daily_statistic,amount_daily_statistic,volatility_daily_statistic'
   FROM pub_stock_daily_indicator GROUP BY trade_date
+  UNION ALL
+  SELECT 'pub_stock_weekly_indicator', period_end_date, COUNT(*), 'ma_price_weekly_statistic,amount_weekly_statistic,volatility_weekly_statistic'
+  FROM pub_stock_weekly_indicator GROUP BY period_end_date
   UNION ALL
   SELECT 'pub_stock_asset_basic', snapshot_date, COUNT(*), 'token_stock_basic,token_type'
   FROM pub_stock_asset_basic GROUP BY snapshot_date

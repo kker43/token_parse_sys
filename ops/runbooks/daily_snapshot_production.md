@@ -1,29 +1,27 @@
-# Daily Snapshot Production
+# 每日分析快照生产
 
-## Purpose
+## 目的
 
-Use `workflows/jobs/daily_snapshot_production.py` as the scheduler-facing
-entrypoint for first-stage L1 `AnalysisSnapshot` production.
+使用 `workflows/jobs/daily_snapshot_production.py` 作为面向调度器的第一阶段 L1 `AnalysisSnapshot` 生产入口。
 
-This job does not fetch market data directly. It consumes:
+这个作业不直接拉取市场数据。它消费：
 
-- an exported L0 `DataAsset` catalog
-- already-fetched source rows for each target stock/date
+- 已导出的 L0 `DataAsset` 目录。
+- 每个目标股票/日期已经取得的源数据行。
 
-It writes deterministic snapshot JSON that later L2 primitives and L3 labels can
-consume.
+它会写出确定性的快照 JSON，供后续 L2 原语和 L3 标签消费。
 
-## Files
+## 文件
 
-- schedule config example:
+- 调度配置示例：
   `configs/schedules/daily_snapshot_production.example.json`
-- cron template:
+- cron 模板：
   `ops/crontab/daily_snapshot_production.crontab.example`
-- systemd templates:
+- systemd 模板：
   `ops/systemd/token-parse-daily-snapshot-production.service.example`
   `ops/systemd/token-parse-daily-snapshot-production.timer.example`
 
-## Example command
+## 示例命令
 
 ```bash
 cd /home/ubuntu/token_parse_sys
@@ -31,8 +29,6 @@ cd /home/ubuntu/token_parse_sys
   --schedule-config-path configs/schedules/daily_snapshot_production.json
 ```
 
-## Current stage
+## 当前阶段
 
-The first version is file-driven. Replacing `snapshot_input_path` generation
-with MySQL-backed L0 repositories should not change the L1 snapshot schema or
-downstream primitive/label interfaces.
+第一版由文件驱动。后续即使把 `snapshot_input_path` 的生成替换为基于 MySQL 的 L0 repository，也不应该改变 L1 快照 schema 或下游原语/标签接口。

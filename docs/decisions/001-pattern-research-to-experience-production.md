@@ -1,45 +1,36 @@
-# ADR 001: Pattern Research to Experience Data Production
+# ADR 001：从形态研究到经验数据生产
 
-## Status
+## 状态
 
-Accepted draft.
+已接受草稿。
 
-## Context
+## 背景
 
-Upstream systems are expected to provide factual data only, such as market
-prices, volume, derived factual indicators, trading calendars, stock metadata,
-industry metadata, and data quality status.
+上游系统只应提供事实数据，例如市场价格、成交量、派生事实指标、交易日历、股票元数据、行业元数据和数据质量状态。
 
-In early phases, there may be very little research-derived or
-experience-derived data. Stock Lobster therefore needs a production research
-workflow that starts from real stock pattern samples, associates observable
-factors, distills primitive definitions, builds labels, evaluates strategy
-combinations, and then either schedules repeatable production or registers the
-calculation contract into the proper layer.
+在早期阶段，系统中可能几乎没有研究派生或经验派生数据。因此 Stock Lobster 需要一条生产级研究工作流：从真实股票形态样本开始，关联可观察因子，提炼原语定义，构建标签，评估策略组合，然后把可重复生产调度起来，或把计算契约注册到正确层级。
 
-This does not change the hard boundary that Stock Lobster must not produce
-canonical factual data.
+这不会改变硬性边界：Stock Lobster 不得生产权威事实数据。
 
-## Decision
+## 决策
 
-Stock Lobster owns experience data production.
+Stock Lobster 拥有经验数据生产。
 
-Experience data means versioned research and strategy artifacts derived from
-factual data, not factual data itself. Examples include:
+经验数据指从事实数据派生出的版本化研究和策略 artifact，而不是事实数据本身。示例包括：
 
-- pattern cases and pattern cohorts
-- factor observations tied to a pattern sample
-- primitive candidates
-- approved primitive definitions
-- label candidates
-- approved label definitions and label snapshots
-- strategy candidates
-- evaluation profiles
-- backtest evidence
-- production approval records
-- observation and review records
+- 形态案例和形态群组。
+- 与形态样本绑定的因子观察。
+- 原语候选。
+- 已批准原语定义。
+- 标签候选。
+- 已批准标签定义和标签快照。
+- 策略候选。
+- 评估口径。
+- 回测证据。
+- 生产审批记录。
+- 观察和复盘记录。
 
-The main workflow is:
+主工作流为：
 
 ```text
 PatternCase
@@ -56,115 +47,107 @@ PatternCase
 -> NewCandidateVersion
 ```
 
-## Layer Placement
+## 层级放置
 
-Experience artifacts must be placed by responsibility:
+经验 artifact 必须按职责放置：
 
-| Artifact | Layer or area | Rule |
+| Artifact | 层级或区域 | 规则 |
 | --- | --- | --- |
-| `PatternCase` | Research orchestration | Sample evidence, not a factual source |
-| `FactorObservation` | Research orchestration | References L1 fields and source DataAssets |
-| `PrimitiveCandidate` | Research orchestration | Proposed L2 contract, not executable production logic |
-| approved `PrimitiveDefinition` | L2 | Pure function over `AnalysisSnapshot` only |
-| `LabelCandidate` | Research orchestration | Proposed L3 contract |
-| approved `LabelDefinition` | L3 | Deterministic label derived from L2 primitive outputs |
-| `LabelSnapshot` | L3 | Repeatable semantic production output |
-| `StrategyCandidate` | L4 | Candidate DSL, not approved production strategy |
-| approved `StrategyDSL` | L4 | White-box versioned strategy definition |
-| `StrategySignal` | L5 | Formal signal output |
-| `BacktestResult` | L6 | Formal evaluation output |
-| `ObservationRecord` | Observation workflow | Future tracking evidence |
+| `PatternCase` | 研究编排 | 样本证据，不是事实来源 |
+| `FactorObservation` | 研究编排 | 引用 L1 字段和来源 DataAsset |
+| `PrimitiveCandidate` | 研究编排 | 提议的 L2 契约，不是可执行生产逻辑 |
+| 已批准 `PrimitiveDefinition` | L2 | 只能是作用于 `AnalysisSnapshot` 的纯函数 |
+| `LabelCandidate` | 研究编排 | 提议的 L3 契约 |
+| 已批准 `LabelDefinition` | L3 | 从 L2 原语输出派生的确定性标签 |
+| `LabelSnapshot` | L3 | 可重复的语义生产输出 |
+| `StrategyCandidate` | L4 | 候选 DSL，不是已批准生产策略 |
+| 已批准 `StrategyDSL` | L4 | 白盒版本化策略定义 |
+| `StrategySignal` | L5 | 正式信号输出 |
+| `BacktestResult` | L6 | 正式评估输出 |
+| `ObservationRecord` | 观察工作流 | 未来跟踪证据 |
 
-Research orchestration can coordinate lower layers, but L0-L6 must not depend
-on research orchestration modules.
+研究编排可以协调下层，但 L0-L6 不得依赖研究编排模块。
 
-## Production Modes
+## 生产模式
 
-Every research-derived artifact must choose one of three outcomes:
+每个研究派生 artifact 必须选择三种结果之一：
 
-1. Archive as research evidence only.
-2. Register a calculation contract into the proper layer.
-3. Schedule repeatable production for an approved layer artifact.
+1. 仅作为研究证据归档。
+2. 将计算契约注册到正确层级。
+3. 为已批准的层级 artifact 调度可重复生产。
 
-Examples:
+示例：
 
-- A sample note that explains why a stock looked interesting stays as
-  `PatternCase`.
-- A reusable pure calculation becomes an L2 `PrimitiveDefinition`.
-- A deterministic semantic field becomes an L3 `LabelDefinition` and scheduled
-  `LabelSnapshot` production.
-- A white-box selection recipe becomes an L4 `StrategyDSL`.
-- A verified candidate strategy can be approved for L5 signal generation and
-  L6 backtesting.
+- 解释某只股票为什么有趣的样本笔记保留为 `PatternCase`。
+- 可复用纯计算成为 L2 `PrimitiveDefinition`。
+- 确定性语义字段成为 L3 `LabelDefinition`，并调度 `LabelSnapshot` 生产。
+- 白盒选股配方成为 L4 `StrategyDSL`。
+- 已验证候选策略可以批准用于 L5 信号生成和 L6 回测。
 
-## Approval Boundary
+## 审批边界
 
-The system may automatically draft:
+系统可以自动起草：
 
-- pattern cases
-- factor observations
-- primitive candidates
-- label candidates
-- strategy candidates
-- evaluation suggestions
-- backtest evidence
-- review findings
+- 形态案例。
+- 因子观察。
+- 原语候选。
+- 标签候选。
+- 策略候选。
+- 评估建议。
+- 回测证据。
+- 复盘发现。
 
-The system must not silently approve:
+系统不得静默批准：
 
-- formal primitives
-- formal labels
-- production strategy versions
-- observation pool entry
-- formal signal publishing
-- replacement of an approved strategy version
+- 正式原语。
+- 正式标签。
+- 生产策略版本。
+- 进入观察池。
+- 正式信号发布。
+- 替换已批准策略版本。
 
-Approval must record who approved it, when it was approved, the evidence set,
-and the exact version being approved.
+审批必须记录审批人、审批时间、证据集，以及被批准的精确版本。
 
-## Alignment With Upstream Data Production
+## 与上游数据生产对齐
 
-Upstream factual data projects align with Stock Lobster through contracts, not
-through shared strategy code.
+上游事实数据项目通过契约与 Stock Lobster 对齐，而不是通过共享策略代码对齐。
 
-Required links:
+必需链接：
 
-- `DataAsset` id and version
-- field schema and field semantics
-- data quality status
-- `AnalysisSnapshot` version
-- primitive version
-- label version
-- strategy version
-- evaluation profile version
-- run id
+- `DataAsset` id 和版本。
+- 字段 schema 和字段语义。
+- 数据质量状态。
+- `AnalysisSnapshot` 版本。
+- 原语版本。
+- 标签版本。
+- 策略版本。
+- 评估口径版本。
+- run id。
 
-This lets an approved strategy explain both:
+这让已批准策略可以同时解释：
 
-- which upstream factual data it used
-- which Stock Lobster experience artifacts turned those facts into strategy
-  semantics
+- 它使用了哪些上游事实数据。
+- 哪些 Stock Lobster 经验 artifact 把这些事实转化为策略语义。
 
-## Consequences
+## 影响
 
-Benefits:
+收益：
 
-- real samples drive primitives and labels instead of abstract guessing
-- experience production remains reproducible and auditable
-- upstream data production stays clean and factual
-- strategy semantics can evolve through explicit versions
-- scheduled label or strategy production can be traced back to research cases
+- 真实样本驱动原语和标签，而不是抽象猜测。
+- 经验生产保持可复现和可审计。
+- 上游数据生产保持干净且事实化。
+- 策略语义可以通过显式版本演进。
+- 调度标签或策略生产时，可以追溯到研究案例。
 
-Tradeoffs:
+代价：
 
-- more registry and approval objects are needed
-- early research flow is slower than directly hard-coding strategies
-- sample quality matters, so weak examples must remain research evidence rather
-  than approved layer contracts
+- 需要更多 registry 和审批对象。
+- 早期研究流程比直接硬编码策略更慢。
+- 样本质量很重要，弱样本必须保留为研究证据，而不是批准为层级契约。
 
-## First Implementation Implication
+## 第一实现含义
 
-Before adding many primitives, implement a small research workflow model:
+添加大量原语前，先实现一个小型研究工作流模型：
 
 ```text
 PatternCase
@@ -175,6 +158,4 @@ StrategyCandidate
 ApprovalDecision
 ```
 
-Then use one real pattern family as the first end-to-end test case. The first
-pattern family should be small enough to inspect manually and rich enough to
-exercise L1-L6.
+然后使用一个真实形态家族作为第一个端到端测试案例。第一个形态家族应足够小，便于人工检查，同时足够丰富，可以覆盖 L1-L6。

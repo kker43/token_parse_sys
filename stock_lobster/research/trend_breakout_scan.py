@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from bisect import bisect_right
+import csv
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping
+
+from stock_lobster.technical_indicators import moving_average_at, rolling_max_drawdown_at
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,15 +35,59 @@ class TrendBreakoutMetrics:
     ma5: float
     ma10: float
     ma20: float
+    ma30: float
     ma60: float
     ma120: float
     ma20_slope_20d: float
     amount_ratio_20d: float
     max_drawdown_60d: float
+    max_drawdown_120d: float
     convergence_5_10_20_pct: float
+    close_to_high_60d_pct: float
+    ma20_deviation_pct: float
+    ma30_deviation_pct: float
+    ma30_hold_ratio_30d: float
+    ma30_hold_ratio_60d: float
+    ma30_hold_ratio_90d: float
+    ma30_hold_ratio_120d: float
+    ma60_hold_ratio_120d: float
+    return_20d: float
+    red_k_ratio_20d: float
+    green_k_ratio_20d: float
+    long_shadow_ratio_20d: float
+    avg_amount_20d: float
     close_new_high_60d_flag: bool
+    daily_quality_pass: bool
+    trend_stability_pass: bool
+    market_cap_liquidity_pass: bool
+    turnover_quality_pass: bool
+    context_strength_pass: bool
     steady_uptrend: bool
+    pre_breakout_watch: bool
     breakout_watch: bool
+    setup_score: float
+    name: str = ""
+    industry: str = ""
+    market: str = ""
+    list_status: str = ""
+    total_mv: float | None = None
+    turnover_rate: float | None = None
+    max_turnover_rate_20d: float | None = None
+    avg_turnover_rate_20d: float | None = None
+    turnover_spike_ratio_20d: float | None = None
+    strong_industry_hit: bool = False
+    strong_concept_hit: bool = False
+    strong_industry_names: tuple[str, ...] = ()
+    strong_concept_names: tuple[str, ...] = ()
+    quality_failure_reasons: tuple[str, ...] = ()
+    weekly_asof_trade_date: str | None = None
+    weekly_close: float | None = None
+    weekly_ma5: float | None = None
+    weekly_ma10: float | None = None
+    weekly_ma20: float | None = None
+    weekly_ma20_slope_4w: float | None = None
+    weekly_max_drawdown_26w: float | None = None
+    weekly_trend_pass: bool = True
 
     def to_mapping(self) -> dict[str, object]:
         """Render this metrics object as a JSON-friendly mapping."""
@@ -47,19 +95,63 @@ class TrendBreakoutMetrics:
         return {
             "asset_id": self.asset_id,
             "trade_date": self.trade_date,
+            "name": self.name,
+            "industry": self.industry,
+            "market": self.market,
+            "list_status": self.list_status,
             "close": self.close,
             "ma5": self.ma5,
             "ma10": self.ma10,
             "ma20": self.ma20,
+            "ma30": self.ma30,
             "ma60": self.ma60,
             "ma120": self.ma120,
             "ma20_slope_20d": self.ma20_slope_20d,
             "amount_ratio_20d": self.amount_ratio_20d,
             "max_drawdown_60d": self.max_drawdown_60d,
+            "max_drawdown_120d": self.max_drawdown_120d,
             "convergence_5_10_20_pct": self.convergence_5_10_20_pct,
+            "close_to_high_60d_pct": self.close_to_high_60d_pct,
+            "ma20_deviation_pct": self.ma20_deviation_pct,
+            "ma30_deviation_pct": self.ma30_deviation_pct,
+            "ma30_hold_ratio_30d": self.ma30_hold_ratio_30d,
+            "ma30_hold_ratio_60d": self.ma30_hold_ratio_60d,
+            "ma30_hold_ratio_90d": self.ma30_hold_ratio_90d,
+            "ma30_hold_ratio_120d": self.ma30_hold_ratio_120d,
+            "ma60_hold_ratio_120d": self.ma60_hold_ratio_120d,
+            "return_20d": self.return_20d,
+            "red_k_ratio_20d": self.red_k_ratio_20d,
+            "green_k_ratio_20d": self.green_k_ratio_20d,
+            "long_shadow_ratio_20d": self.long_shadow_ratio_20d,
+            "avg_amount_20d": self.avg_amount_20d,
+            "total_mv": self.total_mv,
+            "turnover_rate": self.turnover_rate,
+            "max_turnover_rate_20d": self.max_turnover_rate_20d,
+            "avg_turnover_rate_20d": self.avg_turnover_rate_20d,
+            "turnover_spike_ratio_20d": self.turnover_spike_ratio_20d,
             "close_new_high_60d_flag": self.close_new_high_60d_flag,
+            "daily_quality_pass": self.daily_quality_pass,
+            "trend_stability_pass": self.trend_stability_pass,
+            "market_cap_liquidity_pass": self.market_cap_liquidity_pass,
+            "turnover_quality_pass": self.turnover_quality_pass,
+            "context_strength_pass": self.context_strength_pass,
+            "strong_industry_hit": self.strong_industry_hit,
+            "strong_concept_hit": self.strong_concept_hit,
+            "strong_industry_names": list(self.strong_industry_names),
+            "strong_concept_names": list(self.strong_concept_names),
+            "quality_failure_reasons": list(self.quality_failure_reasons),
+            "weekly_asof_trade_date": self.weekly_asof_trade_date,
+            "weekly_close": self.weekly_close,
+            "weekly_ma5": self.weekly_ma5,
+            "weekly_ma10": self.weekly_ma10,
+            "weekly_ma20": self.weekly_ma20,
+            "weekly_ma20_slope_4w": self.weekly_ma20_slope_4w,
+            "weekly_max_drawdown_26w": self.weekly_max_drawdown_26w,
+            "weekly_trend_pass": self.weekly_trend_pass,
             "steady_uptrend": self.steady_uptrend,
+            "pre_breakout_watch": self.pre_breakout_watch,
             "breakout_watch": self.breakout_watch,
+            "setup_score": self.setup_score,
         }
 
 
@@ -69,8 +161,67 @@ class TrendBreakoutScanPolicy:
 
     min_amount_ratio_20d: float = 1.5
     max_abs_drawdown_60d: float = 0.40
+    max_abs_drawdown_120d: float = 0.55
+    min_red_k_ratio_20d: float = 0.45
+    max_long_shadow_ratio_20d: float = 0.65
+    require_close_above_ma30: bool = True
+    require_weekly_uptrend: bool = False
+    max_abs_weekly_drawdown_26w: float = 0.55
+    max_weekly_ma20_deviation_pct: float | None = None
+    min_close_to_high_60d_pct: float = -0.08
+    max_close_to_high_60d_pct: float = -0.002
+    min_pre_breakout_amount_ratio_20d: float = 0.80
+    max_ma20_deviation_pct: float = 0.35
+    max_ma30_deviation_pct: float = 0.35
+    min_sustained_ma30_hold_ratio_90d: float = 0.75
+    min_recent_ma30_hold_ratio_30d: float = 0.75
+    min_recent_ma30_hold_ratio_60d: float = 0.55
+    min_base_breakout_ma30_hold_ratio_60d: float = 0.50
+    min_base_breakout_return_20d: float = 0.20
+    require_pre_breakout_sustained_ma30: bool = True
+    require_normal_listing: bool = False
+    min_total_mv: float | None = None
+    min_avg_amount_20d: float | None = None
+    max_turnover_rate_20d: float | None = None
+    max_turnover_spike_ratio_20d: float | None = None
+    require_context_strength: bool = False
     max_convergence_5_10_20_pct: float | None = None
     start_date: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class StockSignalContext:
+    """External stock/date context consumed by the research scanner."""
+
+    asset_id: str
+    trade_date: str
+    name: str = ""
+    industry: str = ""
+    market: str = ""
+    list_status: str = ""
+    total_mv: float | None = None
+    turnover_rate: float | None = None
+    max_turnover_rate_20d: float | None = None
+    avg_turnover_rate_20d: float | None = None
+    avg_amount_20d: float | None = None
+    strong_industry_hit: bool = False
+    strong_concept_hit: bool = False
+    strong_industry_names: tuple[str, ...] = ()
+    strong_concept_names: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class WeeklyTrendContext:
+    """Weekly trend context aligned to one daily signal date."""
+
+    asof_trade_date: str
+    close: float
+    ma5: float
+    ma10: float
+    ma20: float
+    ma20_slope_4w: float
+    max_drawdown_26w: float
+    trend_pass: bool
 
 
 def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
@@ -95,13 +246,74 @@ def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
     return tuple(bars)
 
 
+def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext, ...]:
+    """Read optional stock/date context exported from the factual data layer."""
+
+    rows = Path(path).read_text(encoding="utf-8").splitlines()
+    if not rows:
+        return ()
+    default_columns = (
+        "asset_id",
+        "trade_date",
+        "name",
+        "industry",
+        "market",
+        "list_status",
+        "total_mv",
+        "turnover_rate",
+        "max_turnover_rate_20d",
+        "avg_turnover_rate_20d",
+        "avg_amount_20d",
+        "strong_industry_hit",
+        "strong_concept_hit",
+        "strong_industry_names",
+        "strong_concept_names",
+    )
+    has_header = rows[0].split("\t")[0] in {"asset_id", "ts_code"}
+    if has_header:
+        reader = csv.DictReader(rows, delimiter="\t")
+    else:
+        reader = csv.DictReader(rows, delimiter="\t", fieldnames=default_columns)
+
+    contexts: list[StockSignalContext] = []
+    for row in reader:
+        asset_id = row.get("asset_id") or row.get("ts_code") or ""
+        trade_date = row.get("trade_date") or ""
+        if not asset_id or not trade_date:
+            continue
+        contexts.append(
+            StockSignalContext(
+                asset_id=asset_id,
+                trade_date=trade_date,
+                name=row.get("name", "") or "",
+                industry=row.get("industry", "") or "",
+                market=row.get("market", "") or "",
+                list_status=row.get("list_status", "") or "",
+                total_mv=_optional_float(row.get("total_mv")),
+                turnover_rate=_optional_float(row.get("turnover_rate")),
+                max_turnover_rate_20d=_optional_float(row.get("max_turnover_rate_20d")),
+                avg_turnover_rate_20d=_optional_float(row.get("avg_turnover_rate_20d")),
+                avg_amount_20d=_optional_float(row.get("avg_amount_20d")),
+                strong_industry_hit=_truthy(row.get("strong_industry_hit")),
+                strong_concept_hit=_truthy(row.get("strong_concept_hit")),
+                strong_industry_names=_split_names(row.get("strong_industry_names")),
+                strong_concept_names=_split_names(row.get("strong_concept_names")),
+            )
+        )
+    return tuple(contexts)
+
+
 def scan_trend_breakouts(
     bars: Iterable[KlineBar],
     policy: TrendBreakoutScanPolicy | None = None,
+    weekly_bars: Iterable[KlineBar] | None = None,
+    stock_contexts: Iterable[StockSignalContext] | Mapping[tuple[str, str], StockSignalContext] | None = None,
 ) -> tuple[TrendBreakoutMetrics, ...]:
     """Scan kline bars and return deterministic trend-breakout metrics."""
 
     active_policy = policy or TrendBreakoutScanPolicy()
+    weekly_contexts = _build_weekly_contexts(weekly_bars or (), active_policy)
+    stock_context_map = _context_mapping(stock_contexts)
     by_asset: dict[str, list[KlineBar]] = defaultdict(list)
     for bar in bars:
         by_asset[bar.asset_id].append(bar)
@@ -111,6 +323,15 @@ def scan_trend_breakouts(
         asset_bars = sorted(by_asset[asset_id], key=lambda bar: bar.trade_date)
         closes = [bar.close for bar in asset_bars]
         amounts = [bar.amount for bar in asset_bars]
+        moving_averages = {
+            5: _moving_average_series(closes, 5),
+            10: _moving_average_series(closes, 10),
+            20: _moving_average_series(closes, 20),
+            30: _moving_average_series(closes, 30),
+            60: _moving_average_series(closes, 60),
+            120: _moving_average_series(closes, 120),
+        }
+        average_amount_20d = _moving_average_series(amounts, 20)
         for index, bar in enumerate(asset_bars):
             if active_policy.start_date is not None and bar.trade_date < active_policy.start_date:
                 continue
@@ -118,8 +339,12 @@ def scan_trend_breakouts(
                 bars=asset_bars,
                 closes=closes,
                 amounts=amounts,
+                moving_averages=moving_averages,
+                average_amount_20d=average_amount_20d,
                 index=index,
                 policy=active_policy,
+                weekly_contexts=weekly_contexts.get(asset_id, ()),
+                stock_context=stock_context_map.get((bar.asset_id, bar.trade_date)),
             )
             if metrics is not None:
                 results.append(metrics)
@@ -137,6 +362,7 @@ def summarize_breakout_scan(
             item.asset_id,
             {
                 "steady_uptrend_count": 0,
+                "pre_breakout_watch_count": 0,
                 "breakout_watch_count": 0,
                 "first_breakout_watch_date": None,
                 "latest_breakout_watch_date": None,
@@ -144,6 +370,8 @@ def summarize_breakout_scan(
         )
         if item.steady_uptrend:
             stock_summary["steady_uptrend_count"] = int(stock_summary["steady_uptrend_count"]) + 1
+        if item.pre_breakout_watch:
+            stock_summary["pre_breakout_watch_count"] = int(stock_summary["pre_breakout_watch_count"]) + 1
         if item.breakout_watch:
             stock_summary["breakout_watch_count"] = int(stock_summary["breakout_watch_count"]) + 1
             if stock_summary["first_breakout_watch_date"] is None:
@@ -156,30 +384,92 @@ def _metrics_for_index(
     bars: list[KlineBar],
     closes: list[float],
     amounts: list[float],
+    moving_averages: Mapping[int, list[float | None]],
+    average_amount_20d: list[float | None],
     index: int,
     policy: TrendBreakoutScanPolicy,
+    weekly_contexts: tuple[WeeklyTrendContext, ...],
+    stock_context: StockSignalContext | None,
 ) -> TrendBreakoutMetrics | None:
-    ma5 = _ma(closes, 5, index)
-    ma10 = _ma(closes, 10, index)
-    ma20 = _ma(closes, 20, index)
-    ma60 = _ma(closes, 60, index)
-    ma120 = _ma(closes, 120, index)
-    if None in (ma5, ma10, ma20, ma60, ma120):
+    ma5 = moving_averages[5][index]
+    ma10 = moving_averages[10][index]
+    ma20 = moving_averages[20][index]
+    ma30 = moving_averages[30][index]
+    ma60 = moving_averages[60][index]
+    ma120 = moving_averages[120][index]
+    if None in (ma5, ma10, ma20, ma30, ma60, ma120):
         return None
-    previous_ma20 = _ma(closes, 20, index - 20) if index >= 20 else None
+    previous_ma20 = moving_averages[20][index - 20] if index >= 20 else None
     max_drawdown_60d = _max_drawdown(closes, index, 60)
-    if previous_ma20 is None or max_drawdown_60d is None:
+    max_drawdown_120d = _max_drawdown(closes, index, 120)
+    if previous_ma20 is None or max_drawdown_60d is None or max_drawdown_120d is None:
         return None
 
     bar = bars[index]
-    amount_average_20d = _ma(amounts, 20, index)
+    amount_average_20d = average_amount_20d[index]
     if amount_average_20d is None or amount_average_20d == 0:
         return None
 
     ma20_slope_20d = ma20 / previous_ma20 - 1
     amount_ratio_20d = bar.amount / amount_average_20d
     convergence_5_10_20_pct = (max(ma5, ma10, ma20) - min(ma5, ma10, ma20)) / bar.close
-    close_new_high_60d_flag = bar.close >= max(closes[index - 59 : index + 1])
+    high_60d = max(closes[index - 59 : index + 1])
+    close_to_high_60d_pct = bar.close / high_60d - 1
+    ma20_deviation_pct = bar.close / ma20 - 1
+    ma30_deviation_pct = bar.close / ma30 - 1
+    ma30_hold_ratio_30d = _close_above_ma_ratio(closes, moving_averages[30], index, 30)
+    ma30_hold_ratio_60d = _close_above_ma_ratio(closes, moving_averages[30], index, 60)
+    ma30_hold_ratio_90d = _close_above_ma_ratio(closes, moving_averages[30], index, 90)
+    ma30_hold_ratio_120d = _close_above_ma_ratio(closes, moving_averages[30], index, 120)
+    ma60_hold_ratio_120d = _close_above_ma_ratio(closes, moving_averages[60], index, 120)
+    return_20d = bar.close / closes[index - 20] - 1
+    red_k_ratio_20d = _red_k_ratio(bars, index, 20)
+    green_k_ratio_20d = 1 - red_k_ratio_20d
+    long_shadow_ratio_20d = _long_shadow_ratio(bars, index, 20)
+    close_new_high_60d_flag = bar.close >= high_60d
+    weekly_context = _weekly_context_asof(weekly_contexts, bar.trade_date)
+    weekly_trend_pass = _weekly_trend_pass(weekly_context, policy)
+    trend_stability_pass = _trend_stability_pass(
+        close_new_high_60d_flag=close_new_high_60d_flag,
+        ma30_deviation_pct=ma30_deviation_pct,
+        ma30_hold_ratio_30d=ma30_hold_ratio_30d,
+        ma30_hold_ratio_60d=ma30_hold_ratio_60d,
+        ma30_hold_ratio_90d=ma30_hold_ratio_90d,
+        return_20d=return_20d,
+        policy=policy,
+    )
+    pre_breakout_sustained_pass = (
+        not policy.require_pre_breakout_sustained_ma30
+        or ma30_hold_ratio_90d >= policy.min_sustained_ma30_hold_ratio_90d
+    )
+    market_cap_liquidity_pass = _market_cap_liquidity_pass(
+        context=stock_context,
+        amount_average_20d=amount_average_20d,
+        policy=policy,
+    )
+    turnover_quality_pass = _turnover_quality_pass(stock_context, policy)
+    context_strength_pass = _context_strength_pass(stock_context, policy)
+    quality_failure_reasons = _quality_failure_reasons(
+        context=stock_context,
+        amount_average_20d=amount_average_20d,
+        trend_stability_pass=trend_stability_pass,
+        pre_breakout_sustained_pass=pre_breakout_sustained_pass,
+        market_cap_liquidity_pass=market_cap_liquidity_pass,
+        turnover_quality_pass=turnover_quality_pass,
+        context_strength_pass=context_strength_pass,
+        policy=policy,
+    )
+    close_above_ma30 = (not policy.require_close_above_ma30) or bar.close > ma30
+    daily_quality_pass = (
+        close_above_ma30
+        and red_k_ratio_20d >= policy.min_red_k_ratio_20d
+        and abs(max_drawdown_120d) <= policy.max_abs_drawdown_120d
+        and long_shadow_ratio_20d <= policy.max_long_shadow_ratio_20d
+        and trend_stability_pass
+        and market_cap_liquidity_pass
+        and turnover_quality_pass
+        and context_strength_pass
+    )
     steady_uptrend = (
         bar.close > ma20
         and bar.close > ma60
@@ -187,6 +477,8 @@ def _metrics_for_index(
         and ma60 > ma120
         and ma20_slope_20d > 0
         and abs(max_drawdown_60d) <= policy.max_abs_drawdown_60d
+        and daily_quality_pass
+        and weekly_trend_pass
     )
     convergence_ok = (
         policy.max_convergence_5_10_20_pct is None
@@ -198,6 +490,25 @@ def _metrics_for_index(
         and amount_ratio_20d >= policy.min_amount_ratio_20d
         and convergence_ok
     )
+    pre_breakout_watch = (
+        steady_uptrend
+        and not close_new_high_60d_flag
+        and pre_breakout_sustained_pass
+        and policy.min_close_to_high_60d_pct <= close_to_high_60d_pct <= policy.max_close_to_high_60d_pct
+        and amount_ratio_20d >= policy.min_pre_breakout_amount_ratio_20d
+        and ma20_deviation_pct <= policy.max_ma20_deviation_pct
+        and ma30_deviation_pct <= policy.max_ma30_deviation_pct
+    )
+    setup_score = _setup_score(
+        red_k_ratio_20d=red_k_ratio_20d,
+        long_shadow_ratio_20d=long_shadow_ratio_20d,
+        max_drawdown_60d=max_drawdown_60d,
+        amount_ratio_20d=amount_ratio_20d,
+        close_to_high_60d_pct=close_to_high_60d_pct,
+        ma20_deviation_pct=ma20_deviation_pct,
+        breakout_watch=breakout_watch,
+        pre_breakout_watch=pre_breakout_watch,
+    )
 
     return TrendBreakoutMetrics(
         asset_id=bar.asset_id,
@@ -206,30 +517,379 @@ def _metrics_for_index(
         ma5=ma5,
         ma10=ma10,
         ma20=ma20,
+        ma30=ma30,
         ma60=ma60,
         ma120=ma120,
         ma20_slope_20d=ma20_slope_20d,
         amount_ratio_20d=amount_ratio_20d,
         max_drawdown_60d=max_drawdown_60d,
+        max_drawdown_120d=max_drawdown_120d,
         convergence_5_10_20_pct=convergence_5_10_20_pct,
+        close_to_high_60d_pct=close_to_high_60d_pct,
+        ma20_deviation_pct=ma20_deviation_pct,
+        ma30_deviation_pct=ma30_deviation_pct,
+        ma30_hold_ratio_30d=ma30_hold_ratio_30d,
+        ma30_hold_ratio_60d=ma30_hold_ratio_60d,
+        ma30_hold_ratio_90d=ma30_hold_ratio_90d,
+        ma30_hold_ratio_120d=ma30_hold_ratio_120d,
+        ma60_hold_ratio_120d=ma60_hold_ratio_120d,
+        return_20d=return_20d,
+        red_k_ratio_20d=red_k_ratio_20d,
+        green_k_ratio_20d=green_k_ratio_20d,
+        long_shadow_ratio_20d=long_shadow_ratio_20d,
+        avg_amount_20d=amount_average_20d,
         close_new_high_60d_flag=close_new_high_60d_flag,
+        daily_quality_pass=daily_quality_pass,
+        trend_stability_pass=trend_stability_pass,
+        market_cap_liquidity_pass=market_cap_liquidity_pass,
+        turnover_quality_pass=turnover_quality_pass,
+        context_strength_pass=context_strength_pass,
+        weekly_asof_trade_date=weekly_context.asof_trade_date if weekly_context else None,
+        weekly_close=weekly_context.close if weekly_context else None,
+        weekly_ma5=weekly_context.ma5 if weekly_context else None,
+        weekly_ma10=weekly_context.ma10 if weekly_context else None,
+        weekly_ma20=weekly_context.ma20 if weekly_context else None,
+        weekly_ma20_slope_4w=weekly_context.ma20_slope_4w if weekly_context else None,
+        weekly_max_drawdown_26w=weekly_context.max_drawdown_26w if weekly_context else None,
+        weekly_trend_pass=weekly_trend_pass,
         steady_uptrend=steady_uptrend,
+        pre_breakout_watch=pre_breakout_watch,
         breakout_watch=breakout_watch,
+        setup_score=setup_score,
+        name=stock_context.name if stock_context else "",
+        industry=stock_context.industry if stock_context else "",
+        market=stock_context.market if stock_context else "",
+        list_status=stock_context.list_status if stock_context else "",
+        total_mv=stock_context.total_mv if stock_context else None,
+        turnover_rate=stock_context.turnover_rate if stock_context else None,
+        max_turnover_rate_20d=stock_context.max_turnover_rate_20d if stock_context else None,
+        avg_turnover_rate_20d=stock_context.avg_turnover_rate_20d if stock_context else None,
+        turnover_spike_ratio_20d=_turnover_spike_ratio(stock_context),
+        strong_industry_hit=stock_context.strong_industry_hit if stock_context else False,
+        strong_concept_hit=stock_context.strong_concept_hit if stock_context else False,
+        strong_industry_names=stock_context.strong_industry_names if stock_context else (),
+        strong_concept_names=stock_context.strong_concept_names if stock_context else (),
+        quality_failure_reasons=quality_failure_reasons,
     )
 
 
-def _ma(values: list[float], window: int, index: int) -> float | None:
-    if index < 0 or index + 1 < window:
+def select_candidates(
+    metrics: Iterable[TrendBreakoutMetrics],
+    mode: str = "breakout",
+    top_n_per_date: int | None = None,
+) -> tuple[TrendBreakoutMetrics, ...]:
+    """Select scan candidates by mode and optional daily Top N ranking."""
+
+    if mode not in {"breakout", "pre_breakout", "all"}:
+        raise ValueError(f"unsupported candidate mode: {mode}")
+    if mode == "breakout":
+        candidates = [item for item in metrics if item.breakout_watch]
+    elif mode == "pre_breakout":
+        candidates = [item for item in metrics if item.pre_breakout_watch]
+    else:
+        candidates = [item for item in metrics if item.breakout_watch or item.pre_breakout_watch]
+    if top_n_per_date is None:
+        candidates.sort(key=lambda item: (item.trade_date, item.asset_id))
+        return tuple(candidates)
+    candidates.sort(key=lambda item: (item.trade_date, -item.setup_score, item.asset_id))
+    by_date: dict[str, list[TrendBreakoutMetrics]] = defaultdict(list)
+    for candidate in candidates:
+        by_date[candidate.trade_date].append(candidate)
+    selected: list[TrendBreakoutMetrics] = []
+    for trade_date in sorted(by_date):
+        selected.extend(by_date[trade_date][:top_n_per_date])
+    return tuple(selected)
+
+
+def _build_weekly_contexts(
+    bars: Iterable[KlineBar],
+    policy: TrendBreakoutScanPolicy,
+) -> dict[str, tuple[WeeklyTrendContext, ...]]:
+    by_asset: dict[str, list[KlineBar]] = defaultdict(list)
+    for bar in bars:
+        by_asset[bar.asset_id].append(bar)
+
+    contexts_by_asset: dict[str, tuple[WeeklyTrendContext, ...]] = {}
+    for asset_id, asset_bars in by_asset.items():
+        sorted_bars = sorted(asset_bars, key=lambda bar: bar.trade_date)
+        closes = [bar.close for bar in sorted_bars]
+        contexts: list[WeeklyTrendContext] = []
+        for index, bar in enumerate(sorted_bars):
+            ma5 = _ma(closes, 5, index)
+            ma10 = _ma(closes, 10, index)
+            ma20 = _ma(closes, 20, index)
+            previous_ma20 = _ma(closes, 20, index - 4) if index >= 4 else None
+            max_drawdown_26w = _max_drawdown(closes, index, 26)
+            if None in (ma5, ma10, ma20, previous_ma20, max_drawdown_26w):
+                continue
+            ma20_slope_4w = ma20 / previous_ma20 - 1
+            ma20_deviation_ok = (
+                policy.max_weekly_ma20_deviation_pct is None
+                or bar.close / ma20 - 1 <= policy.max_weekly_ma20_deviation_pct
+            )
+            trend_pass = (
+                bar.close > ma20
+                and ma10 > ma20
+                and ma20_slope_4w > 0
+                and abs(max_drawdown_26w) <= policy.max_abs_weekly_drawdown_26w
+                and ma20_deviation_ok
+            )
+            contexts.append(
+                WeeklyTrendContext(
+                    asof_trade_date=bar.trade_date,
+                    close=bar.close,
+                    ma5=ma5,
+                    ma10=ma10,
+                    ma20=ma20,
+                    ma20_slope_4w=ma20_slope_4w,
+                    max_drawdown_26w=max_drawdown_26w,
+                    trend_pass=trend_pass,
+                )
+            )
+        contexts_by_asset[asset_id] = tuple(contexts)
+    return contexts_by_asset
+
+
+def _weekly_context_asof(
+    contexts: tuple[WeeklyTrendContext, ...],
+    trade_date: str,
+) -> WeeklyTrendContext | None:
+    if not contexts:
         return None
-    return sum(values[index - window + 1 : index + 1]) / window
+    dates = [context.asof_trade_date for context in contexts]
+    index = bisect_right(dates, trade_date) - 1
+    if index < 0:
+        return None
+    return contexts[index]
+
+
+def _weekly_trend_pass(
+    context: WeeklyTrendContext | None,
+    policy: TrendBreakoutScanPolicy,
+) -> bool:
+    if context is None:
+        return not policy.require_weekly_uptrend
+    return context.trend_pass
+
+
+def _trend_stability_pass(
+    *,
+    close_new_high_60d_flag: bool,
+    ma30_deviation_pct: float,
+    ma30_hold_ratio_30d: float,
+    ma30_hold_ratio_60d: float,
+    ma30_hold_ratio_90d: float,
+    return_20d: float,
+    policy: TrendBreakoutScanPolicy,
+) -> bool:
+    if ma30_deviation_pct > policy.max_ma30_deviation_pct:
+        return False
+    sustained = ma30_hold_ratio_90d >= policy.min_sustained_ma30_hold_ratio_90d
+    recent_repair = (
+        ma30_hold_ratio_30d >= policy.min_recent_ma30_hold_ratio_30d
+        and ma30_hold_ratio_60d >= policy.min_recent_ma30_hold_ratio_60d
+    )
+    base_breakout = (
+        close_new_high_60d_flag
+        and ma30_hold_ratio_60d >= policy.min_base_breakout_ma30_hold_ratio_60d
+        and return_20d >= policy.min_base_breakout_return_20d
+    )
+    return sustained or recent_repair or base_breakout
+
+
+def _market_cap_liquidity_pass(
+    *,
+    context: StockSignalContext | None,
+    amount_average_20d: float,
+    policy: TrendBreakoutScanPolicy,
+) -> bool:
+    if policy.require_normal_listing:
+        if context is None:
+            return False
+        if context.list_status and context.list_status != "L":
+            return False
+        if "ST" in context.name.upper():
+            return False
+    if policy.min_total_mv is not None:
+        if context is None or context.total_mv is None or context.total_mv < policy.min_total_mv:
+            return False
+    if policy.min_avg_amount_20d is not None and amount_average_20d < policy.min_avg_amount_20d:
+        return False
+    return True
+
+
+def _turnover_quality_pass(context: StockSignalContext | None, policy: TrendBreakoutScanPolicy) -> bool:
+    if policy.max_turnover_rate_20d is not None:
+        if context is None or context.max_turnover_rate_20d is None:
+            return False
+        if context.max_turnover_rate_20d > policy.max_turnover_rate_20d:
+            return False
+    if policy.max_turnover_spike_ratio_20d is not None:
+        spike_ratio = _turnover_spike_ratio(context)
+        if spike_ratio is None or spike_ratio > policy.max_turnover_spike_ratio_20d:
+            return False
+    return True
+
+
+def _context_strength_pass(context: StockSignalContext | None, policy: TrendBreakoutScanPolicy) -> bool:
+    if not policy.require_context_strength:
+        return True
+    if context is None:
+        return False
+    return context.strong_industry_hit or context.strong_concept_hit
+
+
+def _quality_failure_reasons(
+    *,
+    context: StockSignalContext | None,
+    amount_average_20d: float,
+    trend_stability_pass: bool,
+    pre_breakout_sustained_pass: bool,
+    market_cap_liquidity_pass: bool,
+    turnover_quality_pass: bool,
+    context_strength_pass: bool,
+    policy: TrendBreakoutScanPolicy,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if not trend_stability_pass:
+        reasons.append("trend_stability_failed")
+    if not pre_breakout_sustained_pass:
+        reasons.append("pre_breakout_ma30_sustained_failed")
+    if not market_cap_liquidity_pass:
+        if policy.require_normal_listing and context is not None and "ST" in context.name.upper():
+            reasons.append("st_or_abnormal_listing")
+        elif policy.min_total_mv is not None and (context is None or context.total_mv is None or context.total_mv < policy.min_total_mv):
+            reasons.append("total_mv_below_threshold")
+        elif policy.min_avg_amount_20d is not None and amount_average_20d < policy.min_avg_amount_20d:
+            reasons.append("avg_amount_20d_below_threshold")
+        else:
+            reasons.append("market_cap_liquidity_failed")
+    if not turnover_quality_pass:
+        reasons.append("turnover_quality_failed")
+    if not context_strength_pass:
+        reasons.append("industry_concept_strength_failed")
+    return tuple(reasons)
+
+
+def _turnover_spike_ratio(context: StockSignalContext | None) -> float | None:
+    if context is None or context.turnover_rate is None or context.avg_turnover_rate_20d in (None, 0):
+        return None
+    return context.turnover_rate / context.avg_turnover_rate_20d
+
+
+def _setup_score(
+    red_k_ratio_20d: float,
+    long_shadow_ratio_20d: float,
+    max_drawdown_60d: float,
+    amount_ratio_20d: float,
+    close_to_high_60d_pct: float,
+    ma20_deviation_pct: float,
+    breakout_watch: bool,
+    pre_breakout_watch: bool,
+) -> float:
+    if not breakout_watch and not pre_breakout_watch:
+        return 0.0
+    red_score = min(max(red_k_ratio_20d, 0.0), 1.0) * 25
+    shadow_score = (1 - min(max(long_shadow_ratio_20d, 0.0), 1.0)) * 20
+    drawdown_score = (1 - min(abs(max_drawdown_60d) / 0.40, 1.0)) * 20
+    volume_score = min(amount_ratio_20d / 2.5, 1.0) * 15
+    high_distance_score = (1 - min(abs(close_to_high_60d_pct) / 0.08, 1.0)) * 15
+    deviation_penalty = min(max(ma20_deviation_pct - 0.20, 0.0) / 0.30, 1.0) * 10
+    mode_bonus = 5 if pre_breakout_watch else 2
+    return round(red_score + shadow_score + drawdown_score + volume_score + high_distance_score + mode_bonus - deviation_penalty, 6)
+
+
+def _ma(values: list[float], window: int, index: int) -> float | None:
+    return moving_average_at(values, window, index)
 
 
 def _max_drawdown(values: list[float], index: int, window: int) -> float | None:
-    if index + 1 < window:
+    return rolling_max_drawdown_at(values, window, index)
+
+
+def _red_k_ratio(bars: list[KlineBar], index: int, window: int) -> float:
+    window_bars = bars[index - window + 1 : index + 1]
+    red_count = sum(1 for bar in window_bars if bar.close >= bar.open)
+    return red_count / len(window_bars)
+
+
+def _long_shadow_ratio(bars: list[KlineBar], index: int, window: int) -> float:
+    ratios: list[float] = []
+    for bar in bars[index - window + 1 : index + 1]:
+        candle_range = bar.high - bar.low
+        if candle_range <= 0:
+            ratios.append(0.0)
+            continue
+        body = abs(bar.close - bar.open)
+        shadow = max(candle_range - body, 0.0)
+        ratios.append(shadow / candle_range)
+    return sum(ratios) / len(ratios)
+
+
+def _moving_average_series(values: list[float], window: int) -> list[float | None]:
+    result: list[float | None] = [None] * len(values)
+    rolling_sum = 0.0
+    for index, value in enumerate(values):
+        rolling_sum += value
+        if index >= window:
+            rolling_sum -= values[index - window]
+        if index + 1 >= window:
+            result[index] = rolling_sum / window
+    return result
+
+
+def _close_above_ma_ratio(
+    closes: list[float],
+    ma_values: list[float | None],
+    index: int,
+    window: int,
+) -> float:
+    start = index - window + 1
+    if start < 0:
+        return 0.0
+    valid = 0
+    passed = 0
+    for current_index in range(start, index + 1):
+        ma_value = ma_values[current_index]
+        if ma_value is None:
+            continue
+        valid += 1
+        if closes[current_index] > ma_value:
+            passed += 1
+    if valid == 0:
+        return 0.0
+    return passed / valid
+
+
+def _context_mapping(
+    contexts: Iterable[StockSignalContext] | Mapping[tuple[str, str], StockSignalContext] | None,
+) -> Mapping[tuple[str, str], StockSignalContext]:
+    if contexts is None:
+        return {}
+    if isinstance(contexts, Mapping):
+        return contexts
+    return {(context.asset_id, context.trade_date): context for context in contexts}
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None:
         return None
-    current_peak = values[index - window + 1]
-    worst = 0.0
-    for value in values[index - window + 1 : index + 1]:
-        current_peak = max(current_peak, value)
-        worst = min(worst, value / current_peak - 1)
-    return worst
+    text = str(value).strip()
+    if not text or text.upper() == "NULL":
+        return None
+    return float(text)
+
+
+def _truthy(value: object) -> bool:
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+
+
+def _split_names(value: object) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    text = str(value).strip()
+    if not text or text.upper() == "NULL":
+        return ()
+    return tuple(part.strip() for part in text.replace(";", ",").split(",") if part.strip())

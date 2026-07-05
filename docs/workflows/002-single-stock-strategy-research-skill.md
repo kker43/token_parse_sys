@@ -92,6 +92,36 @@ configs/research_workflows/single_stock_strategy_research.example.json
 
 ## 4. L2/L3 建设判断
 
+### 4.0 因子复用优先
+
+workflow 在提出任何新 L2 primitive 或新基础指标前，必须先执行因子复用检查。
+
+检查顺序：
+
+```text
+1. 查找完全匹配的已有因子。
+2. 查找只有窗口不同的同类因子。
+3. 查找只有周期不同的同类因子。
+4. 查找可作为 research_only 阶段替代的近似因子。
+5. 只有确实无法复用时，才输出新的 BuildRequirement。
+```
+
+例子：
+
+```text
+weekly_max_drawdown_26w
+```
+
+不应直接建设为策略专属因子。它应优先复用已有 `max_drawdown_60d`、`max_drawdown_120d` 所属的滚动最大回撤口径族，只是把周期改成 weekly、窗口改成 26。
+
+如果上游还没有发布该窗口，workflow 应输出：
+
+```text
+状态：pending_upstream_reuse
+原因：已有相似滚动回撤口径，但缺 weekly 26w 窗口
+处理：研究态可临时计算，生产态等待上游同口径补齐
+```
+
 ### 4.1 L2 已存在
 
 当 `primitive_id` 已存在于 `PrimitiveRegistry`：

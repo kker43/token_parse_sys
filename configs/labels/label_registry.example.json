@@ -126,6 +126,7 @@
         {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
         {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
         {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"}
+        ,{"primitive_id": "risk.ma30_deviation_not_extreme", "version": "candidate_v1", "required": true, "alias": "ma30_not_overextended"}
       ],
       "logic": {
         "all": [
@@ -134,7 +135,8 @@
           "ma20_above_ma60 == true",
           "ma60_above_ma120 == true",
           "ma20_rising == true",
-          "drawdown_controlled == true"
+          "drawdown_controlled == true",
+          "ma30_not_overextended == true"
         ]
       },
       "output_fields": {
@@ -151,6 +153,39 @@
       "notes": "稳健趋势股标签，只表达股票走势质量，不表达买入动作。"
     },
     {
+      "label_id": "technical_context.weekly_uptrend_context",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "technical_context",
+      "primitive_refs": [
+        {"primitive_id": "weekly_context.close_above_weekly_ma20", "version": "candidate_v1", "required": true, "alias": "weekly_close_above_ma20"},
+        {"primitive_id": "weekly_context.weekly_ma10_above_ma20", "version": "candidate_v1", "required": true, "alias": "weekly_ma10_above_ma20"},
+        {"primitive_id": "weekly_context.weekly_ma20_rising_4w", "version": "candidate_v1", "required": true, "alias": "weekly_ma20_rising"},
+        {"primitive_id": "weekly_context.weekly_drawdown_26w_controlled", "version": "candidate_v1", "required": true, "alias": "weekly_drawdown_controlled"},
+        {"primitive_id": "weekly_context.weekly_trend_context_pass", "version": "candidate_v1", "required": true, "alias": "weekly_trend_pass"}
+      ],
+      "logic": {
+        "all": [
+          "weekly_close_above_ma20 == true",
+          "weekly_ma10_above_ma20 == true",
+          "weekly_ma20_rising == true",
+          "weekly_drawdown_controlled == true",
+          "weekly_trend_pass == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "周线 K 线和周线趋势指标可按 signal_date as-of 对齐",
+      "evidence": [
+        "用户样本中的周级别趋势背景截图"
+      ],
+      "promotion_policy": "需要结合日线子策略回测验证后才能升级为 approved",
+      "owner": "stock_lobster",
+      "notes": "周级别趋势背景标签，只做日线信号前置过滤；as-of 规则为取 period_end_date <= signal_date 的最新周线。"
+    },
+    {
       "label_id": "technical_pattern.uptrend_consolidation_breakout",
       "version": "candidate_v1",
       "status": "candidate",
@@ -162,6 +197,7 @@
         {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
         {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
         {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"},
+        {"primitive_id": "weekly_context.weekly_trend_context_pass", "version": "candidate_v1", "required": true, "alias": "weekly_context"},
         {"primitive_id": "structure.ma_5_10_20_converged", "version": "v1", "required": true, "alias": "ma_converged"},
         {"primitive_id": "level_breakout.close_new_high_60d", "version": "v1", "required": true, "alias": "new_high"}
       ],
@@ -173,6 +209,7 @@
           "ma60_above_ma120 == true",
           "ma20_rising == true",
           "drawdown_controlled == true",
+          "weekly_context == true",
           "ma_converged == true",
           "new_high == true"
         ]
@@ -202,6 +239,7 @@
         {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
         {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
         {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"},
+        {"primitive_id": "weekly_context.weekly_trend_context_pass", "version": "candidate_v1", "required": true, "alias": "weekly_context"},
         {"primitive_id": "level_breakout.close_new_high_60d", "version": "v1", "required": true, "alias": "new_high"}
       ],
       "logic": {
@@ -212,6 +250,7 @@
           "ma60_above_ma120 == true",
           "ma20_rising == true",
           "drawdown_controlled == true",
+          "weekly_context == true",
           "new_high == true"
         ]
       },
@@ -229,6 +268,85 @@
       "notes": "稳健趋势股的新高突破标签，不强制要求均线收敛。"
     },
     {
+      "label_id": "technical_pattern.steady_uptrend_pre_breakout_watch",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "technical_pattern",
+      "primitive_refs": [
+        {"primitive_id": "moving_average.close_above_ma20", "version": "v1", "required": true, "alias": "above_ma20"},
+        {"primitive_id": "moving_average.close_above_ma30", "version": "candidate_v1", "required": true, "alias": "above_ma30"},
+        {"primitive_id": "moving_average.close_above_ma60", "version": "candidate_v1", "required": true, "alias": "above_ma60"},
+        {"primitive_id": "moving_average.ma20_above_ma60", "version": "candidate_v1", "required": true, "alias": "ma20_above_ma60"},
+        {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
+        {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
+        {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown60_controlled"},
+        {"primitive_id": "risk.max_drawdown_120d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown120_controlled"},
+        {"primitive_id": "candlestick.red_k_ratio_20d_healthy", "version": "candidate_v1", "required": true, "alias": "red_k_healthy"},
+        {"primitive_id": "candlestick.long_shadow_ratio_20d_controlled", "version": "candidate_v1", "required": true, "alias": "shadow_controlled"},
+        {"primitive_id": "weekly_context.weekly_trend_context_pass", "version": "candidate_v1", "required": true, "alias": "weekly_context"},
+        {"primitive_id": "level_breakout.close_near_high_60d", "version": "candidate_v1", "required": true, "alias": "near_high"},
+        {"primitive_id": "risk.ma20_deviation_not_extreme", "version": "candidate_v1", "required": true, "alias": "ma20_not_overextended"},
+        {"primitive_id": "risk.ma30_deviation_not_extreme", "version": "candidate_v1", "required": true, "alias": "ma30_not_overextended"},
+        {"primitive_id": "moving_average.ma30_hold_ratio_90d_sustained", "version": "candidate_v1", "required": true, "alias": "ma30_sustained"}
+      ],
+      "logic": {
+        "all": [
+          "above_ma20 == true",
+          "above_ma30 == true",
+          "above_ma60 == true",
+          "ma20_above_ma60 == true",
+          "ma60_above_ma120 == true",
+          "ma20_rising == true",
+          "drawdown60_controlled == true",
+          "drawdown120_controlled == true",
+          "red_k_healthy == true",
+          "shadow_controlled == true",
+          "weekly_context == true",
+          "near_high == true",
+          "ma20_not_overextended == true",
+          "ma30_not_overextended == true",
+          "ma30_sustained == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean",
+        "score": "numeric"
+      },
+      "valid_when": "周线背景、日线稳健趋势、接近前高和偏离控制类 L2 原语可计算",
+      "evidence": [
+        "688017.SH 绿的谐波日线接近前高样本",
+        "002384.SZ 东山精密 20260226 长期盘整后启动样本",
+        "600105.SH 永鼎股份正反样本对照"
+      ],
+      "promotion_policy": "需要少量候选池回测、持续跟踪和阈值校准后才能升级为 L4 测试跟踪策略条件",
+      "owner": "stock_lobster",
+      "notes": "稳健上升趋势股的预突破关注标签，目标是每日少量高质量观察池，而不是确认突破后的广泛召回。"
+    },
+    {
+      "label_id": "context.strong_industry_or_concept",
+      "version": "candidate_v1",
+      "status": "candidate",
+      "category": "context",
+      "primitive_refs": [
+        {"primitive_id": "context.industry_or_concept_strength_hit", "version": "candidate_v1", "required": true, "alias": "industry_or_concept_hit"}
+      ],
+      "logic": {
+        "all": [
+          "industry_or_concept_hit == true"
+        ]
+      },
+      "output_fields": {
+        "matched": "boolean"
+      },
+      "valid_when": "行业/概念强度上下文已按 signal_date 生成",
+      "evidence": [
+        "用户确认：属于强行业或者强概念任一命中即可通过过滤。"
+      ],
+      "promotion_policy": "需要在每周候选池复盘中观察行业/概念过滤对召回数量和胜率的影响。",
+      "owner": "stock_lobster",
+      "notes": "上下文过滤标签，只表达个股是否处于强行业/强概念环境，不表达买入动作。"
+    },
+    {
       "label_id": "composite_setup.steady_uptrend_breakout_watch",
       "version": "candidate_v1",
       "status": "candidate",
@@ -240,6 +358,8 @@
         {"primitive_id": "moving_average.ma60_above_ma120", "version": "candidate_v1", "required": true, "alias": "ma60_above_ma120"},
         {"primitive_id": "trend.ma20_rising_20d", "version": "candidate_v1", "required": true, "alias": "ma20_rising"},
         {"primitive_id": "risk.max_drawdown_60d_controlled", "version": "candidate_v1", "required": true, "alias": "drawdown_controlled"},
+        {"primitive_id": "weekly_context.weekly_trend_context_pass", "version": "candidate_v1", "required": true, "alias": "weekly_context"},
+        {"primitive_id": "context.industry_or_concept_strength_hit", "version": "candidate_v1", "required": true, "alias": "context_strength"},
         {"primitive_id": "level_breakout.close_new_high_60d", "version": "v1", "required": true, "alias": "new_high"},
         {"primitive_id": "volume_liquidity.amount_ratio_20d_high", "version": "v1", "required": true, "alias": "volume_high"}
       ],
@@ -251,6 +371,8 @@
           "ma60_above_ma120 == true",
           "ma20_rising == true",
           "drawdown_controlled == true",
+          "weekly_context == true",
+          "context_strength == true",
           "new_high == true",
           "volume_high == true"
         ]

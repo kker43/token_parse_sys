@@ -1,18 +1,14 @@
-# Standard 001: System Structure and Model Guidance
+# Standard 001：系统结构和模型指导
 
-## Purpose
+## 目的
 
-This standard defines the target project structure, workflow boundaries, tool
-boundaries, and model-selection rules for Stock Lobster.
+本标准定义 Stock Lobster 的目标项目结构、工作流边界、工具边界和模型选择规则。
 
-Future Codex or GPT sessions should read this document before implementing
-features that touch project structure, workflows, research production, strategy
-production, or recurring jobs.
+后续 Codex 或 GPT 会话在实现涉及项目结构、工作流、研究生产、策略生产或例行任务的功能前，应先阅读本文档。
 
-## Core Thesis
+## 核心判断
 
-Stock Lobster should be built as one large system with separate bounded
-contexts:
+Stock Lobster 应构建为一个大型系统，但内部按独立有界上下文拆分：
 
 ```text
 data_foundation
@@ -23,14 +19,11 @@ data_foundation
 -> skills
 ```
 
-The system should not become one flat package where strategy code reads
-collector internals. The larger project may contain the data foundation, but
-Stock Lobster must consume factual data through contracts and registered
-assets.
+系统不应变成一个扁平包，让策略代码直接读取采集器内部实现。更大的项目可以包含数据基础能力，但 Stock Lobster 必须通过契约和已注册资产来消费事实数据。
 
-## Main Production Chain
+## 主生产链路
 
-The main chain is:
+主链路为：
 
 ```text
 Factual Data
@@ -44,24 +37,24 @@ Factual Data
 -> Routine Optimization
 ```
 
-Layer mapping:
+层级映射：
 
-| Chain step | Owner |
+| 链路步骤 | 所有者 |
 | --- | --- |
-| factual data production | `data_foundation` |
-| field schema and asset contract | `shared_contracts` and L0 |
-| analysis snapshot | L1 |
-| sample research and experience candidates | `stock_lobster.research` |
-| approved primitives | L2 |
-| approved labels and label snapshots | L3 |
-| strategy composition | L4 |
-| formal signals | L5 |
-| formal backtests | L6 |
-| observation and optimization | `observation` or `app` workflow area |
+| 事实数据生产 | `data_foundation` |
+| 字段 schema 和资产契约 | `shared_contracts` 和 L0 |
+| 分析快照 | L1 |
+| 样本研究和经验候选 | `stock_lobster.research` |
+| 已批准原语 | L2 |
+| 已批准标签和标签快照 | L3 |
+| 策略组合 | L4 |
+| 正式信号 | L5 |
+| 正式回测 | L6 |
+| 观察和优化 | `observation` 或 `app` 工作流区域 |
 
-## Target Large Project Layout
+## 大型项目目标布局
 
-If the repository evolves into a large project, use this shape:
+如果仓库演进为大型项目，使用以下形态：
 
 ```text
 token_parse_sys/
@@ -126,125 +119,118 @@ token_parse_sys/
     data_contracts/
 ```
 
-The current repository can evolve toward this structure gradually. Do not move
-files just to match the target shape unless the next implementation step needs
-that boundary.
+当前仓库可以逐步朝该结构演进。除非下一步实现确实需要该边界，否则不要为了匹配目标形态而移动文件。
 
-## Bounded Context Rules
+## 有界上下文规则
 
-### `data_foundation`
+### `data_foundation`（数据基础）
 
-Owns factual data production.
+拥有事实数据生产。
 
-Allowed outputs:
+允许输出：
 
-- raw and normalized market data
-- adjusted prices
-- volume and amount facts
-- moving averages
-- volatility and ATR
-- interval high/low statistics
-- stock, industry, concept, and calendar metadata
-- data quality status
-- exported `DataAsset` catalog
+- 原始和标准化市场数据。
+- 复权价格。
+- 成交量和成交额事实。
+- 移动平均。
+- 波动率和 ATR。
+- 区间高低点统计。
+- 股票、行业、概念和交易日历元数据。
+- 数据质量状态。
+- 已导出的 `DataAsset` 目录。
 
-Not allowed:
+不允许输出：
 
-- strategy meanings
-- buy/sell signals
-- approved primitives
-- approved labels
-- production strategy decisions
+- 策略含义。
+- 买入/卖出信号。
+- 已批准原语。
+- 已批准标签。
+- 生产策略决策。
 
-### `shared/contracts`
+### `shared/contracts`（共享契约）
 
-Owns cross-context contracts.
+拥有跨上下文契约。
 
-Examples:
+示例：
 
-- field schema
-- asset identifiers
-- date and symbol conventions
-- quality status vocabulary
-- version and run id conventions
+- 字段 schema。
+- 资产标识符。
+- 日期和证券代码约定。
+- 质量状态词汇。
+- 版本和 run id 约定。
 
-Contracts must be stable enough that Stock Lobster can reproduce historical
-analysis when upstream production code changes.
+契约必须足够稳定，使 Stock Lobster 能在上游生产代码变化后仍可复现历史分析。
 
-### `stock_lobster`
+### `stock_lobster`（策略系统）
 
-Owns experience data, strategy semantics, signal generation, backtesting, and
-observation.
+拥有经验数据、策略语义、信号生成、回测和观察。
 
-Stock Lobster may create:
+Stock Lobster 可以创建：
 
 - `PatternCase`
 - `FactorObservation`
 - `PrimitiveCandidate`
-- approved `PrimitiveDefinition`
+- 已批准的 `PrimitiveDefinition`
 - `LabelCandidate`
-- approved `LabelDefinition`
+- 已批准的 `LabelDefinition`
 - `LabelSnapshot`
 - `StrategyCandidate`
-- approved `StrategyDSL`
+- 已批准的 `StrategyDSL`
 - `StrategySignal`
 - `BacktestResult`
 - `ApprovalDecision`
 - `ObservationRecord`
 - `ReviewFinding`
 
-Stock Lobster must not create canonical factual data.
+Stock Lobster 不得创建权威事实数据。
 
-### `workflows`
+### `workflows`（工作流）
 
-Owns executable process composition.
+拥有可执行流程编排。
 
-Workflows call public APIs from bounded contexts. They must not hide business
-logic that belongs in layer packages or registries.
+工作流调用有界上下文的公开 API。不得把应该放在层级包或 registry 中的业务逻辑藏进工作流。
 
-### `tools`
+### `tools`（工具）
 
-Owns reusable callable capabilities.
+拥有可复用调用能力。
 
-Tools should be thin wrappers around stable application services. They should
-not become the source of strategy truth.
+工具应是稳定应用服务的薄包装。它们不应成为策略事实来源。
 
-### `skills`
+### `skills`（技能）
 
-Own agent playbooks.
+拥有 Agent playbook。
 
-Skills describe how a Codex/GPT session should perform a repeatable workflow.
-They should not contain production business logic.
+Skill 描述 Codex/GPT 会话应该如何执行可重复工作流。它们不应包含生产业务逻辑。
 
-## Workflow Split
+## 工作流拆分
 
-Use separate workflows. Do not compress everything into one giant workflow.
+使用独立工作流。不要把所有事情压成一个巨大工作流。
 
-### W1 Factual Data Production
+### W1 事实数据生产
 
 ```text
-Source
--> Ingestion
--> Normalization
--> Indicator Production
--> Quality Check
--> DataAsset Catalog Export
+数据源
+-> 采集
+-> 标准化
+-> 指标生产
+-> 质量检查
+-> DataAsset 目录导出
 ```
 
-Output: factual data tables/files and `DataAsset` contracts.
+输出：事实数据表/文件和 `DataAsset` 契约。
 
-### W2 Snapshot Production
+### W2 快照生产
 
 ```text
 DataAsset
--> Query Contract
+-> 查询契约
 -> AnalysisSnapshot
--> Snapshot Dependency Record
+-> 快照依赖记录
 ```
 
-Output: reproducible L1 snapshots.
+输出：可复现的 L1 快照。
 
-### W3 Pattern Research to Experience Production
+### W3 从形态研究到经验生产
 
 ```text
 PatternCase
@@ -258,12 +244,12 @@ PatternCase
 -> RegisteredArtifact or ScheduledProduction
 ```
 
-Output: approved or archived experience artifacts.
+输出：已批准或已归档的经验 artifact。
 
-### W4 Strategy Construction
+### W4 策略构建
 
 ```text
-Approved Label Fields
+已批准标签字段
 -> CandidatePoolPolicy
 -> StagePipeline
 -> StrategyCandidate
@@ -271,39 +257,39 @@ Approved Label Fields
 -> ApprovalDecision
 ```
 
-Output: versioned L4 strategy definitions.
+输出：版本化 L4 策略定义。
 
-### W5 Backtest Evaluation
+### W5 回测评估
 
 ```text
 StrategyDSL
 -> EvaluationProfile
--> Historical Signal Replay
+-> 历史信号重放
 -> BacktestResult
 -> FailureCase
 -> ReviewFinding
 ```
 
-Output: formal L6 evidence.
+输出：正式 L6 证据。
 
-### W6 Routine Optimization
+### W6 例行优化
 
 ```text
-Scheduled Label Production
--> Approved Strategy Run
--> Signal Generation
--> Observation Update
--> Periodic Review
--> Optimization Candidate
+定时标签生产
+-> 已批准策略运行
+-> 信号生成
+-> 观察更新
+-> 周期复盘
+-> 优化候选
 ```
 
-Output: observation records and new candidate versions.
+输出：观察记录和新的候选版本。
 
-## Skill Strategy
+## Skill 策略
 
-Do not build one huge skill for the whole system.
+不要为整个系统构建一个巨大 skill。
 
-Use one thin router skill plus focused workflow skills:
+使用一个轻量路由 skill 加上聚焦的工作流 skill：
 
 ```text
 stock-lobster-router
@@ -315,24 +301,24 @@ stock-lobster-routine-optimization
 stock-lobster-architecture-review
 ```
 
-The router skill should only decide which workflow skill applies.
+路由 skill 只负责判断适用哪个工作流 skill。
 
-Each workflow skill should specify:
+每个工作流 skill 应说明：
 
-- when to use it
-- files and docs to read first
-- allowed file scopes
-- required tools or CLI commands
-- required artifacts
-- approval gates
-- validation commands
-- session closeout format
+- 何时使用。
+- 需要先读哪些文件和文档。
+- 允许的文件范围。
+- 必需工具或 CLI 命令。
+- 必需 artifact。
+- 审批门。
+- 验证命令。
+- 会话收尾格式。
 
-## Tool Strategy
+## 工具策略
 
-Build tools as small reusable capabilities, not as hidden strategy engines.
+将工具构建为小型可复用能力，不要做成隐藏策略引擎。
 
-Recommended tool groups:
+推荐工具组：
 
 ```text
 DataAssetTool
@@ -349,38 +335,38 @@ ScheduleTool
 ObservationReviewTool
 ```
 
-Tool rules:
+工具规则：
 
-- Tools read and write through public application services.
-- Tools preserve version, provenance, and run id.
-- Tools must not silently approve candidates.
-- Tools must not create factual data inside Stock Lobster.
-- Tools must make their input and output artifacts inspectable.
+- 工具通过公开应用服务读写。
+- 工具保留版本、来源和 run id。
+- 工具不得静默批准候选项。
+- 工具不得在 Stock Lobster 内部创建事实数据。
+- 工具必须让输入和输出 artifact 可检查。
 
-## Model Selection Standard
+## 模型选择标准
 
-Coding can switch models. Use the model based on risk, ambiguity, and scope.
+编码可以切换模型。根据风险、模糊度和范围选择模型。
 
-| Model | Use for | Avoid for |
+| 模型 | 适合 | 避免用于 |
 | --- | --- | --- |
-| GPT-5.5 | architecture, boundaries, schema design, difficult multi-layer code, DSL, backtest logic, final review | trivial scans |
-| GPT-5.4 | routine implementation, tests, CLI, config readers, stable layer work | major ambiguous architecture decisions |
-| GPT-5.4-Mini | repository scans, table/catalog discovery, summaries, small config edits, repetitive tests | final strategy semantics or complex refactors |
-| GPT-5.3-Codex-Spark | quick questions, tiny local edits, fast iteration on one narrow issue | durable architecture, large changes, production semantics |
+| GPT-5.5 | 架构、边界、schema 设计、困难的多层代码、DSL、回测逻辑、最终审阅 | 琐碎扫描 |
+| GPT-5.4 | 常规实现、测试、CLI、配置读取器、稳定层级工作 | 重大且模糊的架构决策 |
+| GPT-5.4-Mini | 仓库扫描、表/目录发现、摘要、小型配置编辑、重复测试 | 最终策略语义或复杂重构 |
+| GPT-5.3-Codex-Spark | 快速问题、极小本地编辑、单个窄问题的快速迭代 | 持久架构、大型变更、生产语义 |
 
-Default rule:
+默认规则：
 
 ```text
-Design with GPT-5.5.
-Implement stable modules with GPT-5.4.
-Scan and draft with GPT-5.4-Mini.
-Use Codex-Spark only for fast small loops.
-Review important changes with GPT-5.5.
+用 GPT-5.5 做设计。
+用 GPT-5.4 实现稳定模块。
+用 GPT-5.4-Mini 扫描和起草。
+只在快速小循环中使用 Codex-Spark。
+用 GPT-5.5 审阅重要变更。
 ```
 
-## Model Handoff Rules
+## 模型交接规则
 
-When switching models, include a handoff note:
+切换模型时，包含交接说明：
 
 ```text
 Goal:
@@ -392,50 +378,48 @@ Validation:
 Open questions:
 ```
 
-For implementation sessions, always include:
+实现会话始终包含：
 
-- target workflow
-- layer or bounded context
-- exact allowed directories
-- tests to run
-- approval gates
+- 目标工作流。
+- 层级或有界上下文。
+- 精确允许目录。
+- 要运行的测试。
+- 审批门。
 
-## Implementation Order
+## 实现顺序
 
-Recommended order:
+推荐顺序：
 
-1. Keep the current planning baseline and import-boundary tests.
-2. Add `shared/contracts` or equivalent contract models only when needed.
-3. Build first L0 `DataAsset` catalog from existing factual tables.
-4. Build first L1 `AnalysisSnapshot`.
-5. Add `research/` workflow objects for pattern sample analysis.
-6. Use one pattern family to draft primitive and label candidates.
-7. Approve one tiny primitive and one tiny label.
-8. Build one candidate `StrategyDSL`.
-9. Run one formal backtest.
-10. Add observation and routine optimization only after the first strategy loop
-    is reproducible.
+1. 保留当前规划基线和导入边界测试。
+2. 只在需要时添加 `shared/contracts` 或等价契约模型。
+3. 从现有事实表构建第一版 L0 `DataAsset` 目录。
+4. 构建第一版 L1 `AnalysisSnapshot`。
+5. 添加 `research/` 工作流对象，用于形态样本分析。
+6. 用一个形态家族起草原语和标签候选。
+7. 批准一个很小的原语和一个很小的标签。
+8. 构建一个候选 `StrategyDSL`。
+9. 运行一次正式回测。
+10. 在第一个策略闭环可复现后，再添加观察和例行优化。
 
-## What Future Models Must Not Do
+## 后续模型不得做的事
 
-- Do not move factual production logic into L2-L6.
-- Do not let strategy DSL read raw prices directly.
-- Do not let `data_foundation` emit buy/sell semantics.
-- Do not approve candidates automatically.
-- Do not bury production logic in a skill.
-- Do not put core business rules only in a tool wrapper.
-- Do not add broad abstractions before one end-to-end pattern case exists.
+- 不要把事实生产逻辑移入 L2-L6。
+- 不要让策略 DSL 直接读取原始价格。
+- 不要让 `data_foundation` 输出买入/卖出语义。
+- 不要自动批准候选项。
+- 不要把生产逻辑埋在 skill 中。
+- 不要把核心业务规则只放在工具包装器里。
+- 在出现一个端到端形态案例前，不要添加宽泛抽象。
 
-## Minimum Done Criteria for New Code
+## 新代码的最低完成标准
 
-Any new production-facing code must answer:
+任何新的面向生产代码都必须回答：
 
-- Which bounded context owns it?
-- Which workflow uses it?
-- Which layer or registry does it belong to?
-- Which artifact version does it produce or consume?
-- Which tests prove it does not violate import boundaries?
-- Which user approval is required before production use?
+- 它由哪个有界上下文拥有？
+- 哪个工作流使用它？
+- 它属于哪个层或 registry？
+- 它生产或消费哪个 artifact 版本？
+- 哪些测试证明它没有违反导入边界？
+- 投入生产前需要哪种用户审批？
 
-If these questions cannot be answered, keep the work as research evidence or a
-candidate artifact instead of registering it as production behavior.
+如果无法回答这些问题，应先把工作保留为研究证据或候选 artifact，而不是注册为生产行为。

@@ -197,20 +197,28 @@ class IndividualStockStrategyResearchWorkflowTest(unittest.TestCase):
                 "pub_stock_daily_kline.amount": 67030093972.5,
                 "pub_stock_daily_indicator.1.indicator_name": "ma20",
                 "pub_stock_daily_indicator.1.indicator_value": 140.0,
-                "pub_stock_daily_indicator.2.indicator_name": "ma60",
-                "pub_stock_daily_indicator.2.indicator_value": 103.192,
-                "pub_stock_daily_indicator.3.indicator_name": "ma120",
-                "pub_stock_daily_indicator.3.indicator_value": 70.242,
-                "pub_stock_daily_indicator.4.indicator_name": "ma20_slope_20d",
-                "pub_stock_daily_indicator.4.indicator_value": 0.15,
-                "pub_stock_daily_indicator.5.indicator_name": "max_drawdown_60d",
-                "pub_stock_daily_indicator.5.indicator_value": -0.18,
-                "pub_stock_daily_indicator.6.indicator_name": "convergence_5_10_20_pct",
-                "pub_stock_daily_indicator.6.indicator_value": 0.02,
-                "pub_stock_daily_indicator.7.indicator_name": "close_new_high_60d_flag",
-                "pub_stock_daily_indicator.7.indicator_value": 1,
-                "pub_stock_daily_indicator.8.indicator_name": "amount_ratio_20d",
-                "pub_stock_daily_indicator.8.indicator_value": 1.8,
+                "pub_stock_daily_indicator.2.indicator_name": "ma30",
+                "pub_stock_daily_indicator.2.indicator_value": 125.0,
+                "pub_stock_daily_indicator.3.indicator_name": "ma60",
+                "pub_stock_daily_indicator.3.indicator_value": 103.192,
+                "pub_stock_daily_indicator.4.indicator_name": "ma120",
+                "pub_stock_daily_indicator.4.indicator_value": 70.242,
+                "pub_stock_daily_indicator.5.indicator_name": "ma20_slope_20d",
+                "pub_stock_daily_indicator.5.indicator_value": 0.15,
+                "pub_stock_daily_indicator.6.indicator_name": "max_drawdown_60d",
+                "pub_stock_daily_indicator.6.indicator_value": -0.18,
+                "pub_stock_daily_indicator.7.indicator_name": "max_drawdown_120d",
+                "pub_stock_daily_indicator.7.indicator_value": -0.25,
+                "pub_stock_daily_indicator.8.indicator_name": "convergence_5_10_20_pct",
+                "pub_stock_daily_indicator.8.indicator_value": 0.02,
+                "pub_stock_daily_indicator.9.indicator_name": "close_new_high_60d_flag",
+                "pub_stock_daily_indicator.9.indicator_value": 1,
+                "pub_stock_daily_indicator.10.indicator_name": "amount_ratio_20d",
+                "pub_stock_daily_indicator.10.indicator_value": 1.8,
+                "pub_stock_daily_indicator.11.indicator_name": "red_k_ratio_20d",
+                "pub_stock_daily_indicator.11.indicator_value": 0.65,
+                "pub_stock_daily_indicator.12.indicator_name": "long_shadow_ratio_20d",
+                "pub_stock_daily_indicator.12.indicator_value": 0.30,
             },
         )
 
@@ -230,6 +238,13 @@ class IndividualStockStrategyResearchWorkflowTest(unittest.TestCase):
                         proposed_logic="close > ma20",
                         reason="确认价格在短中期均线上方。",
                         required_features=("pub_stock_daily_kline.close", "indicator:ma20"),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="moving_average.close_above_ma30",
+                        category="moving_average",
+                        proposed_logic="close > ma30",
+                        reason="确认价格没有跌破 MA30。",
+                        required_features=("pub_stock_daily_kline.close", "indicator:ma30"),
                     ),
                     PrimitiveHypothesis(
                         primitive_id="moving_average.close_above_ma60",
@@ -266,6 +281,27 @@ class IndividualStockStrategyResearchWorkflowTest(unittest.TestCase):
                         reason="确认趋势推进相对稳健。",
                         required_features=("indicator:max_drawdown_60d",),
                     ),
+                    PrimitiveHypothesis(
+                        primitive_id="risk.max_drawdown_120d_controlled",
+                        category="risk",
+                        proposed_logic="abs(max_drawdown_120d) <= 0.55",
+                        reason="确认历史回撤不过大。",
+                        required_features=("indicator:max_drawdown_120d",),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="candlestick.red_k_ratio_20d_healthy",
+                        category="candlestick",
+                        proposed_logic="red_k_ratio_20d >= 0.45",
+                        reason="确认红绿比健康。",
+                        required_features=("indicator:red_k_ratio_20d",),
+                    ),
+                    PrimitiveHypothesis(
+                        primitive_id="candlestick.long_shadow_ratio_20d_controlled",
+                        category="candlestick",
+                        proposed_logic="long_shadow_ratio_20d <= 0.65",
+                        reason="确认影线噪声可控。",
+                        required_features=("indicator:long_shadow_ratio_20d",),
+                    ),
                 ),
                 label_hypotheses=(
                     LabelHypothesis(
@@ -273,11 +309,15 @@ class IndividualStockStrategyResearchWorkflowTest(unittest.TestCase):
                         category="technical_pattern",
                         primitive_ids=(
                             "moving_average.close_above_ma20",
+                            "moving_average.close_above_ma30",
                             "moving_average.close_above_ma60",
                             "moving_average.ma20_above_ma60",
                             "moving_average.ma60_above_ma120",
                             "trend.ma20_rising_20d",
                             "risk.max_drawdown_60d_controlled",
+                            "risk.max_drawdown_120d_controlled",
+                            "candlestick.red_k_ratio_20d_healthy",
+                            "candlestick.long_shadow_ratio_20d_controlled",
                         ),
                         proposed_logic="all steady trend primitives are true",
                         reason="沉淀稳健趋势股标签。",
@@ -288,7 +328,7 @@ class IndividualStockStrategyResearchWorkflowTest(unittest.TestCase):
             )
         )
 
-        self.assertEqual(6, len(result.primitive_assessments))
+        self.assertEqual(10, len(result.primitive_assessments))
         self.assertFalse(result.experience_build_plan.has_gaps)
         self.assertTrue(result.label_assessments[0].matched)
         self.assertEqual("draft", result.strategy.status)

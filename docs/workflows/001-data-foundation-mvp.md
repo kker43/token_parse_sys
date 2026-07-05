@@ -1,49 +1,47 @@
-# Workflow 001: Data Foundation MVP
+# Workflow 001：数据基础 MVP
 
-## Purpose
+## 目的
 
-Define the first executable slice for bringing basic factual data capability
-into `token_parse_sys`.
+定义把基础事实数据能力接入 `token_parse_sys` 的第一段可执行切片。
 
-This workflow covers:
+本工作流覆盖：
 
-- external factual data contracts
-- basic data product interfaces
-- routine data production entrypoints
-- routine quality monitoring
-- Stock Lobster L0 consumption boundaries
+- 外部事实数据契约。
+- 基础数据产品接口。
+- 例行数据生产入口。
+- 例行质量监控。
+- Stock Lobster L0 消费边界。
 
-It does not cover:
+本工作流不覆盖：
 
-- pattern research
-- primitives
-- labels
-- strategy DSL
-- signal generation
-- backtest execution
-- observation review
+- 形态研究。
+- 原语。
+- 标签。
+- 策略 DSL。
+- 信号生成。
+- 回测执行。
+- 观察复盘。
 
-Those belong to later workflows after this data foundation slice is stable.
+这些属于后续工作流，应在本数据基础切片稳定后再做。
 
-## Model Recommendation
+## 模型建议
 
-Do not switch to a smaller model before this workflow is accepted.
+本工作流被接受前，不要切换到更小模型。
 
-Recommended split:
+推荐拆分：
 
-| Work | Model |
+| 工作 | 模型 |
 | --- | --- |
-| workflow design, boundary decisions, schema decisions | GPT-5.5 |
-| deterministic code implementation and tests | GPT-5.4 |
-| registry scanning, config draft generation, repetitive checks | GPT-5.4-Mini |
-| tiny local fixes only | GPT-5.3-Codex-Spark |
+| 工作流设计、边界决策、schema 决策 | GPT-5.5 |
+| 确定性代码实现和测试 | GPT-5.4 |
+| registry 扫描、配置草稿生成、重复检查 | GPT-5.4-Mini |
+| 极小本地修复 | GPT-5.3-Codex-Spark |
 
-The first code implementation after this document can use GPT-5.4 as long as
-the session reads this workflow, `AGENTS.md`, and the standards first.
+本文档后的第一段代码实现可以使用 GPT-5.4，只要该会话先阅读本工作流、`AGENTS.md` 和标准文档。
 
-## Current Upstream Assumption
+## 当前上游假设
 
-The upstream factual producer is:
+上游事实生产者是：
 
 ```text
 host: ubuntu@111.229.103.59
@@ -51,41 +49,39 @@ path: <external_producer_root>
 inspection snapshot: external factual producer inspected on 2026-07-04
 ```
 
-The external factual producer remains the running producer during this MVP.
-This project should not rewrite or move it yet.
+MVP 期间，外部事实生产者仍作为运行中的生产者。本项目暂时不重写或移动它。
 
-`token_parse_sys` consumes stable contracts and readiness state from it.
+`token_parse_sys` 消费它暴露的稳定契约和就绪状态。
 
-## Target Boundary
+## 目标边界
 
 ```text
-external factual producer
-  -> produces factual tables and pub_* products
-  -> exposes registry files and quality status
+外部事实生产者
+  -> 生产事实表和 pub_* 产品
+  -> 暴露 registry 文件和质量状态
 
 token_parse_sys/data_foundation
-  -> mirrors or reads contracts
-  -> validates product readiness
-  -> exports DataAsset configs for Stock Lobster
-  -> provides routine bridge jobs
+  -> 镜像或读取契约
+  -> 校验产品就绪状态
+  -> 为 Stock Lobster 导出 DataAsset 配置
+  -> 提供例行 bridge 作业
 
 token_parse_sys/stock_lobster/l0_data_access
-  -> consumes DataAsset configs
-  -> never reads external factual-producer internals directly unless
-     explicitly marked transitional
+  -> 消费 DataAsset 配置
+  -> 除非明确标记为过渡用途，否则绝不直接读取外部事实生产者内部实现
 ```
 
-## MVP Components
+## MVP 组件
 
-### 1. Shared Contracts
+### 1. 共享契约
 
-Location:
+位置：
 
 ```text
 shared/contracts/
 ```
 
-Initial objects:
+初始对象：
 
 ```text
 DataProductContract
@@ -95,27 +91,27 @@ IndicatorContract
 PublishedProductRef
 ```
 
-Responsibilities:
+职责：
 
-- define common vocabulary
-- preserve product, field, version, date, quality, and source semantics
-- be importable by `data_foundation` and `stock_lobster`
+- 定义通用词汇。
+- 保留产品、字段、版本、日期、质量和来源语义。
+- 可被 `data_foundation` 和 `stock_lobster` 导入。
 
-Non-goals:
+非目标：
 
-- database access
-- production scheduling
-- strategy semantics
+- 数据库访问。
+- 生产调度。
+- 策略语义。
 
-### 2. Provider Bridge
+### 2. Provider Bridge（供应方桥接）
 
-Location:
+位置：
 
 ```text
 data_foundation/provider_bridge/
 ```
 
-Initial services:
+初始服务：
 
 ```text
 RegistryReader
@@ -123,22 +119,22 @@ PublishedProductCatalog
 PublishedQualityReader
 ```
 
-Responsibilities:
+职责：
 
-- read or mirror selected registry files from `<external_producer_root>`
-- expose normalized contract objects
-- keep source path, branch, commit, and registry version in metadata
+- 从 `<external_producer_root>` 读取或镜像选定 registry 文件。
+- 暴露标准化契约对象。
+- 在元数据中保留来源路径、分支、commit 和 registry 版本。
 
-Non-goals:
+非目标：
 
-- direct strategy use
-- moving the external factual producer
-- rewriting external factual-producer tasks
-- writing to upstream tables
+- 直接用于策略。
+- 移动外部事实生产者。
+- 重写外部事实生产者任务。
+- 写入上游表。
 
-### 3. Data Asset Export
+### 3. 数据资产导出
 
-Location:
+位置：
 
 ```text
 data_foundation/catalog_export/
@@ -146,13 +142,13 @@ configs/data_assets/
 stock_lobster/l0_data_access/
 ```
 
-Initial output:
+初始输出：
 
 ```text
 configs/data_assets/published_products.example.json
 ```
 
-Initial products:
+初始产品：
 
 ```text
 pub_data_quality_status
@@ -164,22 +160,21 @@ pub_stock_asset_basic
 pub_stock_daily_indicator
 ```
 
-Responsibilities:
+职责：
 
-- turn upstream `pub_*` contracts into Stock Lobster L0 `DataAsset` configs
-- include field schema, quality gate, source product, data version, and date
-  semantics
-- keep configs stable enough for L1 snapshot builders
+- 将上游 `pub_*` 契约转成 Stock Lobster L0 `DataAsset` 配置。
+- 包含字段 schema、质量门、来源产品、数据版本和日期语义。
+- 让配置足够稳定，可供 L1 快照构建器使用。
 
-### 4. Routine Job Entrypoints
+### 4. 例行作业入口
 
-Location:
+位置：
 
 ```text
 workflows/jobs/
 ```
 
-Initial jobs:
+初始作业：
 
 ```text
 daily_fact_data_production.py
@@ -187,31 +182,30 @@ daily_data_quality_monitor.py
 daily_data_asset_export.py
 ```
 
-Responsibilities:
+职责：
 
-- act as stable scheduler entrypoints
-- preserve `run_id`
-- call deterministic services
-- return non-zero on failure
-- write structured job results
+- 作为稳定的调度器入口。
+- 保留 `run_id`。
+- 调用确定性服务。
+- 失败时返回非零。
+- 写入结构化作业结果。
 
-Transition behavior:
+过渡行为：
 
-- `daily_fact_data_production.py` may wrap the existing
-  `<external_producer_root>` scheduler during the transition.
-- It must not inline external factual-producer logic.
-- It must record which upstream commit or contract snapshot was used.
+- `daily_fact_data_production.py` 过渡期可以包装现有 `<external_producer_root>` 调度器。
+- 它不得内联外部事实生产者逻辑。
+- 它必须记录使用了哪个上游 commit 或契约快照。
 
-### 5. Public Interfaces
+### 5. 公共接口
 
-Location:
+位置：
 
 ```text
 interfaces/cli/
 interfaces/sql/
 ```
 
-Initial CLI commands:
+初始 CLI 命令：
 
 ```text
 data-foundation list-products
@@ -219,63 +213,62 @@ data-foundation check-readiness --date YYYYMMDD
 data-foundation export-data-assets
 ```
 
-Initial SQL examples:
+初始 SQL 示例：
 
 ```text
 interfaces/sql/check_pub_data_quality_status.sql
 interfaces/sql/select_pub_stock_daily_indicator.sql
 ```
 
-Responsibilities:
+职责：
 
-- provide stable operator-facing entrypoints
-- avoid asking users or jobs to import internal modules
+- 提供面向运维的稳定入口。
+- 避免要求用户或作业 import 内部模块。
 
-### 6. Quality Monitoring
+### 6. 质量监控
 
-Location:
+位置：
 
 ```text
 data_foundation/quality/
 workflows/jobs/daily_data_quality_monitor.py
 ```
 
-Initial checks:
+初始检查：
 
-- product readiness exists
-- status is `ready`
-- quality level is `pass` or `warning`
-- record count meets minimum expectation
-- primary date field matches requested date
-- core fields are non-null according to contract
-- product data version matches registry
+- 产品就绪记录存在。
+- 状态为 `ready`。
+- 质量级别为 `pass` 或 `warning`。
+- 记录数达到最低预期。
+- 主日期字段匹配请求日期。
+- 根据契约，核心字段非空。
+- 产品数据版本匹配 registry。
 
-Quality result:
+质量结果：
 
 ```text
 DataProductReadinessResult
 ```
 
-The quality monitor should report readiness. It should not change strategy or
-experience artifacts.
+质量监控器应报告就绪状态。它不应修改策略或经验 artifact。
 
-## Routine vs Passive Split
+## 例行与被动拆分
 
-| Area | Routine? | First location |
+| 区域 | 例行？ | 第一位置 |
 | --- | --- | --- |
-| contract dataclasses | no | `shared/contracts/` |
-| registry reader | no | `data_foundation/provider_bridge/` |
-| readiness checker | no | `data_foundation/quality/` |
-| data asset exporter | on demand or scheduled | `data_foundation/catalog_export/` |
-| fact production wrapper | yes | `workflows/jobs/daily_fact_data_production.py` |
-| quality monitor job | yes | `workflows/jobs/daily_data_quality_monitor.py` |
-| operator CLI | passive | `interfaces/cli/` |
-| SQL examples | passive | `interfaces/sql/` |
-| Stock Lobster L0 catalog | passive | `stock_lobster/l0_data_access/` |
+| 契约 dataclass | 否 | `shared/contracts/` |
+| registry 读取器 | 否 | `data_foundation/provider_bridge/` |
+| 就绪检查器 | 否 | `data_foundation/quality/` |
+| 数据资产导出器 | 按需或调度 | `data_foundation/catalog_export/` |
+| 事实生产包装器 | 是 | `workflows/jobs/daily_fact_data_production.py` |
+| 质量监控作业 | 是 | `workflows/jobs/daily_data_quality_monitor.py` |
+| 运维 CLI | 被动 | `interfaces/cli/` |
+| SQL 示例 | 被动 | `interfaces/sql/` |
+| Stock Lobster L0 目录 | 被动 | `stock_lobster/l0_data_access/` |
 
-## First Code Slice
+## 第一段代码切片
 
-Implement this in the first coding session:
+第一轮编码会话实现：
 
 ```text
 shared/contracts/
@@ -305,12 +298,11 @@ tests/
     test_readiness.py
 ```
 
-Use JSON for the first checked-in example config unless YAML parsing dependency
-is explicitly added. Upstream can remain YAML.
+除非明确添加 YAML 解析依赖，否则第一版纳入版本管理的示例配置使用 JSON。上游可以继续保持 YAML。
 
-## Second Code Slice
+## 第二段代码切片
 
-After the first slice passes tests:
+第一段通过测试后：
 
 ```text
 workflows/jobs/
@@ -325,49 +317,46 @@ interfaces/sql/
   select_pub_stock_daily_indicator.sql
 ```
 
-These should call services from the first slice.
+这些应调用第一段切片提供的服务。
 
-## Acceptance Criteria
+## 验收标准
 
-MVP is done when:
+MVP 完成标准：
 
-- `DataProductContract` can represent all first-stage `pub_*` products.
-- L0 `DataAsset` config can be exported from those contracts.
-- A readiness checker can deterministically approve or block a product/date.
-- Routine job entrypoints exist for quality monitoring and data asset export.
-- No Stock Lobster strategy layer reads external factual-producer internals.
-- Import-boundary tests prevent lower layers from importing orchestration code.
-- All tests pass locally.
+- `DataProductContract` 可以表示所有第一阶段 `pub_*` 产品。
+- L0 `DataAsset` 配置可以从这些契约导出。
+- 就绪检查器可以对某个产品/日期做确定性的通过或阻断判断。
+- 用于质量监控和数据资产导出的例行作业入口存在。
+- 没有 Stock Lobster 策略层读取外部事实生产者内部实现。
+- 导入边界测试阻止下层导入编排代码。
+- 所有测试在本地通过。
 
-## Open Decisions
+## 未决决策
 
-- Should production configs be JSON first, or should the project add PyYAML?
-- Should the bridge read `<external_producer_root>/config/*.yaml` directly on
-  the server, or should those registries be exported into this project first?
-- Should `daily_fact_data_production.py` call the existing external
-  factual-producer scheduler, or only monitor its output in the first phase?
-- Where should structured job results be persisted: file, MySQL, SQLite, or
-  later application tables?
+- 生产配置先用 JSON，还是项目添加 PyYAML？
+- bridge 在服务器上直接读取 `<external_producer_root>/config/*.yaml`，还是先把这些 registry 导出到本项目？
+- `daily_fact_data_production.py` 第一阶段调用现有外部事实生产者调度器，还是只监控其输出？
+- 结构化作业结果应持久化到哪里：文件、MySQL、SQLite，还是后续应用表？
 
-## Handoff Prompt for GPT-5.4 Implementation
+## 交接给 GPT-5.4 实现的 Prompt
 
 ```text
-You are implementing Workflow 001: Data Foundation MVP.
-Read AGENTS.md, PLANS.md, docs/standards/001-system-structure-and-model-guidance.md,
-docs/standards/002-data-foundation-integration.md,
-docs/standards/003-remote-system-execution-layout.md, and
-docs/workflows/001-data-foundation-mvp.md.
+你正在实现 Workflow 001：数据基础 MVP。
+阅读 AGENTS.md、PLANS.md、docs/standards/001-system-structure-and-model-guidance.md、
+docs/standards/002-data-foundation-integration.md、
+docs/standards/003-remote-system-execution-layout.md 和
+docs/workflows/001-data-foundation-mvp.md。
 
-Implement only the first code slice:
-- shared/contracts data product and quality models
-- data_foundation provider_bridge registry reader skeleton
+只实现第一段代码切片：
+- shared/contracts 数据产品和质量模型
+- data_foundation provider_bridge registry reader 骨架
 - data_foundation quality readiness checker
 - data_foundation catalog_export data asset exporter
-- example JSON data asset config
-- focused tests
+- 示例 JSON data asset 配置
+- 聚焦测试
 
-Do not modify the external factual producer.
-Do not implement strategy, primitive, label, signal, backtest, or observation.
-Do not add routine jobs until the passive services pass tests.
-Run unittest and report layer boundary status.
+不要修改外部事实生产者。
+不要实现策略、原语、标签、信号、回测或观察。
+被动服务通过测试前，不要添加例行作业。
+运行 unittest，并报告层级边界状态。
 ```

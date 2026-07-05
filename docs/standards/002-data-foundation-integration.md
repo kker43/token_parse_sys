@@ -1,58 +1,54 @@
-# Standard 002: Data Foundation Integration
+# Standard 002：数据基础集成
 
-## Purpose
+## 目的
 
-This standard records how the upstream factual data project should fit into the
-larger Stock Lobster system.
+本标准记录上游事实数据项目应如何纳入更大的 Stock Lobster 系统。
 
-It is based on a read-only inspection of:
+它基于一次只读检查：
 
-- remote host: `ubuntu@111.229.103.59`
-- configured producer root: `<external_producer_root>`
-- inspection date: 2026-07-04
+- 远程主机：`ubuntu@111.229.103.59`
+- 已配置生产者根目录：`<external_producer_root>`
+- 检查日期：2026-07-04
 
-The inspected source checkout was clean at the time of the latest check.
+最近一次检查时，被检查的源码 checkout 是干净的。
 
-## Remote Deployment Target
+## 远程部署目标
 
-Preferred future project directory:
+推荐的未来项目目录：
 
 ```text
 /home/ubuntu/token_parse_sys
 ```
 
-This name matches the large-project structure from
-`docs/standards/001-system-structure-and-model-guidance.md`.
+这个名称与 `docs/standards/001-system-structure-and-model-guidance.md` 中的大型项目结构一致。
 
-Do not overwrite existing remote projects such as:
+不要覆盖已有远程项目，例如：
 
 - `<external_producer_root>`
 - `/home/ubuntu/token_parse`
 - `/home/ubuntu/token_parse_recall`
 - `/home/ubuntu/token_recall`
 
-When the project is deployed to the server, create a new directory under
-`/home/ubuntu` and copy or clone this repository there. Do not move the
-configured producer checkout until the integration plan is complete.
+项目部署到服务器时，在 `/home/ubuntu` 下创建新目录，然后把本仓库复制或 clone 到那里。在集成计划完成前，不要移动已配置的生产者 checkout。
 
-## Upstream Current Direction
+## 上游当前方向
 
-The inspected external factual producer already matches the desired separation:
+被检查的外部事实生产者已经符合期望的职责分离：
 
 ```text
 source/raw -> fact -> statistic/basic_indicator -> publish/pub_*
 ```
 
-It explicitly excludes:
+它明确排除：
 
-- primitive
-- signal
-- strategy
-- backtest
-- portfolio
-- trading candidates or buy/sell decisions
+- primitive（原语）
+- signal（信号）
+- strategy（策略）
+- backtest（回测）
+- portfolio（组合）
+- 交易候选或买卖决策
 
-This is compatible with Stock Lobster:
+这与 Stock Lobster 兼容：
 
 ```text
 data_foundation
@@ -63,9 +59,9 @@ data_foundation
 -> L2-L6
 ```
 
-## Recommended Placement
+## 推荐放置方式
 
-If this repository evolves into `token_parse_sys`, place the upstream project as:
+如果本仓库演进为 `token_parse_sys`，将上游项目放置为：
 
 ```text
 token_parse_sys/
@@ -94,31 +90,30 @@ token_parse_sys/
     l6_backtest_engine/
 ```
 
-Migration should be gradual:
+迁移应循序渐进：
 
-1. Keep `<external_producer_root>` running independently.
-2. Export stable contracts from the external factual producer.
-3. Consume those contracts in Stock Lobster L0.
-4. Move or mirror selected source files into `data_foundation` only after the
-   contract is stable.
+1. 保持 `<external_producer_root>` 独立运行。
+2. 从外部事实生产者导出稳定契约。
+3. 在 Stock Lobster L0 中消费这些契约。
+4. 只有在契约稳定后，才把选定源码移动或镜像到 `data_foundation`。
 
-## Do Not Migrate Runtime Artifacts
+## 不要迁移运行态 artifact
 
-Do not copy these from the external factual producer into the clean project:
+不要把这些内容从外部事实生产者复制到干净项目中：
 
 - `venv/`
 - `logs/`
 - `tracker/`
-- local backup zips
-- runtime tracker JSON files at project root
+- 本地备份 zip。
+- 项目根目录下的运行态 tracker JSON 文件。
 - `.git/`
-- machine-local secrets such as `config/config.ini`
+- 机器本地 secret，例如 `config/config.ini`。
 
-These can remain on the server where the running producer lives.
+这些可以留在运行生产者所在的服务器上。
 
-## Contract Assets to Reuse
+## 可复用的契约资产
 
-The following upstream files are useful as starting points:
+以下上游文件适合作为起点：
 
 ```text
 config/table_registry.yaml
@@ -132,7 +127,7 @@ product_engine/models.py
 product_engine/registry.py
 ```
 
-The SQL files should be treated as drafts:
+SQL 文件应作为草稿对待：
 
 ```text
 sql/views/pub_stock_kline_views.sql
@@ -140,27 +135,25 @@ sql/views/pub_stock_basic_views.sql
 sql/migrations/002_create_pub_stock_daily_indicator.sql
 ```
 
-## Data Products to Expose to Stock Lobster
+## 暴露给 Stock Lobster 的数据产品
 
-Initial L0 `DataAsset` entries should come from `pub_*` products:
+初始 L0 `DataAsset` 条目应来自 `pub_*` 产品：
 
-| Data product | Stock Lobster use |
+| 数据产品 | Stock Lobster 用途 |
 | --- | --- |
-| `pub_data_quality_status` | readiness gate before consuming any product |
-| `pub_stock_daily_kline` | daily price/volume facts |
-| `pub_stock_weekly_kline` | weekly price/volume facts |
-| `pub_stock_monthly_kline` | monthly price/volume facts |
-| `pub_stock_daily_basic` | daily valuation and basic facts |
-| `pub_stock_asset_basic` | asset identity and classification |
-| `pub_stock_daily_indicator` | long-table basic indicators |
+| `pub_data_quality_status` | 消费任何产品前的就绪门 |
+| `pub_stock_daily_kline` | 日线价格/成交量事实 |
+| `pub_stock_weekly_kline` | 周线价格/成交量事实 |
+| `pub_stock_monthly_kline` | 月线价格/成交量事实 |
+| `pub_stock_daily_basic` | 每日估值和基础事实 |
+| `pub_stock_asset_basic` | 资产身份和分类 |
+| `pub_stock_daily_indicator` | 长表基础指标 |
 
-Stock Lobster should not consume internal tables by default. Direct reads from
-tables such as `token_daily_details` or `ma_price_daily_statistic` are allowed
-only for transitional diagnostics and must be recorded as temporary.
+默认情况下，Stock Lobster 不应消费内部表。只有过渡诊断场景允许直接读取 `token_daily_details` 或 `ma_price_daily_statistic` 等表，并且必须记录为临时用法。
 
-## Basic Indicators as Experience Inputs
+## 作为经验输入的基础指标
 
-These upstream indicators are acceptable as factual or basic-indicator inputs:
+以下上游指标可作为事实或基础指标输入：
 
 - `close_new_high_60d_flag`
 - `pct_change_20d`
@@ -174,23 +167,21 @@ These upstream indicators are acceptable as factual or basic-indicator inputs:
 - `volatility_ratio_5d_20d`
 - `volume_ratio_5d_20d`
 
-They are not Stock Lobster primitives by themselves. Stock Lobster may use them
-to build:
+它们本身不是 Stock Lobster 原语。Stock Lobster 可以用它们构建：
 
-- `AnalysisSnapshot` fields
-- `FactorObservation`
-- `PrimitiveCandidate`
-- approved L2 primitives after sample validation
-- approved L3 labels after deterministic definition
+- `AnalysisSnapshot` 字段。
+- `FactorObservation`。
+- `PrimitiveCandidate`。
+- 经样本验证后的已批准 L2 原语。
+- 确定性定义后的已批准 L3 标签。
 
-## Items That Need Changes Before Production Use
+## 生产使用前需要修改的事项
 
-### 1. Publish quality status first
+### 1. 先发布质量状态
 
-`pub_data_quality_status` is the intended readiness gate, but implementation is
-still planned. Implement this before downstream production depends on `pub_*`.
+`pub_data_quality_status` 是预期的就绪门，但实现仍在计划中。下游生产依赖 `pub_*` 之前，应先实现它。
 
-Minimum requirement:
+最低要求：
 
 ```text
 data_product
@@ -208,99 +199,84 @@ data_version
 error_message
 ```
 
-### 2. Do not hard-code `quality_status = 'pass'`
+### 2. 不要硬编码 `quality_status = 'pass'`
 
-Current SQL drafts set `quality_status` to `pass` directly in views. That is
-unsafe for downstream production.
+当前 SQL 草稿在视图中直接把 `quality_status` 设置为 `pass`。这对下游生产不安全。
 
-Preferred approach:
+推荐做法：
 
-- write or compute product-level quality results
-- write `pub_data_quality_status`
-- expose product rows only when the quality gate is ready
-- carry row-level quality only when a real row-level check exists
+- 写入或计算产品级质量结果。
+- 写入 `pub_data_quality_status`。
+- 只有质量门就绪后才暴露产品行。
+- 只有存在真实行级检查时，才携带行级质量。
 
-### 3. Avoid dynamic `CURRENT_TIMESTAMP` in reproducible views
+### 3. 可复现视图中避免动态 `CURRENT_TIMESTAMP`
 
-Draft views use `CURRENT_TIMESTAMP AS published_at`. This changes every query
-and weakens reproducibility.
+草稿视图使用 `CURRENT_TIMESTAMP AS published_at`。这会让每次查询结果都变化，削弱可复现性。
 
-Preferred approach:
+推荐做法：
 
-- materialize publish outputs with a stable `published_at`
-- or join a stable publish batch/status table
+- 物化发布输出，并使用稳定的 `published_at`。
+- 或连接稳定的发布批次/状态表。
 
-### 4. Align registry and SQL fields
+### 4. 对齐 registry 和 SQL 字段
 
-`pub_stock_daily_indicator` documentation mentions optional
-`indicator_score` and `indicator_rank`, but the draft DDL does not include them.
+`pub_stock_daily_indicator` 文档提到可选的 `indicator_score` 和 `indicator_rank`，但草稿 DDL 未包含它们。
 
-Either:
+二选一：
 
-- add nullable `indicator_score` and `indicator_rank`, or
-- remove them from the contract until supported
+- 添加可空的 `indicator_score` 和 `indicator_rank`。
+- 或在支持前把它们从契约中移除。
 
-### 5. Resolve `pub_stock_daily_basic` source mismatch
+### 5. 解决 `pub_stock_daily_basic` 来源不一致
 
-`data_product_registry.yaml` lists both `token_daily_basic` and
-`token_valuation_daily` as source tables, but the draft SQL currently selects
-only from `token_daily_basic`.
+`data_product_registry.yaml` 同时列出 `token_daily_basic` 和 `token_valuation_daily` 作为来源表，但草稿 SQL 当前只从 `token_daily_basic` 选择。
 
-Either:
+二选一：
 
-- join the valuation source, or
-- update the registry to match the actual v1 product
+- join 估值来源。
+- 或更新 registry，使其匹配实际 v1 产品。
 
-### 6. Review `stock_recall_daily`
+### 6. 复查 `stock_recall_daily`
 
-`stock_recall_daily` is classified as a fact/event. The name and semantics may
-look like strategy recall.
+`stock_recall_daily` 被分类为事实/事件。名称和语义可能看起来像策略召回。
 
-Keep it in `data_foundation` only if it is defined as a neutral event fact, such
-as "met objective price/volume event conditions". If it means "candidate stock
-for a strategy", move that semantic into Stock Lobster research or L4.
+只有当它被定义为中性事件事实时，例如“满足客观价格/成交量事件条件”，才应留在 `data_foundation`。如果它表示“某个策略的候选股票”，就应把该语义移入 Stock Lobster research 或 L4。
 
-### 7. Expand indicator metadata
+### 7. 扩展指标元数据
 
-`indicator_registry.yaml` should eventually include enough metadata for
-reproducibility:
+`indicator_registry.yaml` 最终应包含足够的可复现元数据：
 
-- formula description
-- parameter schema
-- input windows
-- `source_start_date` rule
-- `code_version`
-- null and outlier handling
+- 公式描述。
+- 参数 schema。
+- 输入窗口。
+- `source_start_date` 规则。
+- `code_version`。
+- 空值和异常值处理。
 
-### 8. Treat `product_engine` as a draft framework
+### 8. 将 `product_engine` 视为草稿框架
 
-`product_engine.registry` can be reused soon. `product_engine.publisher` still
-returns `publisher_not_implemented`, so it is not production-ready.
+`product_engine.registry` 可以较快复用。`product_engine.publisher` 仍返回 `publisher_not_implemented`，因此尚未达到生产可用状态。
 
-## Integration Sequence
+## 集成顺序
 
-Recommended next steps:
+推荐下一步：
 
-1. Stabilize and version the external factual-producer contracts.
-2. Implement `pub_data_quality_status`.
-3. Fix the SQL draft issues above.
-4. Export `data_product_registry.yaml` as the first shared contract.
-5. Create matching Stock Lobster L0 `DataAsset` configs for each `pub_*`
-   product.
-6. Build one L1 `AnalysisSnapshot` from `pub_stock_daily_kline`,
-   `pub_stock_daily_basic`, `pub_stock_asset_basic`, and
-   `pub_stock_daily_indicator`.
-7. Use one real pattern family to validate the research workflow.
+1. 稳定并版本化外部事实生产者契约。
+2. 实现 `pub_data_quality_status`。
+3. 修复上面的 SQL 草稿问题。
+4. 将 `data_product_registry.yaml` 导出为第一份共享契约。
+5. 为每个 `pub_*` 产品创建匹配的 Stock Lobster L0 `DataAsset` 配置。
+6. 基于 `pub_stock_daily_kline`、`pub_stock_daily_basic`、`pub_stock_asset_basic` 和 `pub_stock_daily_indicator` 构建一个 L1 `AnalysisSnapshot`。
+7. 用一个真实形态家族验证研究工作流。
 
-## Current Recommended Boundary
+## 当前推荐边界
 
-Keep this rule:
+保持这条规则：
 
 ```text
-data_foundation answers: what factual data and basic indicators are available?
-stock_lobster answers: what pattern, primitive, label, strategy, and evidence
-does that data support?
+data_foundation 回答：有哪些事实数据和基础指标可用？
+stock_lobster 回答：这些数据支持什么形态、原语、标签、策略和证据？
 ```
 
-The two parts can live in one large project, but they should stay separate by
-package, registry, workflow, and approval boundary.
+两部分可以存在于同一个大型项目中，但它们应通过包、registry、工作流和审批边界保持分离。

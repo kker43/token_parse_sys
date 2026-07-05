@@ -76,16 +76,44 @@ def _metrics_from_mapping(payload: Mapping[str, object]) -> TrendBreakoutMetrics
         ma5=float(payload["ma5"]),
         ma10=float(payload["ma10"]),
         ma20=float(payload["ma20"]),
+        ma30=float(payload["ma30"]),
         ma60=float(payload["ma60"]),
         ma120=float(payload["ma120"]),
         ma20_slope_20d=float(payload["ma20_slope_20d"]),
         amount_ratio_20d=float(payload["amount_ratio_20d"]),
         max_drawdown_60d=float(payload["max_drawdown_60d"]),
+        max_drawdown_120d=float(payload["max_drawdown_120d"]),
         convergence_5_10_20_pct=float(payload["convergence_5_10_20_pct"]),
+        close_to_high_60d_pct=float(payload.get("close_to_high_60d_pct", 0.0)),
+        ma20_deviation_pct=float(payload.get("ma20_deviation_pct", 0.0)),
+        red_k_ratio_20d=float(payload["red_k_ratio_20d"]),
+        green_k_ratio_20d=float(payload["green_k_ratio_20d"]),
+        long_shadow_ratio_20d=float(payload["long_shadow_ratio_20d"]),
         close_new_high_60d_flag=bool(payload["close_new_high_60d_flag"]),
+        daily_quality_pass=bool(payload["daily_quality_pass"]),
         steady_uptrend=bool(payload["steady_uptrend"]),
+        pre_breakout_watch=bool(payload.get("pre_breakout_watch", False)),
         breakout_watch=bool(payload["breakout_watch"]),
+        setup_score=float(payload.get("setup_score", 0.0)),
+        weekly_asof_trade_date=(
+            str(payload["weekly_asof_trade_date"])
+            if payload.get("weekly_asof_trade_date") is not None
+            else None
+        ),
+        weekly_close=_optional_float(payload.get("weekly_close")),
+        weekly_ma5=_optional_float(payload.get("weekly_ma5")),
+        weekly_ma10=_optional_float(payload.get("weekly_ma10")),
+        weekly_ma20=_optional_float(payload.get("weekly_ma20")),
+        weekly_ma20_slope_4w=_optional_float(payload.get("weekly_ma20_slope_4w")),
+        weekly_max_drawdown_26w=_optional_float(payload.get("weekly_max_drawdown_26w")),
+        weekly_trend_pass=bool(payload.get("weekly_trend_pass", True)),
     )
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None:
+        return None
+    return float(value)
 
 
 def _backtest_result_from_event_report(path: str, holding_horizon: int) -> BacktestResult:

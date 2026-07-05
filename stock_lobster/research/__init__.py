@@ -18,10 +18,14 @@ from stock_lobster.research.single_stock_strategy import (
 )
 from stock_lobster.research.trend_breakout_scan import (
     KlineBar,
+    StockSignalContext,
     TrendBreakoutMetrics,
     TrendBreakoutScanPolicy,
+    WeeklyTrendContext,
     read_kline_tsv,
+    read_stock_signal_context_tsv,
     scan_trend_breakouts,
+    select_candidates,
     summarize_breakout_scan,
 )
 from stock_lobster.research.steady_uptrend_breakout_case import (
@@ -30,6 +34,12 @@ from stock_lobster.research.steady_uptrend_breakout_case import (
     build_steady_uptrend_breakout_request,
     run_steady_uptrend_breakout_case,
     snapshot_from_trend_breakout_metrics,
+)
+from stock_lobster.research.factor_reuse import (
+    FactorRequirement,
+    FactorReuseDecision,
+    audit_factor_reuse,
+    load_indicator_catalog,
 )
 
 __all__ = [
@@ -48,14 +58,22 @@ __all__ = [
     "PrimitiveBuildRequirement",
     "PrimitiveHypothesis",
     "KlineBar",
+    "StockSignalContext",
     "TrendBreakoutMetrics",
     "TrendBreakoutScanPolicy",
+    "WeeklyTrendContext",
     "read_kline_tsv",
+    "read_stock_signal_context_tsv",
     "scan_trend_breakouts",
+    "select_candidates",
     "summarize_breakout_scan",
     "STEADY_UPTREND_BREAKOUT_LABELS",
     "STEADY_UPTREND_BREAKOUT_PRIMITIVES",
     "build_steady_uptrend_breakout_request",
     "run_steady_uptrend_breakout_case",
     "snapshot_from_trend_breakout_metrics",
+    "FactorRequirement",
+    "FactorReuseDecision",
+    "audit_factor_reuse",
+    "load_indicator_catalog",
 ]
