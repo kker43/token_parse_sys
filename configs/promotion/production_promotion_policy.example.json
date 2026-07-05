@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "policy_id": "default_production_promotion_policy",
+  "description": "研究指标、L2 原语、L3 标签和 L4 策略进入生产前的默认准入阈值。",
+  "thresholds": {
+    "candidate": {
+      "min_positive_sample_count": 2,
+      "min_dependency_count": 0
+    },
+    "production_candidate": {
+      "min_positive_sample_count": 20,
+      "min_negative_sample_count": 10,
+      "min_backtest_sample_size": 20,
+      "max_abs_backtest_drawdown": 0.35
+    },
+    "approved_production": {
+      "min_positive_sample_count": 30,
+      "min_negative_sample_count": 20,
+      "min_backtest_sample_size": 30,
+      "min_backtest_win_rate": 0.55,
+      "min_backtest_annual_return": 0.0,
+      "max_abs_backtest_drawdown": 0.25,
+      "require_quality_monitoring_ready": true,
+      "require_missing_data_policy_ready": true,
+      "require_no_future_data_check_ready": true
+    }
+  }
+}

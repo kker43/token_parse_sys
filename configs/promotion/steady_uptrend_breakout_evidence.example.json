@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "artifact_id": "strategy.steady_uptrend_breakout_watch",
+  "artifact_type": "strategy",
+  "current_status": "draft",
+  "target_status": "approved_production",
+  "owner": "stock_lobster",
+  "description": "稳健上升趋势突破关注策略的生产准入证据样例。",
+  "dependency_count": 1,
+  "dependent_workflows": [
+    "steady_uptrend_breakout_research_workflow"
+  ],
+  "positive_sample_count": 23,
+  "negative_sample_count": 0,
+  "backtest_sample_size": 17,
+  "backtest_win_rate": 0.8824,
+  "backtest_annual_return": 4.9272,
+  "backtest_max_drawdown": -0.3047,
+  "threshold_stability": "unknown",
+  "calculation_cost": "low",
+  "quality_monitoring_ready": false,
+  "missing_data_policy_ready": false,
+  "no_future_data_check_ready": true,
+  "failure_case_count": 0,
+  "notes": "当前仅来自两个强样本股票，样本数和最大回撤不满足 approved_production；建议继续 research_only/candidate，而不是进入例行生产。"
+}

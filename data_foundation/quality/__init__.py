@@ -5,9 +5,25 @@ from data_foundation.quality.readiness import (
     DataProductReadinessInputs,
     DataProductReadinessResult,
 )
+from data_foundation.quality.production_promotion import (
+    PromotionEvidence,
+    PromotionPolicy,
+    PromotionReviewResult,
+    PromotionThresholds,
+    load_promotion_evidence,
+    load_promotion_policy,
+    review_promotion,
+)
 
 __all__ = [
     "DataProductReadinessChecker",
     "DataProductReadinessInputs",
     "DataProductReadinessResult",
+    "PromotionEvidence",
+    "PromotionPolicy",
+    "PromotionReviewResult",
+    "PromotionThresholds",
+    "load_promotion_evidence",
+    "load_promotion_policy",
+    "review_promotion",
 ]
