@@ -417,7 +417,7 @@ top200_gainers AS (
     WHERE d.trade_date IN (SELECT trade_date FROM signal_days)
       AND d.pct_chg IS NOT NULL
       AND b.exchange IN ('SSE', 'SZSE', 'BSE')
-      AND b.name NOT LIKE '%ST%'
+      AND b.name NOT LIKE '%%ST%%'
   ) ranked
   WHERE rn <= 200
 ),
