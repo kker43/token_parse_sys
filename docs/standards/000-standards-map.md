@@ -55,17 +55,35 @@ docs/standards/
 
 ## 4. 状态词汇
 
-统一状态：
+本文档是状态词汇的入口。新增状态前必须先判断是否能复用下列词汇；如果确实需要新增，只能在对应层级标准中定义，并说明它不属于通用 artifact 状态。
 
-```text
-research_only
-candidate
-production_candidate
-approved_production
-test_tracking
-active_production
-deprecated
-```
+### 4.1 通用 artifact 状态
+
+| 状态 | 含义 | 使用边界 |
+| --- | --- | --- |
+| `research_only` | 研究态探索、临时验证或样本分析 | 不得被正式 L5/L6 生产依赖 |
+| `candidate` | 候选 artifact，语义可比较但未准入生产 | 可用于候选回测、人工审阅和版本比较 |
+| `production_candidate` | 已有准入证据，等待生产审阅或生命周期 gate | 不等于 approved，不得直接发布正式信号 |
+| `approved_production` | 已批准的生产 artifact | 可以作为正式下游依赖 |
+| `test_tracking` | 测试跟踪状态 | 允许例行观察和复盘，不等于正式生产 |
+| `active_production` | 正式生产状态 | 可以进入正式报告、看板或例行信号链路 |
+| `deprecated` | 已淘汰或不再建议使用 | 新增 workflow 不得依赖 |
+
+### 4.2 局部状态
+
+下列状态只属于特定对象，不应扩散为全局通用状态：
+
+| 状态 | 所属对象 | 说明 |
+| --- | --- | --- |
+| `topic_backlog`、`prioritized`、`scheduled`、`active_research`、`evidence_review`、`promoted_to_research_only`、`closed_rejected`、`closed_archived` | ResearchTopic | 只用于课题管理，见 `012-research-topic-module-spec.md` |
+| `draft`、`pending_backtest`、`backtested`、`pending_approval`、`approved`、`observing`、`paused`、`retired` | 策略生命周期或观察记录 | 只描述策略/观察流转，不替代通用 artifact 状态 |
+
+映射规则：
+
+- `draft` 通常对应尚未进入 `candidate` 的策略草案。
+- `pending_approval` 是人工审批等待状态，不代表已进入 `test_tracking`。
+- `observing` 在当前工程实现中对应 `test_tracking` 或 `active_production` 下的观察记录。
+- `retired` 可映射为 `deprecated`，但 observation 记录可保留 `retired` 以表达生命周期结束。
 
 不同层可以只使用其中一部分，但不能随意发明同义状态。
 

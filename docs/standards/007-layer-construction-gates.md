@@ -25,17 +25,7 @@
 
 ## 3. 统一状态
 
-层级 artifact 优先使用 `000-standards-map.md` 中定义的状态词：
-
-```text
-research_only
-candidate
-production_candidate
-approved_production
-test_tracking
-active_production
-deprecated
-```
+状态词汇以 `000-standards-map.md` 为唯一入口。层级标准可以缩小可用状态集合，但不应重新发明同义状态。
 
 补充规则：
 
@@ -44,7 +34,10 @@ deprecated
 - `production_candidate` 必须有准入证据，等待审阅或回测。
 - `approved_production` 才能作为正式下游依赖。
 - `test_tracking` 适用于策略和观察，不等同于正式生产信号。
+- `active_production` 适用于已批准生产策略和正式信号链路。
 - `deprecated` 不能被新增 workflow 引用。
+
+课题管理和观察记录可以使用局部状态，例如 `topic_backlog`、`pending_approval`、`paused` 和 `retired`，但这些状态不得替代层级 artifact 的通用状态。
 
 ## 4. 通用准入
 

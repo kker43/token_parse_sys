@@ -14,6 +14,14 @@ test_tracking 不等于正式生产。
 
 ## 状态分级
 
+通用 artifact 状态以 `000-standards-map.md` 为准。本文只定义策略从候选验证进入测试跟踪和正式生产时的生命周期门槛。
+
+`pending_approval`、`paused` 和 `retired` 是观察记录或策略流转中的局部状态：
+
+- `pending_approval` 表示等待用户确认，不代表已经进入 `test_tracking`。
+- `paused` 表示暂缓执行或观察，不代表淘汰。
+- `retired` 表示策略或观察记录生命周期结束，可在 artifact 层映射为 `deprecated`。
+
 ### test_tracking
 
 含义：
