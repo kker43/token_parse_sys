@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "workflow_id": "research_sample_accumulation_gate.steady_uptrend_breakout.v1",
+  "target_sample_library": "configs/research_samples/steady_uptrend_breakout_samples.json",
+  "strategy_candidate_id": "strategy.steady_uptrend_breakout_watch",
+  "status": "research_only",
+  "sample_library_gate_policy": {
+    "min_total_events": 40,
+    "min_dated_events": 30,
+    "min_positive_events": 30,
+    "min_high_value_positive_events": 15,
+    "min_negative_events": 15,
+    "min_hard_negative_events": 8,
+    "min_borderline_negative_events": 10
+  },
+  "allowed_sample_event_classes": [
+    "positive_attention",
+    "positive_attention_high_value",
+    "positive_attention_mid_value",
+    "positive_attention_best",
+    "positive_attention_risk_higher",
+    "weak_or_excluded_attention",
+    "borderline_negative_recall",
+    "negative_after_close_recall",
+    "hard_negative_recall"
+  ],
+  "sample_sourcing_lanes": [
+    {
+      "lane_id": "manual_gold_sample",
+      "description": "用户人工确认的典型正反样本，必须保留截图或说明证据。"
+    },
+    {
+      "lane_id": "scan_candidate_review",
+      "description": "由研究扫描候选池产生，再人工标注为正样本、弱样本、边界负样本或硬负样本。"
+    },
+    {
+      "lane_id": "backtest_failure_case",
+      "description": "回测中被召回但后续表现差的失败案例，用于区分入口错误、趋势质量不足和退出规则不足。"
+    },
+    {
+      "lane_id": "missed_opportunity_case",
+      "description": "事后表现强但策略未召回的漏召回样本，只能用于研究校准，不能直接进入正式回测样本内证据。"
+    }
+  ],
+  "notes": [
+    "该配置只约束经验样本积累，不生产事实数据。",
+    "样本覆盖通过后，仍需要 L6 事件回测、阈值稳定性检查和用户审批，才能升级策略状态。"
+  ]
+}

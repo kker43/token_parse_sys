@@ -20,6 +20,9 @@ docs/standards/
   007-layer-construction-gates.md
   008-workflow-construction-standard.md
   009-parallel-session-delivery-standard.md
+  010-macro-cross-asset-research-spec.md
+  011-strategy-lifecycle-gates.md
+  012-research-topic-module-spec.md
   layer-standard-template.md
   layers/
     010-data-foundation-layer-standard.md
@@ -76,15 +79,20 @@ deprecated
 3. 阅读 `006-factor-reuse-policy.md`，先判断是否能复用已有因子或同类口径。
 4. 阅读 `007-layer-construction-gates.md`，确认准入准出。
 5. 如果是横向业务链路，阅读 `008-workflow-construction-standard.md`。
-6. 如果有并行会话或文件冲突风险，阅读 `009-parallel-session-delivery-standard.md`。
-7. 判断是 research_only、candidate 还是 production_candidate。
-8. 如果要进入生产，必须运行 production_promotion_review。
-9. 修改 registry 或 workflow 后补测试。
-10. 文档、代码、配置必须同步更新。
+6. 如果涉及宏观、大类资产、跨资产异动或置信结论，阅读 `010-macro-cross-asset-research-spec.md`。
+7. 如果有并行会话或文件冲突风险，阅读 `009-parallel-session-delivery-standard.md`。
+8. 如果涉及策略进入 `test_tracking` 或 `active_production`，阅读 `011-strategy-lifecycle-gates.md`。
+9. 如果只是新想法、参考文献或待排期课题，阅读 `012-research-topic-module-spec.md`。
+10. 判断是 topic_backlog、research_only、candidate 还是 production_candidate。
+11. 如果要进入生产，必须运行 production_promotion_review。
+12. 修改 registry 或 workflow 后补测试。
+13. 文档、代码、配置必须同步更新。
 ```
 
 当 agent 不确定归属时：
 
 ```text
 默认放在 research 或 workflows，不要直接放入基础生产层。
+
+如果只是新想法或参考文献，默认先放入课题研究模块，不要直接创建策略或样本 workflow。
 ```

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "observation_id": "observation.strategy.steady_uptrend_breakout_watch.candidate_v1.test_tracking",
+  "strategy_id": "strategy.steady_uptrend_breakout_watch",
+  "strategy_version": "candidate_v1",
+  "lifecycle_status": "pending_approval",
+  "approval_status": "pending_user_approval",
+  "source_evidence_id": "strategy.steady_uptrend_breakout_watch.candidate_v1.evaluation.steady_uptrend_breakout.v1",
+  "evaluation_profile_id": "evaluation.steady_uptrend_breakout.v1",
+  "benchmark": "CANDIDATE_POOL_EQUAL_WEIGHT",
+  "comparison_benchmarks": [
+    "CN_A_EQUAL_WEIGHT",
+    "000905.SH",
+    "000852.SH",
+    "000300.SH",
+    "000698.SH"
+  ],
+  "review_frequency": "daily_after_close",
+  "review_horizons": [5, 10, 20, 60],
+  "promotion_blockers": [
+    "等待 L6 evidence 和用户审批；未批准前不得进入 test_tracking。"
+  ],
+  "notes": "这是 observation 记录格式样例，不代表策略已经进入观察池。"
+}

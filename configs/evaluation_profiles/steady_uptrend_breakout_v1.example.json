@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "profile_id": "evaluation.steady_uptrend_breakout.v1",
+  "strategy_id": "strategy.steady_uptrend_breakout_watch",
+  "strategy_version": "candidate_v1",
+  "benchmark": "CANDIDATE_POOL_EQUAL_WEIGHT",
+  "comparison_benchmarks": [
+    "CN_A_EQUAL_WEIGHT",
+    "000905.SH",
+    "000852.SH",
+    "000300.SH",
+    "000698.SH"
+  ],
+  "benchmark_definition": {
+    "benchmark_id": "candidate_pool_equal_weight_v1",
+    "universe": "同一 signal_date 下，由同一 CandidatePoolPolicy 产生、尚未经过最终排序和精选的全部候选股票。",
+    "weighting": "每个 signal_date 内等权；若当日有 N 只可评估候选，每只权重为 1/N。",
+    "rebalance": "每个 signal_date 独立计算候选池收益，不沿用前一 signal_date 的权重。",
+    "entry_rule": "与策略信号一致：signal_date 后第 1 个交易日开盘价进入。",
+    "exit_rule": "与策略信号一致：holding_horizon 对应退出日收盘价退出。",
+    "missing_price_policy": "缺失 entry 或 exit 价格时剔除该候选并记录 skipped。",
+    "suspended_or_untradable_entry_policy": "T+1 无法交易或停牌时剔除该候选并记录 skipped。",
+    "limit_up_entry_policy": "v1 暂不模拟一字涨停买不进，作为 limitation 记录；后续交易约束版本再升级。",
+    "notes": "该 benchmark 用于判断策略精选结果是否跑赢同一天同一候选池里的平均机会。"
+  },
+  "holding_horizons": [5, 10, 20, 60],
+  "primary_holding_horizon": 10,
+  "selection_frequency": "daily_after_close",
+  "entry_offset": 1,
+  "entry_price_field": "open",
+  "exit_price_field": "close",
+  "acceptance_policy": {
+    "min_sample_size": 20,
+    "min_win_rate": 0.52,
+    "min_avg_return": 0.0,
+    "min_excess_avg_return": 0.0,
+    "return_metric_name": "annual_return",
+    "min_return_metric": 0.0,
+    "drawdown_metric_name": "max_drawdown",
+    "max_abs_drawdown": 0.3,
+    "min_dry_run_success_days": 3,
+    "require_user_approval": true
+  },
+  "lifecycle_gates": {
+    "test_tracking": {
+      "min_sample_size": 20,
+      "min_win_rate": 0.52,
+      "min_avg_return": 0.0,
+      "min_excess_avg_return": 0.0,
+      "return_metric_name": "annual_return",
+      "min_return_metric": 0.0,
+      "drawdown_metric_name": "max_drawdown",
+      "max_abs_drawdown": 0.3,
+      "min_dry_run_success_days": 3,
+      "require_user_approval": true
+    },
+    "active_production": {
+      "min_sample_size": 50,
+      "min_tracking_days": 20,
+      "min_win_rate": 0.55,
+      "min_avg_return": 0.0,
+      "min_median_return": 0.0,
+      "min_excess_avg_return": 0.0,
+      "min_excess_annual_return": 0.0,
+      "return_metric_name": "annual_return",
+      "min_return_metric": 0.0,
+      "drawdown_metric_name": "max_drawdown",
+      "max_abs_drawdown": 0.25,
+      "require_failure_cases_reviewed": true,
+      "require_user_approval": true
+    }
+  },
+  "review_notes": "稳健上行突破策略闭环 v1 的默认评估口径。主基准使用候选池等权，用于评估策略在同一机会集合内的选股能力；对照基准包含全 A 等权、中证500、中证1000、沪深300和科创100。10 日为主评估周期，5/20/60 日用于观察信号即时性、月度延续和中期回撤。profile 只定义评估门槛，不批准策略。"
+}

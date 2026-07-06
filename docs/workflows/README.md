@@ -18,14 +18,16 @@ docs/standards/009-parallel-session-delivery-standard.md
 | --- | --- | --- | --- |
 | 001 | `001-data-foundation-mvp.md` | v0.1 | 外部事实数据契约、DataAsset、L0/L1 接入切片 |
 | 002 | `002-single-stock-strategy-research-skill.md` | v0.1 | 个股研究样本沉淀到 L2/L3/L4 候选的 workflow |
+| 003 | `003-research-sample-accumulation.md` | v0.1 | 研究样本积累、覆盖门槛和扩样本检查 |
+| 004 | `004-theme-lifecycle-research.md` | topic_backlog v0.1 | 把主题生命周期观点先沉淀为研究课题，排优先级后再进入研究 |
 
 ## 3. 待建设 workflow
 
 | 编号 | 建议文档 | 目标 |
 | --- | --- | --- |
-| 003 | `003-full-market-screening.md` | 全 A 股票池分层筛选 |
-| 004 | `004-observation-pool-tracking.md` | 异动观察池再分析和未来跟踪 |
-| 005 | `005-strategy-draft-backtest-approval.md` | 候选策略、自动回测、人工审批和观察池准入 |
+| 005 | `005-full-market-screening.md` | 全 A 股票池分层筛选 |
+| 006 | `006-observation-pool-tracking.md` | 异动观察池再分析和未来跟踪 |
+| 007 | `007-strategy-draft-backtest-approval.md` | 候选策略、自动回测、人工审批和观察池准入 |
 
 ## 4. 新增 workflow 模板
 

@@ -1,0 +1,154 @@
+{
+  "workflow_id": "theme_lifecycle_ai_decrowding_research",
+  "version": "topic_backlog_v1",
+  "status": "topic_backlog",
+  "description": "把“buy everything AI 阶段结束”类观点先保留为主题生命周期研究课题：记录案例、识别缺口、提出候选 L2/L3/L4 口径，但未排优先级、未进入正式 research_only workflow。",
+  "topic_ref": "configs/research_topics/research_topic_registry.example.json#topic.theme_ai_decrowding_20260706",
+  "source_research_case": {
+    "case_id": "theme_ai_decrowding_20260706",
+    "source_type": "article_interpretation",
+    "title": "buy everything AI 的阶段已经结束",
+    "source_url": "https://mp.weixin.qq.com/s/bO60P5HMOO2vaBGBJUH2Sg",
+    "author": "地平线全球策略组",
+    "observed_at": "2026-07-06",
+    "thesis": "AI/科技交易从无差别 beta 进入分化验证阶段，后续应优先识别质量兑现、capex 锚点、去拥挤风险和二阶扩散机会。",
+    "not_a_signal": true
+  },
+  "candidate_pool_policy": {
+    "policy_id": "research.theme_lifecycle_ai_decrowding.pool",
+    "version": "topic_backlog_v1",
+    "source_type": "theme_watchlist_or_l3_label_recall",
+    "parameters": {
+      "market": "CN_A",
+      "theme_families": [
+        "ai",
+        "semiconductor",
+        "compute_infrastructure",
+        "robotics",
+        "power_grid",
+        "industrial_infrastructure"
+      ],
+      "candidate_sources": [
+        "approved theme/concept membership DataAsset when available",
+        "existing context_theme labels when approved",
+        "manual research watchlist after research_only activation"
+      ],
+      "replay_requirement": "任何正式回测前，候选池来源和 as-of 规则必须可复现。",
+      "activation_requirement": "只有排优先级后才允许从 topic_backlog 升级为 research_only。"
+    }
+  },
+  "stage_pipeline": [
+    {
+      "stage_id": "theme_membership_context",
+      "stage_type": "filter",
+      "purpose": "确认股票属于 AI 主线或二阶扩散链条。",
+      "candidate_l3_labels": [
+        "context_regime.ai_theme_active",
+        "context_regime.ai_second_derivative_chain"
+      ],
+      "missing_inputs": [
+        "theme/concept membership as-of DataAsset",
+        "industry/concept strength label"
+      ]
+    },
+    {
+      "stage_id": "decrowding_risk_gate",
+      "stage_type": "risk_filter",
+      "purpose": "识别拥挤多头撤退、短期动量反转和无差别 beta 效率下降。",
+      "candidate_l2_primitives": [
+        "context_theme.theme_attention_falling",
+        "risk.crowded_long_unwinding",
+        "return_momentum.short_term_momentum_reversal",
+        "structure.top_lower_high_bars"
+      ],
+      "candidate_l3_labels": [
+        "risk_state.theme_decrowding_pressure",
+        "risk_state.buy_everything_beta_efficiency_declining"
+      ],
+      "decision": "topic_backlog 阶段只记录未来研究方向，不直接剔除、降权或生成空头信号。"
+    },
+    {
+      "stage_id": "quality_execution_validation",
+      "stage_type": "filter",
+      "purpose": "从主题 beta 切换到兑现驱动，要求公司质量、增长或订单兑现证据。",
+      "candidate_l2_primitives": [
+        "fundamental_quality.profitability_stable",
+        "fundamental_growth.growth_acceleration",
+        "context_theme.order_or_capex_expectation_positive"
+      ],
+      "candidate_l3_labels": [
+        "fundamental_profile.quality_execution_support",
+        "composite_setup.ai_selective_winner_candidate"
+      ],
+      "missing_inputs": [
+        "earnings/order/capex expectation DataAsset",
+        "approved fundamental quality labels"
+      ]
+    },
+    {
+      "stage_id": "validation_window_guard",
+      "stage_type": "observe",
+      "purpose": "财报、订单、capex 指引等验证窗口前后，不强行把研究观点升级为正式策略。",
+      "candidate_l2_primitives": [
+        "context_market.major_event_window_near",
+        "context_theme.capex_anchor_intact"
+      ],
+      "candidate_l3_labels": [
+        "context_regime.theme_in_validation_window",
+        "context_regime.capex_anchor_not_invalidated"
+      ],
+      "decision": "待办阶段不产生策略候选；未来若进入 research_only，验证窗口未结束时最多保留 draft/test_tracking，不进入 active_production。"
+    },
+    {
+      "stage_id": "second_derivative_ranking",
+      "stage_type": "rank",
+      "purpose": "在 capex 主线未证伪时，观察电力、工业基建、机器人等二阶扩散方向。",
+      "score_fields": [
+        "theme_chain_relevance_score",
+        "industry_relative_strength_score",
+        "quality_execution_score",
+        "decrowding_risk_penalty",
+        "technical_structure_confirmation_score"
+      ],
+      "decision_policy": {
+        "use_for_top_n": false,
+        "reason": "当前 score_fields 多数尚未有 approved L2/L3 口径，且本课题未排优先级，只能作为课题研究设计，不作为选股截断依据。"
+      }
+    }
+  ],
+  "artifact_plan": {
+    "research_outputs": [
+      "PatternCase after activation",
+      "FactorObservation after activation",
+      "PrimitiveBuildRequirement after activation",
+      "LabelBuildRequirement after activation",
+      "StrategyCandidate draft after activation"
+    ],
+    "blocked_production_outputs": [
+      "StrategySignal",
+      "BacktestResult used for promotion",
+      "ObservationRecord for approved strategy"
+    ],
+    "promotion_gate": "先经优先级评审从 topic_backlog 升级为 research_only；只有样本库、DataAsset、approved L2/L3 标签和 L6 回测证据齐备后，才能从 research_only 升级为 candidate。"
+  },
+  "next_data_requirements": [
+    {
+      "requirement_id": "theme_membership_asof",
+      "target_layer": "L0/L1",
+      "status": "missing",
+      "description": "可复现的题材/概念成员和 as-of 生效规则。"
+    },
+    {
+      "requirement_id": "theme_crowding_proxy",
+      "target_layer": "research/L2 candidate",
+      "status": "research_temporary",
+      "description": "先用成交额放大、阶段涨幅、顶部新低、波动放大和行业热度回落做代理；不能冒充正式资金流事实。"
+    },
+    {
+      "requirement_id": "capex_order_expectation",
+      "target_layer": "L0/L1",
+      "status": "missing",
+      "description": "capex、订单、财报预期等外部数据契约缺失前，相关标签只能保留为人工研究备注或待建设需求。"
+    }
+  ]
+}

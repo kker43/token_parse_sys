@@ -10,6 +10,7 @@
 - 标准系统结构和模型指导记录在 `docs/standards/001-system-structure-and-model-guidance.md`。
 - 数据基础集成指导记录在 `docs/standards/002-data-foundation-integration.md`。
 - 远程执行布局记录在 `docs/standards/003-remote-system-execution-layout.md`。
+- 宏观大类资产投研扩展的 PRD 记录在 `docs/product/001-macro-cross-asset-research-prd.md`，系统 spec 记录在 `docs/standards/010-macro-cross-asset-research-spec.md`，第一批 DataAsset 示例记录在 `configs/data_assets/macro_cross_asset_data_assets.example.json`。
 - 远程空骨架位于 `/home/ubuntu/token_parse_sys`。
 - 下一步实现是 Workflow 001：`docs/workflows/001-data-foundation-mvp.md`。
 
@@ -62,6 +63,26 @@ PatternCase
 - 只有已批准的层级 artifact 才允许进入定时生产。
 - 每个已批准 artifact 都必须保留指向样本证据、上游 `DataAsset` 依赖、版本和 `run_id` 的链接。
 - 研究编排可以协调 L0-L6，但 L0-L6 不得依赖研究编排。
+
+## 宏观大类资产投研扩展
+
+宏观大类资产模块用于回答黄金、石油、大宗商品、Crypto、股市、美债、中国国债等资产的趋势、异动和下钻分析问题。
+
+该模块仍遵守现有边界：
+
+- 外部数据源只通过 L0 `DataAsset` 契约进入系统。
+- L1 生成 `MacroAnalysisSnapshot`、`AssetStateSnapshot` 和 `CrossAssetSnapshot`。
+- L2/L3 生成确定性趋势、异动、跨资产一致性和反证标签。
+- 研究结论必须带证据、反证、置信度分解和审阅状态。
+- 宏观标签若要影响 A 股策略，只能作为已批准 L3 标签或 approved metadata 被 L4 引用。
+
+后续实现顺序：
+
+1. 用 `configs/data_assets/macro_cross_asset_data_assets.example.json` 扩展第一批宏观 DataAsset。
+2. 为宏观快照补 L1 schema 和合成测试。
+3. 实现趋势、异动、跨资产一致性和反证原语。
+4. 生成宏观标签 registry 和每日简报工作流草稿。
+5. 在用户审批后，再设计宏观标签到 A 股策略上下文的连接。
 
 ## 目标目录布局
 

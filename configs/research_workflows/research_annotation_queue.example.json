@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "workflow_id": "research_annotation_queue.steady_uptrend_breakout.v1",
+  "target_sample_library": "configs/research_samples/steady_uptrend_breakout_samples.json",
+  "strategy_candidate_id": "strategy.steady_uptrend_breakout_watch",
+  "status": "research_only",
+  "candidate_key": "breakout_candidates",
+  "holding_horizon": 20,
+  "source_lane": "scan_candidate_review",
+  "label_status": "proposed",
+  "human_confirmation_required": true,
+  "review_input_format": "queue_item_id<TAB>review_code",
+  "annotation_suggestion_policy": {
+    "high_value_return_threshold": 0.15,
+    "mid_positive_return_threshold": 0.05,
+    "hard_negative_return_threshold": -0.1,
+    "hard_negative_drawdown_threshold": -0.18,
+    "controlled_high_value_drawdown_threshold": -0.12,
+    "high_setup_score_threshold": 75.0,
+    "high_ma30_hold_ratio_90d_threshold": 0.8,
+    "high_max_ma30_deviation_pct": 0.25,
+    "max_review_items": 50
+  },
+  "review_label_options": [
+    {
+      "code": 1,
+      "event_class": "positive_attention_high_value",
+      "value_tier": "high",
+      "label": "高价值正样本"
+    },
+    {
+      "code": 2,
+      "event_class": "positive_attention_mid_value",
+      "value_tier": "mid",
+      "label": "中价值正样本"
+    },
+    {
+      "code": 3,
+      "event_class": "weak_or_excluded_attention",
+      "value_tier": "low_or_exclude",
+      "label": "弱样本或排除候选"
+    },
+    {
+      "code": 4,
+      "event_class": "borderline_negative_recall",
+      "value_tier": "borderline_negative",
+      "label": "边界负样本"
+    },
+    {
+      "code": 5,
+      "event_class": "negative_after_close_recall",
+      "value_tier": "borderline_negative",
+      "label": "召回后失败样本"
+    },
+    {
+      "code": 6,
+      "event_class": "hard_negative_recall",
+      "value_tier": "hard_negative",
+      "label": "硬负样本"
+    },
+    {
+      "code": 7,
+      "event_class": "out_of_family",
+      "value_tier": "out_of_family",
+      "label": "形态族外"
+    },
+    {
+      "code": 8,
+      "event_class": "skip_uncertain",
+      "value_tier": "uncertain",
+      "label": "跳过/证据不足",
+      "writes_to_sample_library": false
+    }
+  ],
+  "notes": [
+    "系统只能写 suggested_event_class，不能自动写 confirmed_event_class。",
+    "人工确认时只填写数字 code，不需要输入标签文字。",
+    "label_status=proposed 的样本不能作为策略晋升证据。",
+    "人工确认后再转入 configs/research_samples/ 下的正式样本库。"
+  ]
+}

@@ -41,6 +41,14 @@ from stock_lobster.research.factor_reuse import (
     audit_factor_reuse,
     load_indicator_catalog,
 )
+from stock_lobster.research.annotation_queue import (
+    AnnotationQueue,
+    AnnotationQueueItem,
+    AnnotationSuggestionPolicy,
+    DEFAULT_REVIEW_LABEL_OPTIONS,
+    ReviewLabelOption,
+    build_annotation_queue,
+)
 
 __all__ = [
     "BacktestAcceptancePolicy",
@@ -76,4 +84,10 @@ __all__ = [
     "FactorReuseDecision",
     "audit_factor_reuse",
     "load_indicator_catalog",
+    "AnnotationQueue",
+    "AnnotationQueueItem",
+    "AnnotationSuggestionPolicy",
+    "DEFAULT_REVIEW_LABEL_OPTIONS",
+    "ReviewLabelOption",
+    "build_annotation_queue",
 ]

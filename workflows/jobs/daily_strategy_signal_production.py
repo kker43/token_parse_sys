@@ -576,6 +576,12 @@ def _write_candidates_csv(path: Path, candidates: Sequence[Mapping[str, object]]
         "ma30_hold_ratio_90d",
         "red_k_ratio_20d",
         "long_shadow_ratio_20d",
+        "large_bearish_body_ratio_20d",
+        "max_consecutive_green_k_20d",
+        "single_bull_bar_return_share_20d",
+        "impulse_consolidation_days",
+        "ma5_10_20_30_convergence_pct",
+        "weak_shape_pass",
         "amount_ratio_20d",
         "max_turnover_rate_20d",
         "strong_industry_hit",
@@ -611,7 +617,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
         "",
         "- 基础生产逻辑由 `token_fetch` 的 `daily_master_scheduler.py` 保持一致。",
         "- 本报告只消费基础事实数据和已注册上下文口径，不直接生产事实数据。",
-        "- 过滤包含正常上市、总市值、20 日均成交额、20 日换手率、周级别趋势、强行业/强概念、MA30 稳健性和接近 60 日高点。",
+        "- 过滤包含正常上市、总市值、20 日均成交额、20 日换手率、周级别趋势、强行业/强概念、MA30 稳健性、接近 60 日高点，以及可选的弱形态过滤。",
         "",
         "## 候选列表",
         "",
@@ -620,9 +626,9 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
         lines.append("本次没有命中候选。")
     else:
         lines.append(
-            "| 股票 | 名称 | 行业 | 收盘 | 分数 | 距60日高点 | MA30乖离 | MA30站上90日 | 红K比 | 量比 | 强上下文 |"
+            "| 股票 | 名称 | 行业 | 收盘 | 分数 | 距60日高点 | MA30乖离 | MA30站上90日 | 红K比 | 大阴柱比 | 单阳主导 | 盘整天数 | 量比 | 强上下文 |"
         )
-        lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
         for item in candidates:
             if not isinstance(item, Mapping):
                 continue
@@ -634,7 +640,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
                 )
             )
             lines.append(
-                "| {asset_id} | {name} | {industry} | {close:.2f} | {score:.2f} | {high_gap:.2%} | {ma30_dev:.2%} | {ma30_hold:.2%} | {red_ratio:.2%} | {amount_ratio:.2f} | {strong_context} |".format(
+                "| {asset_id} | {name} | {industry} | {close:.2f} | {score:.2f} | {high_gap:.2%} | {ma30_dev:.2%} | {ma30_hold:.2%} | {red_ratio:.2%} | {bearish_ratio:.2%} | {single_bull_share:.2%} | {consolidation_days} | {amount_ratio:.2f} | {strong_context} |".format(
                     asset_id=item.get("asset_id", ""),
                     name=item.get("name", ""),
                     industry=item.get("industry", ""),
@@ -644,6 +650,9 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
                     ma30_dev=float(item.get("ma30_deviation_pct") or 0),
                     ma30_hold=float(item.get("ma30_hold_ratio_90d") or 0),
                     red_ratio=float(item.get("red_k_ratio_20d") or 0),
+                    bearish_ratio=float(item.get("large_bearish_body_ratio_20d") or 0),
+                    single_bull_share=float(item.get("single_bull_bar_return_share_20d") or 0),
+                    consolidation_days=int(item.get("impulse_consolidation_days") or 0),
                     amount_ratio=float(item.get("amount_ratio_20d") or 0),
                     strong_context=strong_context,
                 )

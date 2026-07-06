@@ -1,0 +1,102 @@
+{
+  "registry_id": "research_topic_registry",
+  "version": "v1",
+  "status": "active_intake",
+  "description": "课题研究模块登记表：保存想法、参考文献、排期、阻塞项和未来晋升方向。",
+  "intake_policy": {
+    "default_status": "topic_backlog",
+    "default_priority": "unranked",
+    "allowed_source_types": [
+      "article_interpretation",
+      "manual_research_note",
+      "sample_observation",
+      "post_trade_review",
+      "strategy_gap",
+      "system_capability_gap"
+    ],
+    "required_fields": [
+      "topic_id",
+      "title",
+      "summary",
+      "why_keep",
+      "blocked_by",
+      "references",
+      "next_review_trigger"
+    ],
+    "not_allowed": [
+      "do not create StrategySignal",
+      "do not create approved L2/L3/L4 registry entries",
+      "do not run production backtests",
+      "do not treat references as factual data"
+    ]
+  },
+  "priority_rubric": {
+    "P0": "已有足够正负样本、DataAsset 可用、能直接进入 research_only workflow。",
+    "P1": "课题重要且与当前策略方向强相关，但仍缺关键样本或数据契约。",
+    "P2": "想法有启发，但数据、样本和策略路径都不清楚，先保留。",
+    "P3": "仅作长期观察，不主动推进。"
+  },
+  "topics": [
+    {
+      "topic_id": "topic.theme_ai_decrowding_20260706",
+      "title": "AI 主题从无差别 beta 进入去拥挤和业绩验证",
+      "status": "topic_backlog",
+      "priority": "unranked",
+      "summary": "研究 AI/科技主题从 buy everything beta 转入分化验证后，A 股相关链条如何识别质量兑现、拥挤消化、capex 锚点和二阶扩散机会。",
+      "why_keep": "该课题可补充主题生命周期框架，并帮助现有系统把题材热度、行业强度、基本面兑现和风险降权连接起来。",
+      "research_questions": [
+        "A 股 AI/半导体/算力/机器人链条是否存在可复现的主题生命周期阶段？",
+        "拥挤度退潮可以先用哪些已存在或 research_temporary 指标代理？",
+        "质量兑现和 capex 锚点应进入 L1 DataAsset、L3 标签，还是先保留人工研究备注？",
+        "二阶扩散方向是否能改善现有 StagePipeline 的排序解释？"
+      ],
+      "blocked_by": [
+        "theme_membership_asof DataAsset",
+        "theme_crowding_proxy definition",
+        "capex_order_expectation DataAsset or manual review rule",
+        "positive/negative A-share sample set"
+      ],
+      "references": [
+        {
+          "reference_id": "ref.weixin_ai_decrowding_20260706",
+          "source_type": "article",
+          "title": "buy everything AI 的阶段已经结束",
+          "author": "地平线全球策略组",
+          "url": "https://mp.weixin.qq.com/s/bO60P5HMOO2vaBGBJUH2Sg",
+          "published_at": "2026-07-06",
+          "captured_at": "2026-07-06",
+          "relevance": "提供主题从无差别 beta 转向质量兑现、去拥挤和验证窗口的研究启发。",
+          "paraphrased_claims": [
+            "AI/科技交易不再适合无差别买入 beta。",
+            "后续市场更可能奖励质量、执行和具体公司兑现。",
+            "capex 和订单预期是验证 AI 主线的重要锚点。",
+            "在主线未证伪时，二阶扩散链条仍值得观察。"
+          ],
+          "claims_to_verify": [
+            "A 股 AI 相关链条是否存在类似的 beta 效率下降。",
+            "拥挤退潮阶段中质量和执行标签是否能提升筛选效果。",
+            "二阶扩散方向在 A 股是否有可回测的领先或滞后关系。"
+          ],
+          "counterpoints": [
+            "海外科技交易结构不能直接映射到 A 股。",
+            "缺少可复现的资金流和 capex 预期数据时，不应升级为策略条件。"
+          ],
+          "copyright_policy": "只保存摘要和转述，不保存全文或大段原文。"
+        }
+      ],
+      "candidate_outputs": [
+        "DataAssetRequirement: theme_membership_asof",
+        "PrimitiveBuildRequirement: risk.crowded_long_unwinding",
+        "LabelBuildRequirement: risk_state.theme_decrowding_pressure",
+        "FrameworkRequirement: theme lifecycle stage taxonomy"
+      ],
+      "candidate_workflow_refs": [
+        "configs/research_workflows/theme_lifecycle_ai_decrowding.example.json",
+        "docs/workflows/004-theme-lifecycle-research.md"
+      ],
+      "next_review_trigger": "当需要建设主题生命周期框架，或已有 AI/半导体/算力/机器人正反样本积累后再评审。",
+      "created_at": "2026-07-06",
+      "updated_at": "2026-07-06"
+    }
+  ]
+}

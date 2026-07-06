@@ -1,0 +1,150 @@
+{
+  "strategy_id": "strategy.steady_uptrend_breakout_watch",
+  "version": "candidate_v2",
+  "status": "draft",
+  "name": "稳健上升趋势突破关注策略 v2",
+  "description": "在 candidate_v1 的周线趋势、行业/概念上下文、MA30 稳健性和突破放量条件基础上，加入用户标注的弱形态过滤：大阴柱过多、连续绿柱、小阳小阴横盘后一根大阳柱主导、急拉后盘整不足、MA5/10/20/30 过度缠绕。",
+  "parent_strategy_id": "strategy.steady_uptrend_breakout_watch",
+  "candidate_pool": {
+    "policy_id": "strategy.steady_uptrend_breakout_watch.pool",
+    "version": "candidate_v2",
+    "source_type": "l3_label_recall",
+    "parameters": {
+      "labels": [
+        "composite_setup.steady_uptrend_breakout_watch"
+      ],
+      "market": "CN_A"
+    }
+  },
+  "pipeline": [
+    {
+      "stage_id": "quality_gate",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "quality_gate.snapshot_consumable == true"
+      ]
+    },
+    {
+      "stage_id": "hard_exclusion_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "asset_state.normal_listing == true",
+        "liquidity.total_mv_ge_100e == true",
+        "liquidity.avg_amount_20d_ge_2e == true",
+        "risk.turnover_rate_20d_controlled == true"
+      ]
+    },
+    {
+      "stage_id": "weekly_context_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "technical_context.weekly_uptrend_context == true"
+      ],
+      "asof_rule": "weekly.period_end_date <= signal_date 的最新一条周线；周五收盘后可使用本周五周线，非周五使用上一个周五周线。"
+    },
+    {
+      "stage_id": "industry_concept_context_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "context.strong_industry_or_concept == true"
+      ],
+      "logic": "strong_industry_hit OR strong_concept_hit"
+    },
+    {
+      "stage_id": "steady_trend_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "technical_pattern.steady_uptrend_stock == true",
+        "risk.ma30_deviation_not_extreme == true"
+      ]
+    },
+    {
+      "stage_id": "weak_shape_exclusion_filter",
+      "stage_type": "filter",
+      "pass_conditions": [
+        "candlestick.large_bearish_body_ratio_20d <= 0.30",
+        "candlestick.max_consecutive_green_k_20d <= 4",
+        "candlestick.single_bull_bar_return_share_20d <= 0.60",
+        "moving_average.ma5_10_20_30_convergence_pct >= 0.025"
+      ],
+      "diagnostic_fields": [
+        "structure.impulse_consolidation_days"
+      ],
+      "notes": "该阶段专门对应用户标注的 3=弱样本/排除候选：K线难看、大阴柱多、连续绿柱、靠单根大阳柱拉升、均线过度缠绕。急拉后盘整不足先作为诊断字段，因为部分高价值样本本身就是大阳柱确认强势的当天，不能直接硬过滤。"
+    },
+    {
+      "stage_id": "breakout_recall",
+      "stage_type": "recall",
+      "pass_conditions": [
+        "composite_setup.steady_uptrend_breakout_watch == true"
+      ]
+    },
+    {
+      "stage_id": "rank_by_trend_quality",
+      "stage_type": "rank",
+      "status": "diagnostic_only",
+      "score_fields": [
+        "trend_strength_score",
+        "drawdown_control_score",
+        "breakout_volume_score",
+        "red_k_ratio_score",
+        "shadow_noise_score",
+        "weak_shape_penalty"
+      ],
+      "decision_policy": {
+        "use_for_top_n": false,
+        "reason": "当前样本仍在积累，v2 先验证弱形态过滤是否减少用户标注的 3/5 类误召回，不用 setup_score 做最终 Top N 截断。"
+      }
+    }
+  ],
+  "candidate_scan_policy": {
+    "min_amount_ratio_20d": 1.5,
+    "max_abs_drawdown_60d": 0.4,
+    "max_abs_drawdown_120d": 0.55,
+    "min_red_k_ratio_20d": 0.45,
+    "max_long_shadow_ratio_20d": 0.65,
+    "require_close_above_ma30": true,
+    "require_weekly_uptrend": true,
+    "max_abs_weekly_drawdown_26w": 0.55,
+    "max_weekly_ma20_deviation_pct": null,
+    "max_ma30_deviation_pct": 0.35,
+    "preferred_ma30_deviation_pct": 0.25,
+    "min_sustained_ma30_hold_ratio_90d": 0.75,
+    "min_recent_ma30_hold_ratio_30d": 0.75,
+    "min_recent_ma30_hold_ratio_60d": 0.55,
+    "min_base_breakout_ma30_hold_ratio_60d": 0.5,
+    "min_base_breakout_return_20d": 0.2,
+    "require_normal_listing": true,
+    "min_total_mv": 1000000,
+    "min_avg_amount_20d": 2000000000,
+    "min_avg_amount_20d_note": "当前 token_daily_details.amount 原始值约等于实际成交额(元) * 10，因此 2,000,000,000 对应实际 20 日均成交额约 2 亿元。",
+    "max_turnover_rate_20d": 20,
+    "require_context_strength": true,
+    "enable_weak_shape_filter": true,
+    "min_large_bearish_body_pct": 0.025,
+    "max_large_bearish_body_ratio_20d": 0.3,
+    "max_consecutive_green_k_20d": 4,
+    "max_single_bull_bar_return_share_20d": 0.6,
+    "min_impulse_consolidation_days": null,
+    "min_ma5_10_20_30_convergence_pct": 0.025,
+    "start_date": null,
+    "notes": "candidate_v2 是样本驱动研究版本，重点验证弱形态过滤是否剔除 3=弱样本/排除候选，同时保留 1/2 类正样本。"
+  },
+  "backtest_gate": {
+    "min_sample_size": 30,
+    "min_win_rate": 0.55,
+    "return_metric_name": "annual_return",
+    "min_return_metric": 0.0,
+    "drawdown_metric_name": "max_drawdown",
+    "max_abs_drawdown": 0.25
+  },
+  "sample_feedback_basis": {
+    "manual_review_path": "runtime/research_annotation_queues/historical_batch_001_manual_review_20260706_part1.json",
+    "label_code_3_usage": "弱样本/排除候选，用于训练 weak_shape_exclusion_filter。",
+    "primary_v2_validation": [
+      "v2 相比 v1 应减少用户标注为 3/5 的误召回。",
+      "v2 不应大量误杀用户标注为 1/2 的高价值或中价值正样本。",
+      "若正样本被误杀，优先把对应条件降级为 penalty，而不是 hard filter。"
+    ]
+  }
+}

@@ -196,6 +196,63 @@ class TrendBreakoutScanTest(unittest.TestCase):
         self.assertTrue(latest.trend_stability_pass)
         self.assertTrue(latest.breakout_watch)
 
+    def test_filters_breakout_when_weak_shape_filter_flags_user_rejected_pattern(self) -> None:
+        bars = _one_bar_pump_after_choppy_green_bars("000009.SZ")
+
+        metrics = scan_trend_breakouts(
+            bars,
+            TrendBreakoutScanPolicy(
+                start_date="20260001",
+                min_red_k_ratio_20d=0.35,
+                enable_weak_shape_filter=True,
+                max_large_bearish_body_ratio_20d=0.20,
+                max_consecutive_green_k_20d=4,
+                max_single_bull_bar_return_share_20d=0.55,
+                min_impulse_consolidation_days=5,
+                min_ma5_10_20_30_convergence_pct=0.08,
+            ),
+        )
+        latest = metrics[-1]
+
+        self.assertTrue(latest.close_new_high_60d_flag)
+        self.assertGreater(latest.large_bearish_body_ratio_20d, 0.20)
+        self.assertGreater(latest.max_consecutive_green_k_20d, 4)
+        self.assertGreater(latest.single_bull_bar_return_share_20d, 0.55)
+        self.assertLess(latest.impulse_consolidation_days, 5)
+        self.assertLess(latest.ma5_10_20_30_convergence_pct, 0.08)
+        self.assertFalse(latest.weak_shape_pass)
+        self.assertFalse(latest.daily_quality_pass)
+        self.assertFalse(latest.breakout_watch)
+        self.assertIn("large_bearish_body_ratio_failed", latest.quality_failure_reasons)
+        self.assertIn("consecutive_green_k_failed", latest.quality_failure_reasons)
+        self.assertIn("single_bull_bar_dominance_failed", latest.quality_failure_reasons)
+        self.assertIn("impulse_consolidation_days_failed", latest.quality_failure_reasons)
+        self.assertIn("ma5_10_20_30_convergence_failed", latest.quality_failure_reasons)
+
+    def test_weak_shape_metrics_are_observational_until_filter_is_enabled(self) -> None:
+        bars = _one_bar_pump_after_choppy_green_bars("000010.SZ")
+
+        metrics = scan_trend_breakouts(
+            bars,
+            TrendBreakoutScanPolicy(
+                start_date="20260001",
+                min_red_k_ratio_20d=0.35,
+                enable_weak_shape_filter=False,
+                max_large_bearish_body_ratio_20d=0.20,
+                max_consecutive_green_k_20d=4,
+                max_single_bull_bar_return_share_20d=0.55,
+                min_impulse_consolidation_days=5,
+                min_ma5_10_20_30_convergence_pct=0.08,
+            ),
+        )
+        latest = metrics[-1]
+
+        self.assertTrue(latest.weak_shape_pass)
+        self.assertTrue(latest.daily_quality_pass)
+        self.assertTrue(latest.breakout_watch)
+        self.assertGreater(latest.large_bearish_body_ratio_20d, 0.20)
+        self.assertGreater(latest.single_bull_bar_return_share_20d, 0.55)
+
     def test_applies_external_market_cap_turnover_and_context_filters(self) -> None:
         bars = _daily_breakout_bars("000008.SZ")
         contexts = [
@@ -371,6 +428,44 @@ def _base_breakout_start_bars(asset_id: str) -> list[KlineBar]:
     return bars
 
 
+def _one_bar_pump_after_choppy_green_bars(asset_id: str) -> list[KlineBar]:
+    bars: list[KlineBar] = []
+    close_price = 30.0
+    for index in range(140):
+        amount = 120.0
+        if index < 120:
+            close_price += 0.05
+            open_price = close_price - 0.02
+        elif index < 134:
+            close_price += 0.02
+            if index % 2 == 0:
+                open_price = close_price + 0.95
+            else:
+                open_price = close_price - 0.04
+        elif index < 139:
+            close_price += 0.03
+            open_price = close_price + 0.12
+        else:
+            previous_close = close_price
+            close_price = previous_close + 6.0
+            open_price = previous_close + 0.25
+            amount = 300.0
+        high = max(open_price, close_price) + 0.05
+        low = min(open_price, close_price) - 0.05
+        bars.append(
+            KlineBar(
+                asset_id=asset_id,
+                trade_date=f"2026{index + 1:04d}",
+                open=open_price,
+                high=high,
+                low=low,
+                close=close_price,
+                amount=amount,
+            )
+        )
+    return bars
+
+
 def _metric(
     asset_id: str,
     trade_date: str,
@@ -406,10 +501,16 @@ def _metric(
         red_k_ratio_20d=0.60,
         green_k_ratio_20d=0.40,
         long_shadow_ratio_20d=0.25,
+        large_bearish_body_ratio_20d=0.0,
+        max_consecutive_green_k_20d=1,
+        single_bull_bar_return_share_20d=0.20,
+        impulse_consolidation_days=8,
+        ma5_10_20_30_convergence_pct=0.15,
         avg_amount_20d=120.0,
         close_new_high_60d_flag=breakout_watch,
         daily_quality_pass=True,
         trend_stability_pass=True,
+        weak_shape_pass=True,
         market_cap_liquidity_pass=True,
         turnover_quality_pass=True,
         context_strength_pass=True,

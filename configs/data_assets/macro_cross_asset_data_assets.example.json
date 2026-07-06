@@ -1,0 +1,192 @@
+{
+  "catalog_id": "macro_cross_asset_data_assets.example",
+  "catalog_version": "0.1.0",
+  "description": "Macro cross-asset DataAsset examples. These entries describe external contracts only; Stock Lobster does not produce or repair these facts.",
+  "assets": [
+    {
+      "asset_id": "macro.fred.dgs10.daily",
+      "provider": "fred",
+      "source_url": "https://fred.stlouisfed.org/docs/api/fred/series_observations.html",
+      "external_identifier": "DGS10",
+      "asset_group": "rates",
+      "subject": "us_treasury_10y_yield",
+      "frequency": "daily",
+      "calendar": "us_business_day",
+      "field_schema": [
+        {"name": "date", "type": "date", "required": true},
+        {"name": "value", "type": "decimal", "unit": "percent", "required": true},
+        {"name": "realtime_start", "type": "date", "required": false},
+        {"name": "realtime_end", "type": "date", "required": false}
+      ],
+      "quality_contract": {
+        "max_lag_days": 3,
+        "missing_policy": "market_holiday_or_provider_delay_allowed",
+        "revision_policy": "fred_realtime_fields_available",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    },
+    {
+      "asset_id": "macro.fred.dfii10.daily",
+      "provider": "fred",
+      "source_url": "https://fred.stlouisfed.org/docs/api/fred/series_observations.html",
+      "external_identifier": "DFII10",
+      "asset_group": "rates",
+      "subject": "us_tips_10y_real_yield",
+      "frequency": "daily",
+      "calendar": "us_business_day",
+      "field_schema": [
+        {"name": "date", "type": "date", "required": true},
+        {"name": "value", "type": "decimal", "unit": "percent", "required": true},
+        {"name": "realtime_start", "type": "date", "required": false},
+        {"name": "realtime_end", "type": "date", "required": false}
+      ],
+      "quality_contract": {
+        "max_lag_days": 3,
+        "missing_policy": "market_holiday_or_provider_delay_allowed",
+        "revision_policy": "fred_realtime_fields_available",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    },
+    {
+      "asset_id": "macro.eia.crude_inventory.weekly",
+      "provider": "eia",
+      "source_url": "https://www.eia.gov/opendata/documentation.php",
+      "external_identifier": "to_be_registered_from_eia_route",
+      "asset_group": "energy",
+      "subject": "us_crude_oil_inventory",
+      "frequency": "weekly",
+      "calendar": "us_energy_report_calendar",
+      "field_schema": [
+        {"name": "period", "type": "date", "required": true},
+        {"name": "series", "type": "string", "required": true},
+        {"name": "value", "type": "decimal", "required": true},
+        {"name": "units", "type": "string", "required": true}
+      ],
+      "quality_contract": {
+        "max_lag_days": 7,
+        "missing_policy": "provider_delay_must_be_flagged",
+        "revision_policy": "provider_revision_possible",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    },
+    {
+      "asset_id": "macro.fiscaldata.avg_interest_rates.monthly",
+      "provider": "us_treasury_fiscaldata",
+      "source_url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates",
+      "external_identifier": "avg_interest_rates",
+      "asset_group": "rates",
+      "subject": "us_treasury_average_interest_rates",
+      "frequency": "monthly",
+      "calendar": "us_government_report_calendar",
+      "field_schema": [
+        {"name": "record_date", "type": "date", "required": true},
+        {"name": "security_type_desc", "type": "string", "required": true},
+        {"name": "security_desc", "type": "string", "required": true},
+        {"name": "avg_interest_rate_amt", "type": "decimal", "unit": "percent", "required": true}
+      ],
+      "quality_contract": {
+        "max_lag_days": 45,
+        "missing_policy": "provider_delay_must_be_flagged",
+        "revision_policy": "official_dataset_revision_possible",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    },
+    {
+      "asset_id": "macro.coingecko.btc.usd.daily",
+      "provider": "coingecko",
+      "source_url": "https://docs.coingecko.com/",
+      "external_identifier": "bitcoin/usd",
+      "asset_group": "crypto",
+      "subject": "btc_usd_market_price",
+      "frequency": "daily",
+      "calendar": "crypto_24_7",
+      "field_schema": [
+        {"name": "timestamp", "type": "datetime", "required": true},
+        {"name": "price_usd", "type": "decimal", "unit": "usd", "required": true},
+        {"name": "market_cap_usd", "type": "decimal", "unit": "usd", "required": false},
+        {"name": "volume_usd", "type": "decimal", "unit": "usd", "required": false}
+      ],
+      "quality_contract": {
+        "max_lag_days": 1,
+        "missing_policy": "no_missing_daily_close_after_cutoff",
+        "revision_policy": "provider_history_may_change",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    },
+    {
+      "asset_id": "macro.worldbank.commodity_price.monthly",
+      "provider": "world_bank",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "external_identifier": "pink_sheet_commodity_prices",
+      "asset_group": "commodities",
+      "subject": "commodity_price_basket",
+      "frequency": "monthly",
+      "calendar": "calendar_month",
+      "field_schema": [
+        {"name": "period", "type": "date", "required": true},
+        {"name": "commodity", "type": "string", "required": true},
+        {"name": "price", "type": "decimal", "required": true},
+        {"name": "unit", "type": "string", "required": true}
+      ],
+      "quality_contract": {
+        "max_lag_days": 45,
+        "missing_policy": "provider_delay_must_be_flagged",
+        "revision_policy": "official_dataset_revision_possible",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    },
+    {
+      "asset_id": "market.external_producer.a_share_index.daily",
+      "provider": "external_producer_root",
+      "source_url": "<external_producer_root>/pub_* contract",
+      "external_identifier": "to_be_defined_by_data_product_registry",
+      "asset_group": "equity_index",
+      "subject": "a_share_broad_and_style_indices",
+      "frequency": "daily",
+      "calendar": "cn_trading_day",
+      "field_schema": [
+        {"name": "trade_date", "type": "date", "required": true},
+        {"name": "index_code", "type": "string", "required": true},
+        {"name": "close", "type": "decimal", "required": true},
+        {"name": "pct_change", "type": "decimal", "required": false},
+        {"name": "amount", "type": "decimal", "required": false}
+      ],
+      "quality_contract": {
+        "max_lag_days": 1,
+        "missing_policy": "must_match_cn_trading_calendar",
+        "revision_policy": "published_product_should_be_stable",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    },
+    {
+      "asset_id": "macro.cn_gov_bond_curve.daily.placeholder",
+      "provider": "licensed_cn_bond_source_required",
+      "source_url": "to_be_confirmed_after_license_review",
+      "external_identifier": "to_be_defined_by_provider_contract",
+      "asset_group": "rates",
+      "subject": "china_government_bond_yield_curve",
+      "frequency": "daily",
+      "calendar": "cn_business_day",
+      "field_schema": [
+        {"name": "trade_date", "type": "date", "required": true},
+        {"name": "tenor", "type": "string", "required": true},
+        {"name": "yield", "type": "decimal", "unit": "percent", "required": true},
+        {"name": "curve_name", "type": "string", "required": true}
+      ],
+      "quality_contract": {
+        "max_lag_days": 1,
+        "missing_policy": "must_match_provider_calendar",
+        "revision_policy": "provider_contract_required",
+        "license_review_required": true
+      },
+      "owner_layer": "L0"
+    }
+  ]
+}

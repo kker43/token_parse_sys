@@ -1,0 +1,37 @@
+{
+  "workflow_id": "steady_uptrend_breakout_closed_loop",
+  "version": "candidate_v1",
+  "description": "稳健上行突破策略闭环 workflow：扫描候选、运行事件回测、生成候选池等权 benchmark，并输出 closed-loop review。",
+  "inputs": {
+    "evaluation_profile_path": "configs/evaluation_profiles/steady_uptrend_breakout_v1.example.json",
+    "kline_tsv_path": "MySQL -B -N 导出的基础日线，字段顺序为 asset_id, trade_date, open, high, low, close, amount。",
+    "weekly_kline_tsv_path": "可选；用于 scanner 周线背景过滤。",
+    "stock_context_tsv_path": "可选；用于 scanner 行业、题材、市值、流动性等上下文。",
+    "scan_result_path": "可选；若提供，则复用已有 scanner 输出，不重新扫描。"
+  },
+  "outputs": {
+    "scan_result": "扫描候选 JSON；包含 candidate_pool 召回池和 breakout_candidates 最终策略信号池。",
+    "event_backtest": "策略候选事件 L6 回测结果。",
+    "candidate_pool_benchmark": "候选池等权 benchmark 结果。",
+    "stage_benchmarks": "quality_pool、trend_pool、refined_pool、signal_pool 的分阶段 benchmark 结果。",
+    "closed_loop_review": "准入 gate、相对 benchmark 指标、promotion evidence 和 observation proposal。",
+    "closed_loop_summary": "组合 workflow 摘要和产物路径。"
+  },
+  "default_policy": {
+    "candidate_mode": "all",
+    "benchmark": "CANDIDATE_POOL_EQUAL_WEIGHT",
+    "primary_holding_horizon": 10,
+    "comparison_benchmarks": [
+      "CN_A_EQUAL_WEIGHT",
+      "000905.SH",
+      "000852.SH",
+      "000300.SH",
+      "000698.SH"
+    ]
+  },
+  "known_limitations": [
+    "candidate_pool 当前定义为 breakout_watch 和 pre_breakout_watch 的并集；后续可以继续拆质量层、趋势层、精筛层的分阶段候选池。",
+    "v1 不模拟一字涨停买不进；该限制记录在 BenchmarkDefinition 中。",
+    "closed_loop_review 返回非零表示准入 gate 未通过，不表示前置扫描或回测执行失败。"
+  ]
+}
