@@ -1,0 +1,37 @@
+{
+  "strategy_id": "strategy.trend_recall_subpools_candidate_v1",
+  "version": "candidate_v1",
+  "lifecycle_status": "research_only",
+  "description": "Recall after minimum data quality and basic liquidity, then classify five trend subtypes.",
+  "amount_unit": "thousand_cny",
+  "min_avg_amount_20d": 200000,
+  "subpools": {
+    "long_base_breakout": {
+      "amount_ratio_mode": "score",
+      "min_impulse_consolidation_days": 5
+    },
+    "pullback_reacceleration": {
+      "amount_ratio_mode": "score",
+      "min_ma30_hold_30d": 0.75,
+      "min_ma30_hold_60d": 0.55
+    },
+    "ma10_ma20_walkup": {
+      "amount_ratio_mode": "score",
+      "max_single_bull_bar_return_share_20d": 0.35
+    },
+    "trend_following": {
+      "amount_ratio_mode": "score",
+      "ma30_hold_90d_mode": "quality_score"
+    },
+    "early_reversal": {
+      "amount_ratio_mode": "score",
+      "require_ma30_hold_90d": false,
+      "min_ma30_hold_30d": 0.55
+    }
+  },
+  "volume_confirmation": {
+    "indicator": "amount_ratio_prev_20d",
+    "strong_expansion_threshold": 1.5,
+    "hard_recall_gate": false
+  }
+}
