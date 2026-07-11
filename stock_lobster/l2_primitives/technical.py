@@ -120,9 +120,9 @@ def ma30_hold_ratio_90d_sustained(snapshot: AnalysisSnapshot) -> bool:
 
 
 def avg_amount_20d_ge_2e(snapshot: AnalysisSnapshot) -> bool:
-    """Return whether raw 20-day average amount maps to at least 200 million yuan."""
+    """Return whether 20-day average amount is at least 200 million yuan."""
 
-    return get_indicator_value(snapshot, "avg_amount_20d") >= 2_000_000_000
+    return get_indicator_value(snapshot, "avg_amount_20d") >= 200_000
 
 
 def total_mv_ge_100e(snapshot: AnalysisSnapshot) -> bool:

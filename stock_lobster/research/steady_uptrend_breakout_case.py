@@ -134,8 +134,8 @@ STEADY_UPTREND_BREAKOUT_PRIMITIVES: tuple[PrimitiveHypothesis, ...] = (
     PrimitiveHypothesis(
         primitive_id="liquidity.avg_amount_20d_ge_2e",
         category="liquidity",
-        proposed_logic="avg_amount_20d_raw >= 2000000000",
-        reason="剔除近 20 日平均成交额低于 2 亿的股票；当前 amount 原始值约等于实际成交额(元) * 10。",
+        proposed_logic="avg_amount_20d >= 200000 thousand_cny",
+        reason="剔除近 20 日平均成交额低于 2 亿元的股票；amount 输入单位为千元人民币。",
         required_features=("indicator:avg_amount_20d",),
         threshold_refs=("min_avg_amount_20d",),
     ),

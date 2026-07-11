@@ -351,10 +351,10 @@
         "indicator:avg_amount_20d"
       ],
       "params": {
-        "min_avg_amount_20d_raw": 2000000000,
-        "amount_raw_unit_note": "当前 token_daily_details.amount 原始值约等于实际成交额(元) * 10，因此 2,000,000,000 对应实际成交额约 2 亿元。"
+        "min_avg_amount_20d_thousand_cny": 200000,
+        "amount_unit": "thousand_cny"
       },
-      "calculation": "avg_amount_20d >= min_avg_amount_20d_raw",
+      "calculation": "avg_amount_20d >= min_avg_amount_20d_thousand_cny",
       "valid_when": "20 日平均成交额可计算",
       "missing_policy": "block",
       "evidence": [],

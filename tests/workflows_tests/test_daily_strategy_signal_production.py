@@ -54,7 +54,7 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
                     "top_n_per_date": None,
                     "require_weekly_uptrend": True,
                     "require_context_strength": True,
-                    "min_avg_amount_20d": 2_000_000_000,
+                    "min_avg_amount_20d": 200_000,
                     "unknown_field": "ignored",
                 }
             },
@@ -65,7 +65,7 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
         self.assertEqual("20260703", policy.start_date)
         self.assertTrue(policy.require_weekly_uptrend)
         self.assertTrue(policy.require_context_strength)
-        self.assertEqual(2_000_000_000, policy.min_avg_amount_20d)
+        self.assertEqual(200_000, policy.min_avg_amount_20d)
 
     def test_write_candidates_csv_renders_list_fields(self) -> None:
         with TemporaryDirectory() as tempdir:
