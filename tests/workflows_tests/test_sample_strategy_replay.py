@@ -29,7 +29,7 @@ class SampleStrategyReplayTest(unittest.TestCase):
 
         self.assertEqual(
             ("avg_amount_20d_below_threshold",),
-            ordered_blockers(metric, mode="breakout", min_amount_ratio_20d=1.5),
+            ordered_blockers(metric, mode="breakout", min_volume_ratio_5d_20d=1.2),
         )
 
     def test_reports_breakout_volume_only_after_quality_passes(self) -> None:
@@ -38,12 +38,26 @@ class SampleStrategyReplayTest(unittest.TestCase):
             "steady_uptrend": True,
             "quality_failure_reasons": [],
             "close_new_high_60d_flag": True,
-            "amount_ratio_20d": 1.2,
+            "volume_ratio_5d_20d": 1.19,
         }
 
         self.assertEqual(
-            ("amount_ratio_below_1.5",),
-            ordered_blockers(metric, mode="breakout", min_amount_ratio_20d=1.5),
+            ("volume_ratio_5d_20d_below_1.2",),
+            ordered_blockers(metric, mode="breakout", min_volume_ratio_5d_20d=1.2),
+        )
+
+    def test_reports_missing_5d_20d_volume_ratio(self) -> None:
+        metric = {
+            "daily_quality_pass": True,
+            "steady_uptrend": True,
+            "quality_failure_reasons": [],
+            "close_new_high_60d_flag": True,
+            "volume_ratio_5d_20d": None,
+        }
+
+        self.assertEqual(
+            ("volume_ratio_5d_20d_missing",),
+            ordered_blockers(metric, mode="breakout", min_volume_ratio_5d_20d=1.2),
         )
 
     def test_kline_reader_skips_blank_lines(self) -> None:

@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stock-context-tsv-path")
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--start-date")
-    parser.add_argument("--min-amount-ratio-20d", type=float, default=1.5)
+    parser.add_argument("--min-volume-ratio-5d-20d", type=float, default=1.2)
     parser.add_argument("--max-abs-drawdown-60d", type=float, default=0.40)
     parser.add_argument("--max-abs-drawdown-120d", type=float, default=0.55)
     parser.add_argument("--min-red-k-ratio-20d", type=float, default=0.45)
@@ -72,7 +72,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     policy = TrendBreakoutScanPolicy(
-        min_amount_ratio_20d=args.min_amount_ratio_20d,
+        min_volume_ratio_5d_20d=args.min_volume_ratio_5d_20d,
         max_abs_drawdown_60d=args.max_abs_drawdown_60d,
         max_abs_drawdown_120d=args.max_abs_drawdown_120d,
         min_red_k_ratio_20d=args.min_red_k_ratio_20d,
@@ -134,7 +134,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
         },
         "policy": {
-            "min_amount_ratio_20d": policy.min_amount_ratio_20d,
+            "min_volume_ratio_5d_20d": policy.min_volume_ratio_5d_20d,
             "max_abs_drawdown_60d": policy.max_abs_drawdown_60d,
             "max_abs_drawdown_120d": policy.max_abs_drawdown_120d,
             "min_red_k_ratio_20d": policy.min_red_k_ratio_20d,
@@ -145,7 +145,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             "max_weekly_ma20_deviation_pct": policy.max_weekly_ma20_deviation_pct,
             "min_close_to_high_60d_pct": policy.min_close_to_high_60d_pct,
             "max_close_to_high_60d_pct": policy.max_close_to_high_60d_pct,
-            "min_pre_breakout_amount_ratio_20d": policy.min_pre_breakout_amount_ratio_20d,
             "max_ma20_deviation_pct": policy.max_ma20_deviation_pct,
             "max_ma30_deviation_pct": policy.max_ma30_deviation_pct,
             "min_sustained_ma30_hold_ratio_90d": policy.min_sustained_ma30_hold_ratio_90d,

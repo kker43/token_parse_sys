@@ -57,6 +57,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         metrics = scan_trend_breakouts(
             bars,
             TrendBreakoutScanPolicy(start_date="20260001"),
+            stock_contexts=_volume_context(bars, 1.2),
         )
         candidates = [metric for metric in metrics if metric.breakout_watch]
 
@@ -78,6 +79,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
                 require_weekly_uptrend=True,
             ),
             weekly_bars=weekly_bars,
+            stock_contexts=_volume_context(daily_bars, 1.2),
         )
         candidates = [metric for metric in metrics if metric.breakout_watch]
 
@@ -96,6 +98,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
                 require_weekly_uptrend=True,
             ),
             weekly_bars=weekly_bars,
+            stock_contexts=_volume_context(daily_bars, 1.2),
         )
         candidates = [metric for metric in metrics if metric.breakout_watch]
 
@@ -136,6 +139,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         metrics = scan_trend_breakouts(
             bars,
             TrendBreakoutScanPolicy(start_date="20260001"),
+            stock_contexts=_volume_context(bars, 1.2),
         )
         latest = metrics[-1]
 
@@ -169,6 +173,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         metrics = scan_trend_breakouts(
             bars,
             TrendBreakoutScanPolicy(start_date="20260001"),
+            stock_contexts=_volume_context(bars, 1.2),
         )
         latest = metrics[-1]
 
@@ -185,6 +190,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         metrics = scan_trend_breakouts(
             bars,
             TrendBreakoutScanPolicy(start_date="20260001"),
+            stock_contexts=_volume_context(bars, 1.2),
         )
         latest = metrics[-1]
 
@@ -200,6 +206,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         metrics = scan_trend_breakouts(
             bars,
             TrendBreakoutScanPolicy(start_date="20260001"),
+            stock_contexts=_volume_context(bars, 1.2),
         )
         latest = metrics[-1]
 
@@ -224,6 +231,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
                 min_impulse_consolidation_days=5,
                 min_ma5_10_20_30_convergence_pct=0.08,
             ),
+            stock_contexts=_volume_context(bars, 1.2),
         )
         latest = metrics[-1]
 
@@ -242,6 +250,31 @@ class TrendBreakoutScanTest(unittest.TestCase):
         self.assertIn("impulse_consolidation_days_failed", latest.quality_failure_reasons)
         self.assertIn("ma5_10_20_30_convergence_failed", latest.quality_failure_reasons)
 
+    def test_uses_5d_20d_volume_ratio_as_breakout_gate(self) -> None:
+        bars = _daily_breakout_bars("000011.SZ")
+
+        missing = scan_trend_breakouts(
+            bars,
+            TrendBreakoutScanPolicy(start_date="20260001"),
+        )[-1]
+        below = scan_trend_breakouts(
+            bars,
+            TrendBreakoutScanPolicy(start_date="20260001"),
+            stock_contexts=_volume_context(bars, 1.19),
+        )[-1]
+        boundary = scan_trend_breakouts(
+            bars,
+            TrendBreakoutScanPolicy(start_date="20260001"),
+            stock_contexts=_volume_context(bars, 1.20),
+        )[-1]
+
+        self.assertIsNone(missing.volume_ratio_5d_20d)
+        self.assertFalse(missing.breakout_watch)
+        self.assertEqual(1.19, below.volume_ratio_5d_20d)
+        self.assertFalse(below.breakout_watch)
+        self.assertEqual(1.20, boundary.volume_ratio_5d_20d)
+        self.assertTrue(boundary.breakout_watch)
+
     def test_weak_shape_metrics_are_observational_until_filter_is_enabled(self) -> None:
         bars = _one_bar_pump_after_choppy_green_bars("000010.SZ")
 
@@ -257,6 +290,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
                 min_impulse_consolidation_days=5,
                 min_ma5_10_20_30_convergence_pct=0.08,
             ),
+            stock_contexts=_volume_context(bars, 1.2),
         )
         latest = metrics[-1]
 
@@ -364,6 +398,16 @@ def _daily_breakout_bars(asset_id: str) -> list[KlineBar]:
             )
         )
     return bars
+
+
+def _volume_context(bars: list[KlineBar], ratio: float) -> list[StockSignalContext]:
+    return [
+        StockSignalContext(
+            asset_id=bars[-1].asset_id,
+            trade_date=bars[-1].trade_date,
+            volume_ratio_5d_20d=ratio,
+        )
+    ]
 
 
 def _weekly_bars(asset_id: str, rising: bool) -> list[KlineBar]:

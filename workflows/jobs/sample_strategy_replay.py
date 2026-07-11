@@ -83,8 +83,7 @@ def ordered_blockers(
     metric: Mapping[str, object] | None,
     *,
     mode: str,
-    min_amount_ratio_20d: float = 1.5,
-    min_pre_breakout_amount_ratio_20d: float = 0.8,
+    min_volume_ratio_5d_20d: float = 1.2,
     min_close_to_high_60d_pct: float = -0.08,
     max_close_to_high_60d_pct: float = -0.002,
     min_sustained_ma30_hold_ratio_90d: float = 0.75,
@@ -100,12 +99,14 @@ def ordered_blockers(
         return ("steady_uptrend_failed",)
 
     new_high = bool(metric.get("close_new_high_60d_flag"))
-    amount_ratio = float(metric.get("amount_ratio_20d", 0.0))
+    volume_ratio_raw = metric.get("volume_ratio_5d_20d")
     if mode == "breakout":
         if not new_high:
             return ("close_not_new_high_60d",)
-        if amount_ratio < min_amount_ratio_20d:
-            return (f"amount_ratio_below_{min_amount_ratio_20d:g}",)
+        if volume_ratio_raw in (None, ""):
+            return ("volume_ratio_5d_20d_missing",)
+        if float(volume_ratio_raw) < min_volume_ratio_5d_20d:
+            return (f"volume_ratio_5d_20d_below_{min_volume_ratio_5d_20d:g}",)
         return ()
 
     if mode == "pre_breakout":
@@ -118,8 +119,10 @@ def ordered_blockers(
             return ("pre_breakout_too_far_from_high",)
         if close_to_high > max_close_to_high_60d_pct:
             return ("pre_breakout_too_close_to_high",)
-        if amount_ratio < min_pre_breakout_amount_ratio_20d:
-            return (f"amount_ratio_below_{min_pre_breakout_amount_ratio_20d:g}",)
+        if volume_ratio_raw in (None, ""):
+            return ("volume_ratio_5d_20d_missing",)
+        if float(volume_ratio_raw) < min_volume_ratio_5d_20d:
+            return (f"volume_ratio_5d_20d_below_{min_volume_ratio_5d_20d:g}",)
         return ()
 
     if bool(metric.get("breakout_watch")) or bool(metric.get("pre_breakout_watch")):
@@ -225,8 +228,7 @@ def _add_strategy_result(
     blockers = ordered_blockers(
         mapping,
         mode=mode,
-        min_amount_ratio_20d=float(getattr(policy, "min_amount_ratio_20d")),
-        min_pre_breakout_amount_ratio_20d=float(getattr(policy, "min_pre_breakout_amount_ratio_20d")),
+        min_volume_ratio_5d_20d=float(getattr(policy, "min_volume_ratio_5d_20d")),
         min_close_to_high_60d_pct=float(getattr(policy, "min_close_to_high_60d_pct")),
         max_close_to_high_60d_pct=float(getattr(policy, "max_close_to_high_60d_pct")),
         min_sustained_ma30_hold_ratio_90d=float(
@@ -259,6 +261,7 @@ def _add_strategy_result(
         "avg_amount_20d",
         "amount_ratio_20d",
         "amount_ratio_prev_20d",
+        "volume_ratio_5d_20d",
         "ma30_hold_ratio_30d",
         "ma30_hold_ratio_60d",
         "ma30_hold_ratio_90d",
