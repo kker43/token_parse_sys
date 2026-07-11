@@ -3,7 +3,7 @@
   "strategy_config_path": "/home/ubuntu/token_parse_sys/configs/strategies/steady_uptrend_pre_breakout_watch.example.json",
   "output_root": "/home/ubuntu/token_parse_sys/runtime/strategy_signal_production",
   "job_result_path": "/home/ubuntu/token_parse_sys/runtime/strategy_signal_production/latest_result.json",
+  "price_basis": "qfq_asof",
   "lookback_daily_trade_days": 280,
-  "lookback_weekly_trade_days": 120,
-  "price_basis": "qfq_asof"
+  "lookback_weekly_trade_days": 120
 }

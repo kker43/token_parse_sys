@@ -84,6 +84,15 @@
       "description": "Current amount divided by 20-day average amount"
     },
     {
+      "name": "amount_ratio_prev_20d",
+      "version": "candidate_v1",
+      "params": {"window": 20, "amount_field": "amount", "exclude_current": true},
+      "value_type": "numeric",
+      "source_product": "analysis_snapshot_daily_kline",
+      "source_column": "derived_value",
+      "description": "Current amount divided by the preceding 20-trading-day average amount"
+    },
+    {
       "name": "close_new_high_60d_flag",
       "version": "v1",
       "params": {"window": 60, "price_field": "close"},

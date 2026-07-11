@@ -26,6 +26,15 @@ class KlineBar:
 
 
 @dataclass(frozen=True, slots=True)
+class AdjFactor:
+    """Daily adjustment factor for qfq/hfq price transformations."""
+
+    asset_id: str
+    trade_date: str
+    adj_factor: float
+
+
+@dataclass(frozen=True, slots=True)
 class TrendBreakoutMetrics:
     """Window metrics for one stock/date."""
 
@@ -66,6 +75,13 @@ class TrendBreakoutMetrics:
     pre_breakout_watch: bool
     breakout_watch: bool
     setup_score: float
+    amount_ratio_prev_20d: float = 0.0
+    large_bearish_body_ratio_20d: float = 0.0
+    max_consecutive_green_k_20d: int = 0
+    single_bull_bar_return_share_20d: float = 0.0
+    impulse_consolidation_days: int = 0
+    ma5_10_20_30_convergence_pct: float = 0.0
+    weak_shape_pass: bool = True
     name: str = ""
     industry: str = ""
     market: str = ""
@@ -108,6 +124,7 @@ class TrendBreakoutMetrics:
             "ma120": self.ma120,
             "ma20_slope_20d": self.ma20_slope_20d,
             "amount_ratio_20d": self.amount_ratio_20d,
+            "amount_ratio_prev_20d": self.amount_ratio_prev_20d,
             "max_drawdown_60d": self.max_drawdown_60d,
             "max_drawdown_120d": self.max_drawdown_120d,
             "convergence_5_10_20_pct": self.convergence_5_10_20_pct,
@@ -123,6 +140,11 @@ class TrendBreakoutMetrics:
             "red_k_ratio_20d": self.red_k_ratio_20d,
             "green_k_ratio_20d": self.green_k_ratio_20d,
             "long_shadow_ratio_20d": self.long_shadow_ratio_20d,
+            "large_bearish_body_ratio_20d": self.large_bearish_body_ratio_20d,
+            "max_consecutive_green_k_20d": self.max_consecutive_green_k_20d,
+            "single_bull_bar_return_share_20d": self.single_bull_bar_return_share_20d,
+            "impulse_consolidation_days": self.impulse_consolidation_days,
+            "ma5_10_20_30_convergence_pct": self.ma5_10_20_30_convergence_pct,
             "avg_amount_20d": self.avg_amount_20d,
             "total_mv": self.total_mv,
             "turnover_rate": self.turnover_rate,
@@ -132,6 +154,7 @@ class TrendBreakoutMetrics:
             "close_new_high_60d_flag": self.close_new_high_60d_flag,
             "daily_quality_pass": self.daily_quality_pass,
             "trend_stability_pass": self.trend_stability_pass,
+            "weak_shape_pass": self.weak_shape_pass,
             "market_cap_liquidity_pass": self.market_cap_liquidity_pass,
             "turnover_quality_pass": self.turnover_quality_pass,
             "context_strength_pass": self.context_strength_pass,
@@ -186,6 +209,13 @@ class TrendBreakoutScanPolicy:
     max_turnover_spike_ratio_20d: float | None = None
     require_context_strength: bool = False
     max_convergence_5_10_20_pct: float | None = None
+    enable_weak_shape_filter: bool = False
+    min_large_bearish_body_pct: float = 0.025
+    max_large_bearish_body_ratio_20d: float | None = None
+    max_consecutive_green_k_20d: int | None = None
+    max_single_bull_bar_return_share_20d: float | None = None
+    min_impulse_consolidation_days: int | None = None
+    min_ma5_10_20_30_convergence_pct: float | None = None
     start_date: str | None = None
 
 
@@ -244,6 +274,44 @@ def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
             )
         )
     return tuple(bars)
+
+
+def adjust_bars_to_qfq_asof(
+    bars: Iterable[KlineBar],
+    factors: Iterable[AdjFactor],
+    *,
+    anchor_trade_date: str,
+) -> tuple[KlineBar, ...]:
+    """Return bars with OHLC adjusted to the anchor date's qfq price basis."""
+
+    factor_by_key = {(factor.asset_id, factor.trade_date): factor.adj_factor for factor in factors}
+    anchor_by_asset = {
+        factor.asset_id: factor.adj_factor for factor in factors if factor.trade_date == anchor_trade_date
+    }
+    adjusted: list[KlineBar] = []
+    missing: list[str] = []
+    for bar in bars:
+        bar_factor = factor_by_key.get((bar.asset_id, bar.trade_date))
+        anchor_factor = anchor_by_asset.get(bar.asset_id)
+        if bar_factor is None or anchor_factor in (None, 0):
+            missing.append(f"{bar.asset_id}.{bar.trade_date}")
+            continue
+        ratio = bar_factor / anchor_factor
+        adjusted.append(
+            KlineBar(
+                asset_id=bar.asset_id,
+                trade_date=bar.trade_date,
+                open=bar.open * ratio,
+                high=bar.high * ratio,
+                low=bar.low * ratio,
+                close=bar.close * ratio,
+                amount=bar.amount,
+            )
+        )
+    if missing:
+        preview = ", ".join(missing[:5])
+        raise ValueError(f"missing adj_factor for qfq_asof adjustment: {preview}")
+    return tuple(adjusted)
 
 
 def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext, ...]:
@@ -412,6 +480,10 @@ def _metrics_for_index(
 
     ma20_slope_20d = ma20 / previous_ma20 - 1
     amount_ratio_20d = bar.amount / amount_average_20d
+    previous_amount_average_20d = sum(amounts[index - 20 : index]) / 20
+    if previous_amount_average_20d == 0:
+        return None
+    amount_ratio_prev_20d = bar.amount / previous_amount_average_20d
     convergence_5_10_20_pct = (max(ma5, ma10, ma20) - min(ma5, ma10, ma20)) / bar.close
     high_60d = max(closes[index - 59 : index + 1])
     close_to_high_60d_pct = bar.close / high_60d - 1
@@ -426,6 +498,16 @@ def _metrics_for_index(
     red_k_ratio_20d = _red_k_ratio(bars, index, 20)
     green_k_ratio_20d = 1 - red_k_ratio_20d
     long_shadow_ratio_20d = _long_shadow_ratio(bars, index, 20)
+    large_bearish_body_ratio_20d = _large_bearish_body_ratio(
+        bars=bars,
+        index=index,
+        window=20,
+        min_body_pct=policy.min_large_bearish_body_pct,
+    )
+    max_consecutive_green_k_20d = _max_consecutive_green_k(bars, index, 20)
+    single_bull_bar_return_share_20d = _single_bull_bar_return_share(closes, index, 20)
+    impulse_consolidation_days = _impulse_consolidation_days(closes, index, 20)
+    ma5_10_20_30_convergence_pct = (max(ma5, ma10, ma20, ma30) - min(ma5, ma10, ma20, ma30)) / bar.close
     close_new_high_60d_flag = bar.close >= high_60d
     weekly_context = _weekly_context_asof(weekly_contexts, bar.trade_date)
     weekly_trend_pass = _weekly_trend_pass(weekly_context, policy)
@@ -449,11 +531,21 @@ def _metrics_for_index(
     )
     turnover_quality_pass = _turnover_quality_pass(stock_context, policy)
     context_strength_pass = _context_strength_pass(stock_context, policy)
+    weak_shape_failure_reasons = _weak_shape_failure_reasons(
+        large_bearish_body_ratio_20d=large_bearish_body_ratio_20d,
+        max_consecutive_green_k_20d=max_consecutive_green_k_20d,
+        single_bull_bar_return_share_20d=single_bull_bar_return_share_20d,
+        impulse_consolidation_days=impulse_consolidation_days,
+        ma5_10_20_30_convergence_pct=ma5_10_20_30_convergence_pct,
+        policy=policy,
+    )
+    weak_shape_pass = not policy.enable_weak_shape_filter or not weak_shape_failure_reasons
     quality_failure_reasons = _quality_failure_reasons(
         context=stock_context,
         amount_average_20d=amount_average_20d,
         trend_stability_pass=trend_stability_pass,
         pre_breakout_sustained_pass=pre_breakout_sustained_pass,
+        weak_shape_failure_reasons=weak_shape_failure_reasons if policy.enable_weak_shape_filter else (),
         market_cap_liquidity_pass=market_cap_liquidity_pass,
         turnover_quality_pass=turnover_quality_pass,
         context_strength_pass=context_strength_pass,
@@ -466,6 +558,7 @@ def _metrics_for_index(
         and abs(max_drawdown_120d) <= policy.max_abs_drawdown_120d
         and long_shadow_ratio_20d <= policy.max_long_shadow_ratio_20d
         and trend_stability_pass
+        and weak_shape_pass
         and market_cap_liquidity_pass
         and turnover_quality_pass
         and context_strength_pass
@@ -522,6 +615,7 @@ def _metrics_for_index(
         ma120=ma120,
         ma20_slope_20d=ma20_slope_20d,
         amount_ratio_20d=amount_ratio_20d,
+        amount_ratio_prev_20d=amount_ratio_prev_20d,
         max_drawdown_60d=max_drawdown_60d,
         max_drawdown_120d=max_drawdown_120d,
         convergence_5_10_20_pct=convergence_5_10_20_pct,
@@ -537,10 +631,16 @@ def _metrics_for_index(
         red_k_ratio_20d=red_k_ratio_20d,
         green_k_ratio_20d=green_k_ratio_20d,
         long_shadow_ratio_20d=long_shadow_ratio_20d,
+        large_bearish_body_ratio_20d=large_bearish_body_ratio_20d,
+        max_consecutive_green_k_20d=max_consecutive_green_k_20d,
+        single_bull_bar_return_share_20d=single_bull_bar_return_share_20d,
+        impulse_consolidation_days=impulse_consolidation_days,
+        ma5_10_20_30_convergence_pct=ma5_10_20_30_convergence_pct,
         avg_amount_20d=amount_average_20d,
         close_new_high_60d_flag=close_new_high_60d_flag,
         daily_quality_pass=daily_quality_pass,
         trend_stability_pass=trend_stability_pass,
+        weak_shape_pass=weak_shape_pass,
         market_cap_liquidity_pass=market_cap_liquidity_pass,
         turnover_quality_pass=turnover_quality_pass,
         context_strength_pass=context_strength_pass,
@@ -745,6 +845,7 @@ def _quality_failure_reasons(
     amount_average_20d: float,
     trend_stability_pass: bool,
     pre_breakout_sustained_pass: bool,
+    weak_shape_failure_reasons: tuple[str, ...],
     market_cap_liquidity_pass: bool,
     turnover_quality_pass: bool,
     context_strength_pass: bool,
@@ -755,6 +856,7 @@ def _quality_failure_reasons(
         reasons.append("trend_stability_failed")
     if not pre_breakout_sustained_pass:
         reasons.append("pre_breakout_ma30_sustained_failed")
+    reasons.extend(weak_shape_failure_reasons)
     if not market_cap_liquidity_pass:
         if policy.require_normal_listing and context is not None and "ST" in context.name.upper():
             reasons.append("st_or_abnormal_listing")
@@ -775,6 +877,44 @@ def _turnover_spike_ratio(context: StockSignalContext | None) -> float | None:
     if context is None or context.turnover_rate is None or context.avg_turnover_rate_20d in (None, 0):
         return None
     return context.turnover_rate / context.avg_turnover_rate_20d
+
+
+def _weak_shape_failure_reasons(
+    *,
+    large_bearish_body_ratio_20d: float,
+    max_consecutive_green_k_20d: int,
+    single_bull_bar_return_share_20d: float,
+    impulse_consolidation_days: int,
+    ma5_10_20_30_convergence_pct: float,
+    policy: TrendBreakoutScanPolicy,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if (
+        policy.max_large_bearish_body_ratio_20d is not None
+        and large_bearish_body_ratio_20d > policy.max_large_bearish_body_ratio_20d
+    ):
+        reasons.append("large_bearish_body_ratio_failed")
+    if (
+        policy.max_consecutive_green_k_20d is not None
+        and max_consecutive_green_k_20d > policy.max_consecutive_green_k_20d
+    ):
+        reasons.append("consecutive_green_k_failed")
+    if (
+        policy.max_single_bull_bar_return_share_20d is not None
+        and single_bull_bar_return_share_20d > policy.max_single_bull_bar_return_share_20d
+    ):
+        reasons.append("single_bull_bar_dominance_failed")
+    if (
+        policy.min_impulse_consolidation_days is not None
+        and impulse_consolidation_days < policy.min_impulse_consolidation_days
+    ):
+        reasons.append("impulse_consolidation_days_failed")
+    if (
+        policy.min_ma5_10_20_30_convergence_pct is not None
+        and ma5_10_20_30_convergence_pct < policy.min_ma5_10_20_30_convergence_pct
+    ):
+        reasons.append("ma5_10_20_30_convergence_failed")
+    return tuple(reasons)
 
 
 def _setup_score(
@@ -824,6 +964,61 @@ def _long_shadow_ratio(bars: list[KlineBar], index: int, window: int) -> float:
         shadow = max(candle_range - body, 0.0)
         ratios.append(shadow / candle_range)
     return sum(ratios) / len(ratios)
+
+
+def _large_bearish_body_ratio(
+    *,
+    bars: list[KlineBar],
+    index: int,
+    window: int,
+    min_body_pct: float,
+) -> float:
+    window_bars = bars[index - window + 1 : index + 1]
+    large_green_count = sum(
+        1
+        for bar in window_bars
+        if bar.close < bar.open and bar.open > 0 and (bar.open - bar.close) / bar.open >= min_body_pct
+    )
+    return large_green_count / len(window_bars)
+
+
+def _max_consecutive_green_k(bars: list[KlineBar], index: int, window: int) -> int:
+    current = 0
+    longest = 0
+    for bar in bars[index - window + 1 : index + 1]:
+        if bar.close < bar.open:
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return longest
+
+
+def _single_bull_bar_return_share(closes: list[float], index: int, window: int) -> float:
+    start = max(1, index - window + 1)
+    positive_returns = [
+        closes[current_index] / closes[current_index - 1] - 1
+        for current_index in range(start, index + 1)
+        if closes[current_index - 1] > 0 and closes[current_index] > closes[current_index - 1]
+    ]
+    total_positive_return = sum(positive_returns)
+    if total_positive_return <= 0:
+        return 0.0
+    return max(positive_returns) / total_positive_return
+
+
+def _impulse_consolidation_days(closes: list[float], index: int, window: int) -> int:
+    start = max(1, index - window + 1)
+    best_index = start
+    best_return = float("-inf")
+    for current_index in range(start, index + 1):
+        if closes[current_index - 1] <= 0:
+            continue
+        current_return = closes[current_index] / closes[current_index - 1] - 1
+        if current_return > best_return:
+            best_return = current_return
+            best_index = current_index
+    return index - best_index
 
 
 def _moving_average_series(values: list[float], window: int) -> list[float | None]:

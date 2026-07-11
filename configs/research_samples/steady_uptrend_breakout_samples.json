@@ -426,6 +426,7 @@
           "trade_date": "2026-06-24",
           "timeframe": "daily",
           "event_class": "negative_after_close_recall",
+          "value_tier": "borderline_negative",
           "human_interpretation": "收盘后召回为反例，价格可能已经过高，后续回撤较多，趋势稳定性不足。",
           "derived_l2_candidates": [
             "price_position.overextended_from_ma30",
@@ -720,6 +721,416 @@
           "l4_implication": "鱼尾行情不应一律降权；若趋势质量足够稳健，可作为高价值加速样本，但需要配套更严格的回撤和乖离监控。"
         }
       ]
+    },
+    {
+      "sample_id": "stbu_688141_jiehuate_2026_research",
+      "asset_id": "688141.SH",
+      "asset_name": "杰华特",
+      "sample_class": "mixed_positive_weak",
+      "pattern_family": "上升趋势强势突破",
+      "evidence_images": [],
+      "human_notes": [
+        "用户于 2026-07-08 修正：杰华特 20260609 算中价值样本；20260707 有点加速，没有盘整时间。",
+        "20260609 是中价值正样本：前一段回撤后强突破，后续确实快速加速，但它不是长期充分盘整后的高价值介入点。",
+        "20260707 不应按高价值关注：20260609 之后已经连续加速抬升，20260703 和 20260706 又连续上冲，20260707 缺少新的盘整消化，更像加速后追高或盘整不足风险。"
+      ],
+      "events": [
+        {
+          "event_id": "stbu_688141_20260609_mid_value_acceleration",
+          "trade_date": "2026-06-09",
+          "timeframe": "daily",
+          "event_class": "positive_attention_mid_value",
+          "value_tier": "mid",
+          "human_interpretation": "回撤后出现强突破，后续快速加速，属于中价值正样本；需要区别于长期充分盘整后的高价值准备态。",
+          "derived_l2_candidates": [
+            "structure.pullback_after_uptrend",
+            "level_breakout.reacceleration_breakout",
+            "volume_liquidity.amount_expansion",
+            "risk.fishtail_late_acceleration"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.pullback_reacceleration_breakout",
+            "risk_state.fishtail_acceleration_risk"
+          ],
+          "l4_implication": "可作为中价值加速样本参与观察，但排序和解释应提示它不是低位或充分盘整后的最高价值介入点。"
+        },
+        {
+          "event_id": "stbu_688141_20260707_acceleration_without_consolidation",
+          "trade_date": "2026-07-07",
+          "timeframe": "daily",
+          "event_class": "weak_or_excluded_attention",
+          "value_tier": "low_or_exclude",
+          "human_interpretation": "相比 20260609，20260707 已经处在一段加速之后，缺少新的盘整时间，不适合作为高价值新介入样本。",
+          "derived_l2_candidates": [
+            "structure.rest_duration_too_short",
+            "price_position.extension_from_ma30",
+            "risk.fishtail_late_acceleration",
+            "risk.breakout_without_enough_consolidation"
+          ],
+          "derived_l3_candidates": [
+            "risk_state.short_rest_breakout_failure_risk",
+            "risk_state.fishtail_acceleration_risk",
+            "technical_pattern.overextended_unstable_breakout"
+          ],
+          "l4_implication": "用于校准同一标的不同日期的价值层级：日度候选若距离上一轮加速太近、缺少消化盘整，应降低排序或进入风险提示，而不是直接按高价值准备态推送。"
+        }
+      ]
+    },
+    {
+      "sample_id": "stbu_603991_lingxian_20260707_recall_review",
+      "asset_id": "603991.SH",
+      "asset_name": "领先股份",
+      "sample_class": "hard_negative",
+      "pattern_family": "上升趋势强势突破",
+      "evidence_images": [],
+      "human_notes": [
+        "用户于 2026-07-08 复核昨日候选：领先股份不应该被召回。",
+        "主要问题是走势由大阳柱快速拉起，随后出现较多阴柱和回调，承接不健康。",
+        "该样本用于校准单根或少数大阳柱驱动后缺少健康盘整的误召回。"
+      ],
+      "events": [
+        {
+          "event_id": "stbu_603991_20260707_single_bull_then_bearish_pullback",
+          "trade_date": "2026-07-07",
+          "timeframe": "daily",
+          "event_class": "hard_negative_recall",
+          "value_tier": "hard_negative",
+          "human_interpretation": "不应被召回；形态更像大阳柱快速拉升后接多根阴柱和回调，趋势推进质量不足。",
+          "derived_l2_candidates": [
+            "candlestick.single_bull_bar_dominance",
+            "risk.bearish_pullback_after_single_bull_bar",
+            "candlestick.red_green_ratio_weak",
+            "risk.choppy_trend_quality_weak"
+          ],
+          "derived_l3_candidates": [
+            "risk_state.single_bull_bar_pullback_recall_false_positive",
+            "risk_state.trend_quality_hard_negative"
+          ],
+          "l4_implication": "昨日召回应被视为 false positive；后续需要让单阳主导后多阴回调进入降权或排除诊断。"
+        }
+      ]
+    },
+    {
+      "sample_id": "stbu_000811_binglun_20260707_recall_review",
+      "asset_id": "000811.SZ",
+      "asset_name": "冰轮环境",
+      "sample_class": "borderline_negative",
+      "pattern_family": "上升趋势强势突破",
+      "evidence_images": [],
+      "human_notes": [
+        "用户于 2026-07-08 复核昨日候选：冰轮环境属于高位盘整阶段，目前只能是需要等待。",
+        "它已经有一些盘整时间，但还不够充分，暂时不确定该怎么打标。",
+        "该样本先作为等待型边界样本，不直接归入高价值正样本或硬负样本。"
+      ],
+      "events": [
+        {
+          "event_id": "stbu_000811_20260707_high_level_consolidation_wait",
+          "trade_date": "2026-07-07",
+          "timeframe": "daily",
+          "event_class": "borderline_negative_recall",
+          "value_tier": "borderline_negative",
+          "human_interpretation": "高位盘整阶段，已有一定盘整但还不够；当前更适合等待确认，而不是作为明确介入样本。",
+          "derived_l2_candidates": [
+            "structure.high_level_consolidation",
+            "level_breakout.repeated_resistance_test",
+            "structure.high_level_consolidation_wait",
+            "risk.breakout_confirmation_missing"
+          ],
+          "derived_l3_candidates": [
+            "risk_state.high_level_consolidation_waiting_confirmation",
+            "technical_pattern.high_level_w_base_breakout_watch"
+          ],
+          "l4_implication": "可留在观察/等待池，但日度推送需要提示等待确认；若后续盘整更充分或形成清晰 W/平台突破，再重新评估价值层级。"
+        }
+      ]
+    },
+    {
+      "sample_id": "stbu_603608_tianchuang_20260707_recall_review",
+      "asset_id": "603608.SH",
+      "asset_name": "天创时尚",
+      "sample_class": "borderline_negative",
+      "pattern_family": "上升趋势强势突破",
+      "evidence_images": [],
+      "human_notes": [
+        "用户于 2026-07-08 复核昨日候选：天创时尚走势可能还需要高位盘整一下。",
+        "如果后续出现 W 形态会更好；当前 V 形反弹有点陡峭。",
+        "该样本用于校准 V 形过陡反弹和 W 形确认缺失的等待逻辑。"
+      ],
+      "events": [
+        {
+          "event_id": "stbu_603608_20260707_v_shape_wait_for_w_base",
+          "trade_date": "2026-07-07",
+          "timeframe": "daily",
+          "event_class": "borderline_negative_recall",
+          "value_tier": "borderline_negative",
+          "human_interpretation": "当前 V 形反弹偏陡，最好等待高位盘整或 W 形结构确认后再提高价值层级。",
+          "derived_l2_candidates": [
+            "structure.v_shape_rebound_too_steep",
+            "structure.high_level_consolidation",
+            "structure.w_base_confirmation_missing",
+            "level_breakout.repeated_resistance_test"
+          ],
+          "derived_l3_candidates": [
+            "risk_state.v_shape_rebound_wait_for_w_base",
+            "technical_pattern.high_level_w_base_breakout_watch"
+          ],
+          "l4_implication": "不应直接按高价值介入推送；短期可作为等待型候选，后续若形成高位 W 或更充分平台再升级。"
+        }
+      ]
+    },
+    {
+      "sample_id": "stbu_300666_jiangfeng_2026_research",
+      "asset_id": "300666.SZ",
+      "asset_name": "江丰电子",
+      "sample_class": "positive",
+      "pattern_family": "上升趋势强势突破",
+      "evidence_images": [],
+      "human_notes": [
+        "用户于 2026-07-09 输入新一轮样本：江丰电子 20260609 属于高价值样本。",
+        "用户认为 20260105 也可作为高价值样本，但也可以是中价值，核心含义是趋势反转开始。",
+        "远程基础数据只读复核显示：20260105 后续收益较好，但当时 60 日趋势仍未完全修复，更适合作为趋势反转启动型中价值正样本；20260609 则是新高强突破并有明显后续延续。"
+      ],
+      "events": [
+        {
+          "event_id": "stbu_300666_20260105_early_reversal_start",
+          "trade_date": "2026-01-05",
+          "timeframe": "daily",
+          "event_class": "positive_attention_mid_value",
+          "value_tier": "mid",
+          "human_interpretation": "开始趋势反转，后续延续性较好；但事件当时更像从弱势或震荡中重新启动，稳健上升趋势尚未完全形成，因此先按中价值正样本沉淀。",
+          "derived_l2_candidates": [
+            "trend.early_trend_reversal_start",
+            "moving_average.price_reclaim_or_hold_key_ma",
+            "volume_liquidity.amount_expansion",
+            "price_position.not_too_extended",
+            "level_breakout.close_new_high_or_near_new_high"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.early_trend_reversal_breakout",
+            "risk_state.breakout_followthrough_uncertain"
+          ],
+          "l4_implication": "适合作为趋势反转启动型正样本参与研究，但不宜直接与长期稳定上升趋势中的高价值突破样本等权；后续可单独校准反转启动子类。"
+        },
+        {
+          "event_id": "stbu_300666_20260609_new_high_acceleration",
+          "trade_date": "2026-06-09",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "稳健上升趋势后放量强突破并刷新阶段高位，MA30/MA60 承接较好，后续延续强，属于高价值正样本。",
+          "derived_l2_candidates": [
+            "trend.stable_uptrend_progress",
+            "moving_average.ma20_hold_ratio_high",
+            "level_breakout.new_high_after_steady_walkup",
+            "volume_liquidity.amount_expansion",
+            "risk.max_drawdown_60d_controlled"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.steady_ma10_walkup_new_high_acceleration",
+            "technical_pattern.steady_late_acceleration_breakout",
+            "composite_setup.steady_uptrend_breakout_watch"
+          ],
+          "l4_implication": "作为稳定趋势中强新高突破的高价值样本；后续建模需同时监控高位乖离，避免把所有大阳突破无差别追高。"
+        }
+      ]
+    },
+    {
+      "sample_id": "stbu_000657_zhongwugaoxin_2026_research",
+      "asset_id": "000657.SZ",
+      "asset_name": "中钨高新",
+      "sample_class": "positive",
+      "pattern_family": "上升趋势强势突破",
+      "evidence_images": [],
+      "human_notes": [
+        "用户于 2026-07-09 输入新一轮样本：中钨高新 20260107、20260109、20260113、20260522、20260610 都属于高价值样本。",
+        "20260107、20260109、20260113 是同一段强启动/连续确认序列，入库时全部保留为高价值正样本，但后续训练或评估应按事件簇去重或降权。",
+        "20260522 和 20260610 属于回调或高位整理后的再加速样本，后续延续强，适合补充高价值加速形态。"
+      ],
+      "events": [
+        {
+          "event_id": "stbu_000657_20260107_new_high_impulse_start",
+          "trade_date": "2026-01-07",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "连续上升趋势中率先强势突破新高，量价和后续延续都较强，是这一段启动序列的高价值正样本。",
+          "derived_l2_candidates": [
+            "trend.stable_uptrend_progress",
+            "level_breakout.close_new_high_or_near_new_high",
+            "moving_average.daily_ma_bullish_order",
+            "volume_liquidity.amount_expansion",
+            "risk.max_drawdown_60d_controlled"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.steady_uptrend_new_high_breakout",
+            "technical_pattern.steady_late_acceleration_breakout",
+            "composite_setup.steady_uptrend_breakout_watch"
+          ],
+          "l4_implication": "作为新高启动段的高价值正样本；与 20260109、20260113 属于同段 cluster，后续统计时应避免重复放大权重。"
+        },
+        {
+          "event_id": "stbu_000657_20260109_new_high_followthrough",
+          "trade_date": "2026-01-09",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "前一启动点后的继续突破确认，趋势承接和后续收益仍强，属于同段高价值跟随确认样本。",
+          "derived_l2_candidates": [
+            "trend.daily_uptrend_confirmed",
+            "level_breakout.uptrend_continuation_breakout",
+            "moving_average.daily_ma_bullish_order",
+            "volume_liquidity.mild_amount_expansion",
+            "risk.max_drawdown_60d_controlled"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.uptrend_continuation_breakout",
+            "technical_pattern.steady_late_acceleration_breakout",
+            "composite_setup.steady_uptrend_breakout_watch"
+          ],
+          "l4_implication": "可作为高价值延续确认样本，但应标记为同段启动后的 follow-through，避免与首个突破点等同计数。"
+        },
+        {
+          "event_id": "stbu_000657_20260113_acceleration_confirmation",
+          "trade_date": "2026-01-13",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "强启动后的进一步加速确认，短期和中期延续都较强，属于高价值正样本。",
+          "derived_l2_candidates": [
+            "trend.daily_uptrend_confirmed",
+            "momentum.late_stage_acceleration",
+            "level_breakout.uptrend_continuation_breakout",
+            "moving_average.daily_ma_bullish_order",
+            "risk.fishtail_late_acceleration"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.high_level_trend_extension",
+            "technical_pattern.steady_late_acceleration_breakout",
+            "risk_state.fishtail_acceleration_risk"
+          ],
+          "l4_implication": "用于校准强趋势启动后的高价值加速确认；排序层需要识别它与 20260107/20260109 的同段关系。"
+        },
+        {
+          "event_id": "stbu_000657_20260522_pullback_reacceleration",
+          "trade_date": "2026-05-22",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "前期上升趋势后的回调再加速，事件后延续很强，属于高价值再突破样本。",
+          "derived_l2_candidates": [
+            "structure.pullback_after_uptrend",
+            "momentum.reacceleration_after_pullback",
+            "level_breakout.reacceleration_breakout",
+            "volume_liquidity.amount_expansion",
+            "moving_average.price_reclaim_or_hold_key_ma"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.pullback_reacceleration_breakout",
+            "technical_pattern.acceleration_breakout_in_uptrend",
+            "composite_setup.steady_uptrend_breakout_watch"
+          ],
+          "l4_implication": "作为回调后再加速的高价值样本；注意该点不是突破 60 日新高，而是强趋势中的再启动，需要与新高突破子类分开解释。"
+        },
+        {
+          "event_id": "stbu_000657_20260610_high_level_reacceleration",
+          "trade_date": "2026-06-10",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "高位强趋势中再次加速，后续仍有显著延续，属于高价值正样本，但风险上需要监控高位乖离。",
+          "derived_l2_candidates": [
+            "trend.daily_uptrend_confirmed",
+            "momentum.late_stage_acceleration",
+            "price_position.extension_from_ma30",
+            "level_breakout.reacceleration_breakout",
+            "risk.fishtail_late_acceleration"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.high_level_trend_extension",
+            "technical_pattern.steady_late_acceleration_breakout",
+            "risk_state.fishtail_acceleration_risk"
+          ],
+          "l4_implication": "作为高位强趋势继续加速的高价值样本；进入策略时应配套更严格的乖离、换手和回撤监控。"
+        }
+      ]
+    },
+    {
+      "sample_id": "stbu_002371_beifanghuachuang_2026_research",
+      "asset_id": "002371.SZ",
+      "asset_name": "北方华创",
+      "sample_class": "positive",
+      "pattern_family": "上升趋势强势突破",
+      "evidence_images": [],
+      "human_notes": [
+        "用户于 2026-07-09 输入新一轮样本：北方华创 20260427、20260615、20260617 属于高价值样本。",
+        "20260427 是阶段新高强突破，20260615 和 20260617 是同一段高位加速/确认序列，入库时保留但后续应按事件簇处理。",
+        "远程基础数据只读复核显示三处后续表现均强，其中 20260615/20260617 在最新可用数据前不足完整 20 个交易日，但已有较强最高收益表现。"
+      ],
+      "events": [
+        {
+          "event_id": "stbu_002371_20260427_new_high_breakout",
+          "trade_date": "2026-04-27",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "阶段新高附近强势突破，成交明显放大，后续延续和回撤表现较好，属于高价值正样本。",
+          "derived_l2_candidates": [
+            "level_breakout.close_new_high_or_near_new_high",
+            "volume_liquidity.amount_expansion",
+            "moving_average.price_reclaim_or_hold_key_ma",
+            "trend.daily_uptrend_confirmed",
+            "risk.max_drawdown_60d_controlled"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.steady_uptrend_new_high_breakout",
+            "technical_pattern.uptrend_continuation_breakout",
+            "composite_setup.steady_uptrend_breakout_watch"
+          ],
+          "l4_implication": "作为大市值强趋势标的的阶段新高突破高价值样本；量能极强时需要后续用回撤规则验证追高风险。"
+        },
+        {
+          "event_id": "stbu_002371_20260615_high_level_acceleration",
+          "trade_date": "2026-06-15",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "高位趋势中再次加速，MA30 承接和趋势质量较好，后续已出现较强最高收益，属于高价值正样本。",
+          "derived_l2_candidates": [
+            "trend.daily_uptrend_confirmed",
+            "moving_average.ma20_hold_ratio_high",
+            "level_breakout.reacceleration_breakout",
+            "price_position.extension_from_ma30",
+            "risk.fishtail_late_acceleration"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.high_level_trend_extension",
+            "technical_pattern.steady_late_acceleration_breakout",
+            "risk_state.fishtail_acceleration_risk"
+          ],
+          "l4_implication": "作为高位趋势再加速样本；与 20260617 属同一段确认序列，后续统计时需要去重或作为 follow-through 特征。"
+        },
+        {
+          "event_id": "stbu_002371_20260617_new_high_followthrough",
+          "trade_date": "2026-06-17",
+          "timeframe": "daily",
+          "event_class": "positive_attention_high_value",
+          "value_tier": "high",
+          "human_interpretation": "20260615 后的进一步新高确认，后续延续仍强，属于同段高价值确认样本。",
+          "derived_l2_candidates": [
+            "trend.daily_uptrend_confirmed",
+            "level_breakout.close_new_high_or_near_new_high",
+            "moving_average.ma20_hold_ratio_high",
+            "price_position.extension_from_ma30",
+            "risk.max_drawdown_60d_controlled"
+          ],
+          "derived_l3_candidates": [
+            "technical_pattern.steady_uptrend_new_high_breakout",
+            "technical_pattern.steady_late_acceleration_breakout",
+            "risk_state.fishtail_acceleration_risk"
+          ],
+          "l4_implication": "作为同段高位加速的确认样本保留；训练或阈值评估时不应与 20260615 完全独立计数。"
+        }
+      ]
     }
   ],
   "candidate_l2_additions": [
@@ -730,6 +1141,14 @@
     {
       "primitive_id": "candlestick.green_k_ratio_20d",
       "description": "近 20 个交易日 close < open 的比例，用于刻画趋势不稳或抛压偏多风险。"
+    },
+    {
+      "primitive_id": "candlestick.single_bull_bar_dominance",
+      "description": "近一段上涨主要由单根或少数大阳柱贡献，后续承接不足时容易形成误召回。"
+    },
+    {
+      "primitive_id": "risk.bearish_pullback_after_single_bull_bar",
+      "description": "单根或少数大阳柱快速拉升后出现较多阴柱和回调，用于识别拉升后承接不健康。"
     },
     {
       "primitive_id": "risk.frequent_break_ma30_60d",
@@ -748,6 +1167,22 @@
       "description": "上升趋势后的高位平台整理，用于区分中继突破和高位过热。"
     },
     {
+      "primitive_id": "structure.high_level_consolidation_wait",
+      "description": "高位已有一定盘整但确认仍不足，适合等待继续消化或二次结构确认。"
+    },
+    {
+      "primitive_id": "structure.v_shape_rebound_too_steep",
+      "description": "从回调低点快速 V 形拉起但缺少高位整理，容易形成追高或确认不足。"
+    },
+    {
+      "primitive_id": "structure.w_base_confirmation_missing",
+      "description": "尚未形成二次探底或 W 形确认，高位结构仍缺少更稳健的介入依据。"
+    },
+    {
+      "primitive_id": "risk.breakout_confirmation_missing",
+      "description": "接近高位但尚未出现足够清晰的突破确认或整理完成信号。"
+    },
+    {
       "primitive_id": "level_breakout.repeated_resistance_test",
       "description": "多次接近或挑战前高，表达突破前的压力位试探。"
     },
@@ -758,6 +1193,10 @@
     {
       "primitive_id": "structure.rest_duration_too_short",
       "description": "突破前整理时间过短，容易形成追高或突破延续性不足。"
+    },
+    {
+      "primitive_id": "risk.breakout_without_enough_consolidation",
+      "description": "上一轮加速后缺少足够盘整消化就再次接近高位，容易形成追高或性价比下降。"
     },
     {
       "primitive_id": "structure.pullback_after_uptrend",
@@ -832,6 +1271,10 @@
       "description": "日级别处于下跌趋势或均线空头/弱势结构，不符合稳健上升趋势突破的前置条件。"
     },
     {
+      "primitive_id": "trend.early_trend_reversal_start",
+      "description": "弱势或震荡后重新站回关键均线并放量上攻，但稳定上升趋势尚未完全形成。"
+    },
+    {
       "primitive_id": "structure.bottoming_attempt_not_uptrend",
       "description": "价格可能在尝试筑底，但尚未重新进入稳健上升趋势，属于另一类筑底反转形态。"
     },
@@ -891,12 +1334,16 @@
     "risk_state.high_volume_spike_a_drop_risk",
     "risk_state.out_of_family_downtrend_base",
     "risk_state.prior_drawdown_too_large",
+    "technical_pattern.early_trend_reversal_breakout",
     "technical_pattern.bottoming_attempt_not_steady_uptrend",
     "risk_state.noisy_candlestick_unstable_breakout",
     "risk_state.ma_convergence_breakdown_after_breakout",
     "risk_state.trend_quality_hard_negative",
     "risk_state.weekly_uptrend_daily_quality_failed",
-    "risk_state.red_green_ratio_unhealthy"
+    "risk_state.red_green_ratio_unhealthy",
+    "risk_state.single_bull_bar_pullback_recall_false_positive",
+    "risk_state.high_level_consolidation_waiting_confirmation",
+    "risk_state.v_shape_rebound_wait_for_w_base"
   ],
   "next_steps": [
     "用基础数据复核所有已给定 trade_date 的 OHLCV、MA、成交额和回撤指标。",

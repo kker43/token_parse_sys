@@ -59,6 +59,12 @@ class DataAssetCatalogLoader:
         quality_gate = item.get("quality_gate", {})
         if quality_gate and not isinstance(quality_gate, Mapping):
             raise ValueError("quality_gate must be a JSON object")
+        consumer_contract = item.get("consumer_contract", {})
+        if consumer_contract and not isinstance(consumer_contract, Mapping):
+            raise ValueError("consumer_contract must be a JSON object")
+        field_units = consumer_contract.get("field_units", {}) if consumer_contract else {}
+        if field_units and not isinstance(field_units, Mapping):
+            raise ValueError("consumer_contract.field_units must be a JSON object")
 
         return DataAsset(
             asset_id=str(item["data_asset_id"]),
@@ -79,7 +85,8 @@ class DataAssetCatalogLoader:
             allowed_quality_levels=tuple(
                 str(value) for value in quality_gate.get("allowed_quality_levels", ())
             ),
-            consumer_contract=dict(item.get("consumer_contract", {})),
+            consumer_contract=dict(consumer_contract),
+            field_units={str(key): str(value) for key, value in dict(field_units).items()},
             table_name=str(item["table_name"]) if item.get("table_name") is not None else None,
             storage_path=str(item["storage_path"]) if item.get("storage_path") is not None else None,
             first_available_date=(

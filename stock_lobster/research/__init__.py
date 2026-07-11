@@ -17,16 +17,28 @@ from stock_lobster.research.single_stock_strategy import (
     PrimitiveHypothesis,
 )
 from stock_lobster.research.trend_breakout_scan import (
+    AdjFactor,
     KlineBar,
     StockSignalContext,
     TrendBreakoutMetrics,
     TrendBreakoutScanPolicy,
     WeeklyTrendContext,
+    adjust_bars_to_qfq_asof,
     read_kline_tsv,
     read_stock_signal_context_tsv,
     scan_trend_breakouts,
     select_candidates,
     summarize_breakout_scan,
+)
+from stock_lobster.research.steady_uptrend_v3 import (
+    MarketTemperature,
+    SteadyUptrendV3Policy,
+    build_market_temperatures,
+    select_v3_observation_candidates,
+    select_v3_signal_candidates,
+    summarize_v3_rejections,
+    v3_rejection_reasons,
+    v3_score,
 )
 from stock_lobster.research.steady_uptrend_breakout_case import (
     STEADY_UPTREND_BREAKOUT_LABELS,
@@ -40,6 +52,14 @@ from stock_lobster.research.factor_reuse import (
     FactorReuseDecision,
     audit_factor_reuse,
     load_indicator_catalog,
+)
+from stock_lobster.research.annotation_queue import (
+    AnnotationQueue,
+    AnnotationQueueItem,
+    AnnotationSuggestionPolicy,
+    DEFAULT_REVIEW_LABEL_OPTIONS,
+    ReviewLabelOption,
+    build_annotation_queue,
 )
 
 __all__ = [
@@ -57,16 +77,26 @@ __all__ = [
     "PrimitiveAssessment",
     "PrimitiveBuildRequirement",
     "PrimitiveHypothesis",
+    "AdjFactor",
     "KlineBar",
     "StockSignalContext",
     "TrendBreakoutMetrics",
     "TrendBreakoutScanPolicy",
     "WeeklyTrendContext",
+    "adjust_bars_to_qfq_asof",
     "read_kline_tsv",
     "read_stock_signal_context_tsv",
     "scan_trend_breakouts",
     "select_candidates",
     "summarize_breakout_scan",
+    "MarketTemperature",
+    "SteadyUptrendV3Policy",
+    "build_market_temperatures",
+    "select_v3_observation_candidates",
+    "select_v3_signal_candidates",
+    "summarize_v3_rejections",
+    "v3_rejection_reasons",
+    "v3_score",
     "STEADY_UPTREND_BREAKOUT_LABELS",
     "STEADY_UPTREND_BREAKOUT_PRIMITIVES",
     "build_steady_uptrend_breakout_request",
@@ -76,4 +106,10 @@ __all__ = [
     "FactorReuseDecision",
     "audit_factor_reuse",
     "load_indicator_catalog",
+    "AnnotationQueue",
+    "AnnotationQueueItem",
+    "AnnotationSuggestionPolicy",
+    "DEFAULT_REVIEW_LABEL_OPTIONS",
+    "ReviewLabelOption",
+    "build_annotation_queue",
 ]

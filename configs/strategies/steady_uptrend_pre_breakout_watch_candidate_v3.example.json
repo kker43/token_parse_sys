@@ -1,0 +1,90 @@
+{
+  "strategy_id": "strategy.steady_uptrend_pre_breakout_watch",
+  "version": "candidate_v3",
+  "status": "research_only",
+  "name": "稳健上升趋势突破前准备态关注策略 v3",
+  "description": "在 candidate_v2 的稳健趋势、周线和行业/概念上下文基础上，加入研究版市场温度、题材轮动、个股拥挤度、TopN 和同股冷却口径。v3 仍为 research_only，不替换已批准策略。",
+  "parent_strategy_id": "strategy.steady_uptrend_breakout_watch",
+  "candidate_scan_policy": {
+    "min_amount_ratio_20d": 1.5,
+    "max_abs_drawdown_60d": 0.4,
+    "max_abs_drawdown_120d": 0.55,
+    "min_red_k_ratio_20d": 0.45,
+    "max_long_shadow_ratio_20d": 0.65,
+    "require_close_above_ma30": true,
+    "require_weekly_uptrend": true,
+    "max_abs_weekly_drawdown_26w": 0.55,
+    "max_weekly_ma20_deviation_pct": null,
+    "max_ma30_deviation_pct": 0.35,
+    "min_sustained_ma30_hold_ratio_90d": 0.75,
+    "min_recent_ma30_hold_ratio_30d": 0.75,
+    "min_recent_ma30_hold_ratio_60d": 0.55,
+    "min_base_breakout_ma30_hold_ratio_60d": 0.5,
+    "min_base_breakout_return_20d": 0.2,
+    "require_pre_breakout_sustained_ma30": true,
+    "require_normal_listing": true,
+    "min_total_mv": 1000000,
+    "min_avg_amount_20d": 200000,
+    "min_avg_amount_20d_note": "输入单位为千元人民币；200,000 千元对应 2 亿元。",
+    "max_turnover_rate_20d": 20,
+    "max_turnover_spike_ratio_20d": null,
+    "require_context_strength": true,
+    "max_convergence_5_10_20_pct": null,
+    "enable_weak_shape_filter": false,
+    "min_large_bearish_body_pct": 0.025,
+    "max_large_bearish_body_ratio_20d": null,
+    "max_consecutive_green_k_20d": null,
+    "max_single_bull_bar_return_share_20d": null,
+    "min_impulse_consolidation_days": null,
+    "min_ma5_10_20_30_convergence_pct": null,
+    "start_date": null
+  },
+  "v3_filter_policy": {
+    "require_market_temperature": true,
+    "max_market_breadth_ma20": null,
+    "max_market_avg_return_20d": null,
+    "max_market_avg_amount_ratio": null,
+    "min_market_temperature_sample_size": 100,
+    "min_red_k_ratio_20d": null,
+    "max_amount_ratio_20d": null,
+    "min_close_to_high_60d_pct": -0.06,
+    "max_close_to_high_60d_pct": -0.02,
+    "max_ma30_deviation_pct": null,
+    "max_single_bull_bar_return_share_20d": null,
+    "top_n_per_date": 20,
+    "cooldown_trade_days": 10,
+    "fading_concept_names": [
+      "算力租赁",
+      "数据中心",
+      "储能",
+      "华为概念"
+    ],
+    "preferred_rotation_concept_names": [
+      "PCB概念",
+      "存储芯片",
+      "先进封装",
+      "光纤概念"
+    ],
+    "ignored_context_names": [
+      "中证500成份股",
+      "上证180成份股",
+      "上证380成份股",
+      "上证50样本股"
+    ]
+  },
+  "threshold_definition": {
+    "market_temperature_overheated": "市场温度字段包括 ma20 上方占比、全市场 20 日平均涨幅、全市场 20 日平均量比。60 个完整信号日回测不支持默认硬过滤，当前只进入 v3_score 评分惩罚和诊断。",
+    "amount_ratio_overheated": "个股当日成交额 / 20 日均成交额。历史窗口不支持把 >=2.5 作为硬过滤，当前仅进入 v3_score 评分惩罚和诊断。",
+    "single_bull_bar_dominance_failed": "近 20 日最大单日上涨贡献 / 近 20 日正收益合计。历史窗口不支持 0.25 硬过滤，当前仅进入 v3_score 评分惩罚和诊断。",
+    "pre_breakout_too_close_or_far": "预突破观察位要求距离 60 日高点在 -6% 到 -2% 之间；太近容易追高，太远表示尚未接近突破。",
+    "fading_context_without_preferred_rotation": "命中降权题材且未命中优先轮动题材时剔除。"
+  },
+  "validation_plan": {
+    "status": "research_only",
+    "minimum_checks": [
+      "比较 v3 保留组与 v3_rejected_candidates 在 H5/H10/H20 的收益、胜率和中位数。",
+      "按 rejection_reason 分组验证每个口径是否真的降低后续收益或胜率。",
+      "对市场温度、量比、红柱比例、单根大阳柱贡献做分桶，检查默认阈值是否位于数据断点附近。当前市场温度仅保留诊断，不作为默认硬过滤。"
+    ]
+  }
+}
