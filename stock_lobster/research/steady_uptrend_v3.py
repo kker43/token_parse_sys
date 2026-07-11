@@ -40,11 +40,10 @@ class SteadyUptrendV3Policy:
     require_market_temperature: bool = True
     max_market_breadth_ma20: float | None = 0.55
     max_market_avg_return_20d: float | None = 0.03
-    max_market_avg_amount_ratio: float | None = None
     min_market_temperature_sample_size: int = 100
     min_red_k_ratio_20d: float | None = None
-    min_amount_ratio_20d: float | None = None
-    max_amount_ratio_20d: float | None = None
+    min_volume_ratio_5d_20d: float | None = None
+    max_volume_ratio_5d_20d: float | None = None
     min_close_to_high_60d_pct: float = -0.06
     max_close_to_high_60d_pct: float = -0.02
     max_ma30_deviation_pct: float | None = None
@@ -69,11 +68,10 @@ class SteadyUptrendV3Policy:
             "require_market_temperature": self.require_market_temperature,
             "max_market_breadth_ma20": self.max_market_breadth_ma20,
             "max_market_avg_return_20d": self.max_market_avg_return_20d,
-            "max_market_avg_amount_ratio": self.max_market_avg_amount_ratio,
             "min_market_temperature_sample_size": self.min_market_temperature_sample_size,
             "min_red_k_ratio_20d": self.min_red_k_ratio_20d,
-            "min_amount_ratio_20d": self.min_amount_ratio_20d,
-            "max_amount_ratio_20d": self.max_amount_ratio_20d,
+            "min_volume_ratio_5d_20d": self.min_volume_ratio_5d_20d,
+            "max_volume_ratio_5d_20d": self.max_volume_ratio_5d_20d,
             "min_close_to_high_60d_pct": self.min_close_to_high_60d_pct,
             "max_close_to_high_60d_pct": self.max_close_to_high_60d_pct,
             "max_ma30_deviation_pct": self.max_ma30_deviation_pct,
@@ -167,10 +165,23 @@ def v3_rejection_reasons(
 
     if policy.min_red_k_ratio_20d is not None and metric.red_k_ratio_20d < policy.min_red_k_ratio_20d:
         reasons.append("red_k_ratio_below_v3_threshold")
-    if policy.min_amount_ratio_20d is not None and metric.amount_ratio_20d < policy.min_amount_ratio_20d:
-        reasons.append("amount_ratio_below_v3_threshold")
-    if policy.max_amount_ratio_20d is not None and metric.amount_ratio_20d >= policy.max_amount_ratio_20d:
-        reasons.append("amount_ratio_overheated")
+    volume_ratio_required = (
+        policy.min_volume_ratio_5d_20d is not None
+        or policy.max_volume_ratio_5d_20d is not None
+    )
+    if volume_ratio_required and metric.volume_ratio_5d_20d is None:
+        reasons.append("volume_ratio_5d_20d_missing")
+    elif metric.volume_ratio_5d_20d is not None:
+        if (
+            policy.min_volume_ratio_5d_20d is not None
+            and metric.volume_ratio_5d_20d < policy.min_volume_ratio_5d_20d
+        ):
+            reasons.append("volume_ratio_5d_20d_below_v3_threshold")
+        if (
+            policy.max_volume_ratio_5d_20d is not None
+            and metric.volume_ratio_5d_20d >= policy.max_volume_ratio_5d_20d
+        ):
+            reasons.append("volume_ratio_5d_20d_overheated")
     if policy.max_ma30_deviation_pct is not None and metric.ma30_deviation_pct > policy.max_ma30_deviation_pct:
         reasons.append("ma30_deviation_overheated")
     if (
@@ -318,12 +329,6 @@ def _market_temperature_reasons(
         and market_temperature.avg_return_20d > policy.max_market_avg_return_20d
     ):
         reasons.append("market_avg_return_20d_overheated")
-        overheated = True
-    if (
-        policy.max_market_avg_amount_ratio is not None
-        and market_temperature.avg_amount_ratio > policy.max_market_avg_amount_ratio
-    ):
-        reasons.append("market_amount_ratio_overheated")
         overheated = True
     if overheated:
         reasons.insert(0, "market_temperature_overheated")

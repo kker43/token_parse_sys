@@ -77,7 +77,7 @@
     "interpretation": "弱市场候选数限制是当前最有价值的 v3.2 候选方向。weak_breadth_top2 + -10% stop 将 H5 均值从 6.68% 提高到 7.53%，胜率从 61.00% 提高到 65.48%，中位数从 5.99% 提高到 7.35%，同时保持最差收益 -10.00%。参数敏感性显示 top2 比 top1 更适合保留样本覆盖；breadth_ma20 < 0.45 + top2 在当前窗口略优，但 35%-45% 分桶样本只有 5 个，应作为 test_tracking 激进候选继续验证，而不是直接硬晋升。"
   },
   "candidate_scan_policy": {
-    "min_amount_ratio_20d": 1.5,
+    "min_volume_ratio_5d_20d": 1.2,
     "max_abs_drawdown_60d": 0.4,
     "max_abs_drawdown_120d": 0.55,
     "min_red_k_ratio_20d": 0.45,
@@ -114,11 +114,10 @@
     "require_market_temperature": true,
     "max_market_breadth_ma20": null,
     "max_market_avg_return_20d": null,
-    "max_market_avg_amount_ratio": null,
     "min_market_temperature_sample_size": 100,
     "min_red_k_ratio_20d": null,
-    "min_amount_ratio_20d": 1.0,
-    "max_amount_ratio_20d": null,
+    "min_volume_ratio_5d_20d": 1.2,
+    "max_volume_ratio_5d_20d": null,
     "min_close_to_high_60d_pct": -0.06,
     "max_close_to_high_60d_pct": -0.02,
     "max_ma30_deviation_pct": null,
@@ -130,7 +129,7 @@
       "第三代半导体"
     ],
     "post_rank_no_refill_rejection_reasons": [
-      "amount_ratio_below_v3_threshold",
+      "volume_ratio_5d_20d_below_v3_threshold",
       "blocked_risk_context"
     ],
     "fading_concept_names": [
@@ -153,7 +152,7 @@
     ]
   },
   "threshold_definition": {
-    "amount_ratio_below_v3_threshold": "个股当日成交额 / 20 日均成交额低于 1，表示观察位缺少量能确认。60 日 observation_top5 诊断中该组整体质量偏弱，v3.1 在 Top5 后剔除且不补位。",
+    "volume_ratio_5d_20d_below_v3_threshold": "个股最近 5 日平均成交量 / 最近 20 日平均成交量低于 1.2，表示近期持续量能确认不足。v3.1 在 Top5 后剔除且不补位。",
     "blocked_risk_context": "命中显式风险题材即剔除，不使用 preferred_rotation 豁免。当前仅包括 60 日窗口左尾集中出现的 液冷服务器、第三代半导体。v3.1 在 Top5 后剔除且不补位。",
     "post_rank_no_refill_rejection_reasons": "这些拒绝原因不参与 Top5 前的候选补位；先取每日 Top5，再剔除风险项，从而允许坏名额空出，而不是用更低排序样本补满。",
     "market_temperature_overheated": "市场温度字段包括 ma20 上方占比、全市场 20 日平均涨幅、全市场 20 日平均量比。60 个完整信号日回测不支持默认硬过滤，当前只进入 v3_score 评分惩罚和诊断。",

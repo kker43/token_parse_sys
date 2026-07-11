@@ -83,7 +83,7 @@
           "alias": "above_ma20"
         },
         {
-          "primitive_id": "volume_liquidity.amount_ratio_20d_high",
+          "primitive_id": "volume_liquidity.volume_ratio_5d_20d_high",
           "version": "v1",
           "required": true,
           "alias": "volume_high"
@@ -361,7 +361,7 @@
         {"primitive_id": "weekly_context.weekly_trend_context_pass", "version": "candidate_v1", "required": true, "alias": "weekly_context"},
         {"primitive_id": "context.industry_or_concept_strength_hit", "version": "candidate_v1", "required": true, "alias": "context_strength"},
         {"primitive_id": "level_breakout.close_new_high_60d", "version": "v1", "required": true, "alias": "new_high"},
-        {"primitive_id": "volume_liquidity.amount_ratio_20d_high", "version": "v1", "required": true, "alias": "volume_high"}
+        {"primitive_id": "volume_liquidity.volume_ratio_5d_20d_high", "version": "v1", "required": true, "alias": "volume_high"}
       ],
       "logic": {
         "all": [

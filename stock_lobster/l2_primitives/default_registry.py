@@ -61,11 +61,11 @@ def build_default_primitive_registry() -> PrimitiveRegistry:
             description="MA20 slope is positive over the recent window.",
         ),
         PrimitiveDefinition(
-            primitive_id="volume_liquidity.amount_ratio_20d_high",
+            primitive_id="volume_liquidity.volume_ratio_5d_20d_high",
             version="v1",
-            function=technical.amount_ratio_20d_high,
+            function=technical.volume_ratio_5d_20d_high,
             output_type="bool",
-            description="Amount ratio versus 20-day average is high.",
+            description="Recent 5-day average volume is at least 1.2 times the 20-day average.",
         ),
         PrimitiveDefinition(
             primitive_id="volatility.volatility_60d_low",

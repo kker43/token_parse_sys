@@ -84,7 +84,6 @@ class SteadyUptrendV3SelectionTest(unittest.TestCase):
         policy = SteadyUptrendV3Policy(
             max_market_breadth_ma20=None,
             max_market_avg_return_20d=None,
-            max_market_avg_amount_ratio=None,
         )
 
         reasons = v3_rejection_reasons(
@@ -96,17 +95,16 @@ class SteadyUptrendV3SelectionTest(unittest.TestCase):
         self.assertNotIn("market_temperature_overheated", reasons)
         self.assertNotIn("market_breadth_ma20_overheated", reasons)
         self.assertNotIn("market_avg_return_20d_overheated", reasons)
-        self.assertNotIn("market_amount_ratio_overheated", reasons)
 
-    def test_can_require_minimum_amount_ratio_for_confirmation(self) -> None:
+    def test_can_require_minimum_5d_20d_volume_ratio_for_confirmation(self) -> None:
         metric = _metric(
             "000001.SZ",
             "20260601",
             pre_breakout_watch=True,
-            amount_ratio_20d=0.92,
+            volume_ratio_5d_20d=1.19,
         )
         temperature = _healthy_temperature("20260601")
-        policy = SteadyUptrendV3Policy(min_amount_ratio_20d=1.0)
+        policy = SteadyUptrendV3Policy(min_volume_ratio_5d_20d=1.2)
 
         reasons = v3_rejection_reasons(
             metric,
@@ -114,7 +112,23 @@ class SteadyUptrendV3SelectionTest(unittest.TestCase):
             policy=policy,
         )
 
-        self.assertIn("amount_ratio_below_v3_threshold", reasons)
+        self.assertIn("volume_ratio_5d_20d_below_v3_threshold", reasons)
+
+    def test_rejects_missing_5d_20d_volume_ratio_when_required(self) -> None:
+        metric = _metric(
+            "000001.SZ",
+            "20260601",
+            pre_breakout_watch=True,
+            volume_ratio_5d_20d=None,
+        )
+
+        reasons = v3_rejection_reasons(
+            metric,
+            market_temperature=_healthy_temperature("20260601"),
+            policy=SteadyUptrendV3Policy(min_volume_ratio_5d_20d=1.2),
+        )
+
+        self.assertIn("volume_ratio_5d_20d_missing", reasons)
 
     def test_blocks_explicit_risk_context_without_preferred_rotation_exception(self) -> None:
         metric = _metric(
@@ -138,22 +152,22 @@ class SteadyUptrendV3SelectionTest(unittest.TestCase):
         policy = SteadyUptrendV3Policy(
             top_n_per_date=1,
             cooldown_trade_days=0,
-            min_amount_ratio_20d=1.0,
-            post_rank_no_refill_rejection_reasons=("amount_ratio_below_v3_threshold",),
+            min_volume_ratio_5d_20d=1.2,
+            post_rank_no_refill_rejection_reasons=("volume_ratio_5d_20d_below_v3_threshold",),
         )
         weak_volume_leader = _metric(
             "000001.SZ",
             "20260601",
             pre_breakout_watch=True,
             setup_score=90,
-            amount_ratio_20d=0.92,
+            volume_ratio_5d_20d=1.19,
         )
         confirmed_laggard = _metric(
             "000002.SZ",
             "20260601",
             pre_breakout_watch=True,
             setup_score=70,
-            amount_ratio_20d=1.10,
+            volume_ratio_5d_20d=1.30,
         )
 
         selected = select_v3_observation_candidates(
@@ -206,6 +220,7 @@ def _metric(
     pre_breakout_watch: bool = False,
     setup_score: float = 60.0,
     amount_ratio_20d: float = 1.2,
+    volume_ratio_5d_20d: float | None = 1.2,
     strong_concept_names: tuple[str, ...] = ("PCB概念",),
 ) -> TrendBreakoutMetrics:
     return TrendBreakoutMetrics(
@@ -253,6 +268,7 @@ def _metric(
         breakout_watch=breakout_watch,
         setup_score=setup_score,
         strong_concept_names=strong_concept_names,
+        volume_ratio_5d_20d=volume_ratio_5d_20d,
     )
 
 
