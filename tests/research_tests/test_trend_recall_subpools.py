@@ -47,6 +47,21 @@ class TrendRecallSubpoolsTest(unittest.TestCase):
         self.assertTrue(all(not match.matched for match in result.values()))
         self.assertTrue(all("basic_liquidity_failed" in match.reasons for match in result.values()))
 
+    def test_noisy_rebound_after_ma30_break_blocks_every_subpool(self) -> None:
+        result = classify_recall_subpools(
+            _metric(
+                long_shadow_ratio_20d=0.57,
+                large_bearish_body_ratio_20d=0.30,
+                ma30_hold_ratio_30d=0.83,
+                ma30_deviation_pct=0.13,
+            )
+        )
+
+        self.assertTrue(all(not match.matched for match in result.values()))
+        self.assertTrue(
+            all("noisy_ma30_breakdown_rebound" in match.reasons for match in result.values())
+        )
+
 
 def _metric(**overrides: object) -> SimpleNamespace:
     values = {
@@ -65,10 +80,12 @@ def _metric(**overrides: object) -> SimpleNamespace:
         "return_20d": 0.15,
         "amount_ratio_prev_20d": 1.1,
         "red_k_ratio_20d": 0.60,
+        "long_shadow_ratio_20d": 0.40,
         "large_bearish_body_ratio_20d": 0.05,
         "single_bull_bar_return_share_20d": 0.20,
         "impulse_consolidation_days": 8,
         "steady_uptrend": True,
+        "ma30_deviation_pct": 0.08,
     }
     values.update(overrides)
     return SimpleNamespace(**values)

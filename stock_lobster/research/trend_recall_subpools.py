@@ -142,6 +142,13 @@ def _volume_score(amount_ratio_prev_20d: float) -> float:
 
 def _severe_shape_reasons(metric: TrendBreakoutMetrics) -> tuple[str, ...]:
     reasons: list[str] = []
+    if (
+        metric.long_shadow_ratio_20d >= 0.55
+        and metric.large_bearish_body_ratio_20d >= 0.30
+        and metric.ma30_hold_ratio_30d < 0.90
+        and metric.ma30_deviation_pct >= 0.10
+    ):
+        reasons.append("noisy_ma30_breakdown_rebound")
     if metric.large_bearish_body_ratio_20d > 0.30:
         reasons.append("large_bearish_pullback_cluster")
     if metric.single_bull_bar_return_share_20d > 0.50 and metric.impulse_consolidation_days < 5:
