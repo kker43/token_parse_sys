@@ -554,6 +554,17 @@ amount_20d AS (
   JOIN token_daily_details d ON d.trade_date = dday.trade_date
   WHERE dday.rn <= 20
   GROUP BY d.ts_code
+),
+published_volume_ratio AS (
+  SELECT
+    asset_id,
+    MAX(indicator_value) AS volume_ratio_5d_20d
+  FROM pub_stock_daily_indicator
+  WHERE trade_date = {signal_expr}
+    AND indicator_name = 'volume_ratio_5d_20d'
+    AND indicator_version = 'legacy_v1'
+    AND params_hash = 'default'
+  GROUP BY asset_id
 )
 SELECT
   db.ts_code AS asset_id,
@@ -571,18 +582,13 @@ SELECT
   COALESCE(m.strong_concept_hit, 0) AS strong_concept_hit,
   COALESCE(m.strong_industry_names, '') AS strong_industry_names,
   COALESCE(m.strong_concept_names, '') AS strong_concept_names,
-  vr.indicator_value AS volume_ratio_5d_20d
+  vr.volume_ratio_5d_20d
 FROM token_daily_basic db
 JOIN token_stock_basic b ON b.ts_code = db.ts_code AND b.update_date = {signal_expr}
 LEFT JOIN turnover_20d t ON t.ts_code = db.ts_code
 LEFT JOIN amount_20d a ON a.ts_code = db.ts_code
 LEFT JOIN member_hit m ON m.ts_code = db.ts_code
-LEFT JOIN pub_stock_daily_indicator vr
-  ON vr.asset_id = db.ts_code
- AND vr.trade_date = db.trade_date
- AND vr.indicator_name = 'volume_ratio_5d_20d'
- AND vr.indicator_version = 'legacy_v1'
- AND vr.params_hash = 'default'
+LEFT JOIN published_volume_ratio vr ON vr.asset_id = db.ts_code
 WHERE db.trade_date = {signal_expr}
 ORDER BY db.ts_code
 """

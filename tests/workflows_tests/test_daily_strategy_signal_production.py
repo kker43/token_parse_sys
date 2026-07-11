@@ -108,6 +108,8 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
         self.assertIn("indicator_version = 'legacy_v1'", sql)
         self.assertIn("params_hash = 'default'", sql)
         self.assertIn("volume_ratio_5d_20d", sql)
+        self.assertIn("published_volume_ratio AS (", sql)
+        self.assertIn("GROUP BY asset_id", sql)
 
     def test_write_candidates_csv_renders_list_fields(self) -> None:
         with TemporaryDirectory() as tempdir:
