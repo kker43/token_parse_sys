@@ -14,6 +14,7 @@ from workflows.jobs.daily_strategy_signal_production import (
     _fetch_kline_rows,
     _policy_from_strategy_payload,
     _resolve_settings,
+    _stock_context_sql,
     _write_candidates_csv,
     build_parser,
 )
@@ -98,6 +99,15 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
         self.assertTrue(policy.require_weekly_uptrend)
         self.assertTrue(policy.require_context_strength)
         self.assertEqual(200_000, policy.min_avg_amount_20d)
+
+    def test_stock_context_sql_consumes_published_5d_20d_volume_ratio(self) -> None:
+        sql = _stock_context_sql()
+
+        self.assertIn("pub_stock_daily_indicator", sql)
+        self.assertIn("indicator_name = 'volume_ratio_5d_20d'", sql)
+        self.assertIn("indicator_version = 'legacy_v1'", sql)
+        self.assertIn("params_hash = 'default'", sql)
+        self.assertIn("volume_ratio_5d_20d", sql)
 
     def test_write_candidates_csv_renders_list_fields(self) -> None:
         with TemporaryDirectory() as tempdir:

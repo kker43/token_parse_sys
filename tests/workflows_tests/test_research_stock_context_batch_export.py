@@ -40,6 +40,7 @@ class ResearchStockContextBatchExportTest(unittest.TestCase):
                         "strong_concept_hit": 0,
                         "strong_industry_names": "PCB概念",
                         "strong_concept_names": "",
+                        "volume_ratio_5d_20d": 1.25,
                     },
                 )
 
@@ -57,6 +58,8 @@ class ResearchStockContextBatchExportTest(unittest.TestCase):
             self.assertEqual(3, len(lines))
             self.assertIn("000001.SZ\t20260101", lines[1])
             self.assertIn("000002.SZ\t20260103", lines[2])
+            self.assertEqual("volume_ratio_5d_20d", STOCK_CONTEXT_HEADER[-1])
+            self.assertTrue(lines[1].endswith("\t1.25"))
             self.assertEqual(
                 {
                     "20260101": 1,

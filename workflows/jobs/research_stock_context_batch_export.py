@@ -39,6 +39,7 @@ STOCK_CONTEXT_HEADER = (
     "strong_concept_hit",
     "strong_industry_names",
     "strong_concept_names",
+    "volume_ratio_5d_20d",
 )
 
 

@@ -386,6 +386,7 @@ def _export_stock_context(*, connection: Any, trade_date: str, output_path: Path
             "strong_concept_hit",
             "strong_industry_names",
             "strong_concept_names",
+            "volume_ratio_5d_20d",
         ),
     )
 
@@ -569,12 +570,19 @@ SELECT
   COALESCE(m.strong_industry_hit, 0) AS strong_industry_hit,
   COALESCE(m.strong_concept_hit, 0) AS strong_concept_hit,
   COALESCE(m.strong_industry_names, '') AS strong_industry_names,
-  COALESCE(m.strong_concept_names, '') AS strong_concept_names
+  COALESCE(m.strong_concept_names, '') AS strong_concept_names,
+  vr.indicator_value AS volume_ratio_5d_20d
 FROM token_daily_basic db
 JOIN token_stock_basic b ON b.ts_code = db.ts_code AND b.update_date = {signal_expr}
 LEFT JOIN turnover_20d t ON t.ts_code = db.ts_code
 LEFT JOIN amount_20d a ON a.ts_code = db.ts_code
 LEFT JOIN member_hit m ON m.ts_code = db.ts_code
+LEFT JOIN pub_stock_daily_indicator vr
+  ON vr.asset_id = db.ts_code
+ AND vr.trade_date = db.trade_date
+ AND vr.indicator_name = 'volume_ratio_5d_20d'
+ AND vr.indicator_version = 'legacy_v1'
+ AND vr.params_hash = 'default'
 WHERE db.trade_date = {signal_expr}
 ORDER BY db.ts_code
 """

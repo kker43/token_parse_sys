@@ -238,6 +238,7 @@ class StockSignalContext:
     strong_concept_hit: bool = False
     strong_industry_names: tuple[str, ...] = ()
     strong_concept_names: tuple[str, ...] = ()
+    volume_ratio_5d_20d: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,6 +337,7 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
         "strong_concept_hit",
         "strong_industry_names",
         "strong_concept_names",
+        "volume_ratio_5d_20d",
     )
     has_header = rows[0].split("\t")[0] in {"asset_id", "ts_code"}
     if has_header:
@@ -366,6 +368,7 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
                 strong_concept_hit=_truthy(row.get("strong_concept_hit")),
                 strong_industry_names=_split_names(row.get("strong_industry_names")),
                 strong_concept_names=_split_names(row.get("strong_concept_names")),
+                volume_ratio_5d_20d=_optional_float(row.get("volume_ratio_5d_20d")),
             )
         )
     return tuple(contexts)

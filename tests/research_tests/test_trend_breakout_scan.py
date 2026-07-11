@@ -303,7 +303,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "context.tsv"
             path.write_text(
-                "000001.SZ\t20260703\t测试股份\t半导体\t主板\tL\t1000000\t8\t18\t6\t300000000\t1\t0\t半导体\t\n",
+                "000001.SZ\t20260703\t测试股份\t半导体\t主板\tL\t1000000\t8\t18\t6\t300000000\t1\t0\t半导体\t\t1.25\n",
                 encoding="utf-8",
             )
 
@@ -314,6 +314,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         self.assertTrue(contexts[0].strong_industry_hit)
         self.assertFalse(contexts[0].strong_concept_hit)
         self.assertEqual(("半导体",), contexts[0].strong_industry_names)
+        self.assertEqual(1.25, contexts[0].volume_ratio_5d_20d)
 
     def test_select_candidates_limits_top_n_per_date_by_setup_score(self) -> None:
         candidates = (
