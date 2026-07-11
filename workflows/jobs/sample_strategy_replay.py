@@ -249,7 +249,10 @@ def _add_strategy_result(
     row[prefix + "blockers"] = ";".join(blockers)
     row[prefix + "first_blocker"] = blockers[0] if blockers else ""
     for field in (
+        "close",
+        "ma30",
         "daily_quality_pass",
+        "trend_stability_pass",
         "steady_uptrend",
         "breakout_watch",
         "pre_breakout_watch",
@@ -260,6 +263,12 @@ def _add_strategy_result(
         "ma30_hold_ratio_60d",
         "ma30_hold_ratio_90d",
         "close_to_high_60d_pct",
+        "return_20d",
+        "long_shadow_ratio_20d",
+        "large_bearish_body_ratio_20d",
+        "single_bull_bar_return_share_20d",
+        "impulse_consolidation_days",
+        "ma5_10_20_30_convergence_pct",
     ):
         row[prefix + field] = mapping.get(field, "") if mapping else ""
 
