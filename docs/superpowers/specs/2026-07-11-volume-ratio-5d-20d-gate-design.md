@@ -18,6 +18,12 @@ volume_ratio_5d_20d = 最近 5 个交易日平均成交量 / 最近 20 个交易
 - 不在 Stock Lobster 内重新生产或修复该指标。
 - 指标版本沿用上游发布契约中的 `legacy_v1/default`。
 
+实施前核对发现：`short_term_anomaly_daily` 已按日生产该指标，注册表和
+`pub_stock_daily_indicator_draft` 也已声明该指标，但线上
+`pub_stock_daily_indicator` 仍是只包含 4 个旧指标的历史视图。因此本次部署必须先在
+`token_fetch` 通过版本化 SQL 迁移升级发布视图；Stock Lobster 不允许绕过发布契约直接
+查询 `short_term_anomaly_daily`。
+
 ## 数据流
 
 ```text
@@ -59,12 +65,13 @@ min_volume_ratio_5d_20d = 1.2
 
 ## 测试与验收
 
-1. 单元测试先证明 `1.19` 被拒绝、`1.20` 通过、缺失值被拒绝。
-2. 数据读取测试证明上游字段进入 `StockSignalContext` 和 `TrendBreakoutMetrics`。
-3. 配置扫描确认活动策略不存在承担硬门槛的 `min_amount_ratio_20d` 或 `min_pre_breakout_amount_ratio_20d`。
-4. 重新导出样本上下文并复盘 23 个正样本、4 个硬负样本。
-5. 重新运行 2026-07-10 全市场扫描，输出每层数量及候选差异。
-6. 远程完整测试、JSON 校验和正式策略任务全部通过后部署。
+1. 上游迁移前查询证明生产发布视图缺少该指标；迁移后 `20260710` 覆盖不少于 5000 只股票。
+2. 单元测试先证明 `1.19` 被拒绝、`1.20` 通过、缺失值被拒绝。
+3. 数据读取测试证明上游字段进入 `StockSignalContext` 和 `TrendBreakoutMetrics`。
+4. 配置扫描确认活动策略不存在承担硬门槛的 `min_amount_ratio_20d` 或 `min_pre_breakout_amount_ratio_20d`。
+5. 重新导出样本上下文并复盘 23 个正样本、4 个硬负样本。
+6. 重新运行 2026-07-10 全市场扫描，输出每层数量及候选差异。
+7. 远程完整测试、JSON 校验和正式策略任务全部通过后部署。
 
 ## 非目标
 
