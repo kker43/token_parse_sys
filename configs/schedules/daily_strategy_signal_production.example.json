@@ -4,5 +4,6 @@
   "output_root": "/home/ubuntu/token_parse_sys/runtime/strategy_signal_production",
   "job_result_path": "/home/ubuntu/token_parse_sys/runtime/strategy_signal_production/latest_result.json",
   "lookback_daily_trade_days": 280,
-  "lookback_weekly_trade_days": 120
+  "lookback_weekly_trade_days": 120,
+  "price_basis": "qfq_asof"
 }
