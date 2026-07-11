@@ -19,6 +19,19 @@ from stock_lobster.research import (
 
 
 class TrendBreakoutScanTest(unittest.TestCase):
+    def test_amount_ratio_prev_20d_excludes_signal_day(self) -> None:
+        bars = _daily_breakout_bars("000099.SZ")
+        previous_average = sum(bar.amount for bar in bars[-21:-1]) / 20
+
+        latest = scan_trend_breakouts(bars)[-1]
+
+        self.assertAlmostEqual(
+            bars[-1].amount / previous_average,
+            latest.amount_ratio_prev_20d,
+            places=6,
+        )
+        self.assertLess(latest.amount_ratio_20d, latest.amount_ratio_prev_20d)
+
     def test_detects_breakout_watch_candidate(self) -> None:
         bars: list[KlineBar] = []
         price = 10.0

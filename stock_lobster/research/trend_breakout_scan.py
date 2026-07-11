@@ -66,6 +66,7 @@ class TrendBreakoutMetrics:
     pre_breakout_watch: bool
     breakout_watch: bool
     setup_score: float
+    amount_ratio_prev_20d: float = 0.0
     large_bearish_body_ratio_20d: float = 0.0
     max_consecutive_green_k_20d: int = 0
     single_bull_bar_return_share_20d: float = 0.0
@@ -114,6 +115,7 @@ class TrendBreakoutMetrics:
             "ma120": self.ma120,
             "ma20_slope_20d": self.ma20_slope_20d,
             "amount_ratio_20d": self.amount_ratio_20d,
+            "amount_ratio_prev_20d": self.amount_ratio_prev_20d,
             "max_drawdown_60d": self.max_drawdown_60d,
             "max_drawdown_120d": self.max_drawdown_120d,
             "convergence_5_10_20_pct": self.convergence_5_10_20_pct,
@@ -431,6 +433,10 @@ def _metrics_for_index(
 
     ma20_slope_20d = ma20 / previous_ma20 - 1
     amount_ratio_20d = bar.amount / amount_average_20d
+    previous_amount_average_20d = sum(amounts[index - 20 : index]) / 20
+    if previous_amount_average_20d == 0:
+        return None
+    amount_ratio_prev_20d = bar.amount / previous_amount_average_20d
     convergence_5_10_20_pct = (max(ma5, ma10, ma20) - min(ma5, ma10, ma20)) / bar.close
     high_60d = max(closes[index - 59 : index + 1])
     close_to_high_60d_pct = bar.close / high_60d - 1
@@ -562,6 +568,7 @@ def _metrics_for_index(
         ma120=ma120,
         ma20_slope_20d=ma20_slope_20d,
         amount_ratio_20d=amount_ratio_20d,
+        amount_ratio_prev_20d=amount_ratio_prev_20d,
         max_drawdown_60d=max_drawdown_60d,
         max_drawdown_120d=max_drawdown_120d,
         convergence_5_10_20_pct=convergence_5_10_20_pct,

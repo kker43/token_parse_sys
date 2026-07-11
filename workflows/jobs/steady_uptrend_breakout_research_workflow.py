@@ -81,6 +81,7 @@ def _metrics_from_mapping(payload: Mapping[str, object]) -> TrendBreakoutMetrics
         ma120=float(payload["ma120"]),
         ma20_slope_20d=float(payload["ma20_slope_20d"]),
         amount_ratio_20d=float(payload["amount_ratio_20d"]),
+        amount_ratio_prev_20d=float(payload.get("amount_ratio_prev_20d", 0.0)),
         max_drawdown_60d=float(payload["max_drawdown_60d"]),
         max_drawdown_120d=float(payload["max_drawdown_120d"]),
         convergence_5_10_20_pct=float(payload["convergence_5_10_20_pct"]),
