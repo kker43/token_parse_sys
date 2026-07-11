@@ -58,10 +58,10 @@ def ma20_rising_20d(snapshot: AnalysisSnapshot) -> bool:
     return get_indicator_value(snapshot, "ma20_slope_20d") > 0
 
 
-def amount_ratio_20d_high(snapshot: AnalysisSnapshot) -> bool:
-    """Return whether amount is meaningfully above the 20-day average."""
+def volume_ratio_5d_20d_high(snapshot: AnalysisSnapshot) -> bool:
+    """Return whether recent 5-day average volume is above its 20-day baseline."""
 
-    return get_indicator_value(snapshot, "amount_ratio_20d") >= 1.5
+    return get_indicator_value(snapshot, "volume_ratio_5d_20d") >= 1.2
 
 
 def volatility_60d_low(snapshot: AnalysisSnapshot) -> bool:

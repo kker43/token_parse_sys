@@ -154,7 +154,7 @@
       "notes": "均线收敛原子状态，可用于低波动蓄势或盘整突破类 L3 标签。"
     },
     {
-      "primitive_id": "volume_liquidity.amount_ratio_20d_high",
+      "primitive_id": "volume_liquidity.volume_ratio_5d_20d_high",
       "version": "v1",
       "status": "candidate",
       "category": "volume_liquidity",
@@ -163,15 +163,15 @@
         "pub_stock_daily_indicator.indicator_value"
       ],
       "params": {
-        "indicator_name": "amount_ratio_20d",
-        "min_ratio": 1.5
+        "indicator_name": "volume_ratio_5d_20d",
+        "min_ratio": 1.2
       },
-      "calculation": "amount_ratio_20d >= min_ratio",
-      "valid_when": "目标日期存在 amount_ratio_20d 指标",
+      "calculation": "volume_ratio_5d_20d >= min_ratio",
+      "valid_when": "目标日期存在 volume_ratio_5d_20d 指标",
       "missing_policy": "block",
       "evidence": [],
       "owner": "stock_lobster",
-      "notes": "成交额相对 20 日均值明显放大，属于量能状态。"
+      "notes": "最近 5 日平均成交量相对最近 20 日均值放大至少 20%，属于持续量能确认状态。"
     },
     {
       "primitive_id": "volatility.volatility_60d_low",

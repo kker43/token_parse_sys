@@ -386,6 +386,7 @@ def _export_stock_context(*, connection: Any, trade_date: str, output_path: Path
             "strong_concept_hit",
             "strong_industry_names",
             "strong_concept_names",
+            "volume_ratio_5d_20d",
         ),
     )
 
@@ -553,6 +554,17 @@ amount_20d AS (
   JOIN token_daily_details d ON d.trade_date = dday.trade_date
   WHERE dday.rn <= 20
   GROUP BY d.ts_code
+),
+published_volume_ratio AS (
+  SELECT
+    asset_id,
+    MAX(indicator_value) AS volume_ratio_5d_20d
+  FROM pub_stock_daily_indicator
+  WHERE trade_date = {signal_expr}
+    AND indicator_name = 'volume_ratio_5d_20d'
+    AND indicator_version = 'legacy_v1'
+    AND params_hash = 'default'
+  GROUP BY asset_id
 )
 SELECT
   db.ts_code AS asset_id,
@@ -569,12 +581,14 @@ SELECT
   COALESCE(m.strong_industry_hit, 0) AS strong_industry_hit,
   COALESCE(m.strong_concept_hit, 0) AS strong_concept_hit,
   COALESCE(m.strong_industry_names, '') AS strong_industry_names,
-  COALESCE(m.strong_concept_names, '') AS strong_concept_names
+  COALESCE(m.strong_concept_names, '') AS strong_concept_names,
+  vr.volume_ratio_5d_20d
 FROM token_daily_basic db
 JOIN token_stock_basic b ON b.ts_code = db.ts_code AND b.update_date = {signal_expr}
 LEFT JOIN turnover_20d t ON t.ts_code = db.ts_code
 LEFT JOIN amount_20d a ON a.ts_code = db.ts_code
 LEFT JOIN member_hit m ON m.ts_code = db.ts_code
+LEFT JOIN published_volume_ratio vr ON vr.asset_id = db.ts_code
 WHERE db.trade_date = {signal_expr}
 ORDER BY db.ts_code
 """
@@ -635,6 +649,7 @@ def _write_candidates_csv(path: Path, candidates: Sequence[Mapping[str, object]]
         "impulse_consolidation_days",
         "ma5_10_20_30_convergence_pct",
         "weak_shape_pass",
+        "volume_ratio_5d_20d",
         "amount_ratio_20d",
         "max_turnover_rate_20d",
         "strong_industry_hit",
@@ -679,7 +694,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
         lines.append("本次没有命中候选。")
     else:
         lines.append(
-            "| 股票 | 名称 | 行业 | 收盘 | 分数 | 距60日高点 | MA30乖离 | MA30站上90日 | 红K比 | 大阴柱比 | 单阳主导 | 盘整天数 | 量比 | 强上下文 |"
+            "| 股票 | 名称 | 行业 | 收盘 | 分数 | 距60日高点 | MA30乖离 | MA30站上90日 | 红K比 | 大阴柱比 | 单阳主导 | 盘整天数 | 5/20日成交量比 | 强上下文 |"
         )
         lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
         for item in candidates:
@@ -693,7 +708,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
                 )
             )
             lines.append(
-                "| {asset_id} | {name} | {industry} | {close:.2f} | {score:.2f} | {high_gap:.2%} | {ma30_dev:.2%} | {ma30_hold:.2%} | {red_ratio:.2%} | {bearish_ratio:.2%} | {single_bull_share:.2%} | {consolidation_days} | {amount_ratio:.2f} | {strong_context} |".format(
+                "| {asset_id} | {name} | {industry} | {close:.2f} | {score:.2f} | {high_gap:.2%} | {ma30_dev:.2%} | {ma30_hold:.2%} | {red_ratio:.2%} | {bearish_ratio:.2%} | {single_bull_share:.2%} | {consolidation_days} | {volume_ratio:.2f} | {strong_context} |".format(
                     asset_id=item.get("asset_id", ""),
                     name=item.get("name", ""),
                     industry=item.get("industry", ""),
@@ -706,7 +721,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
                     bearish_ratio=float(item.get("large_bearish_body_ratio_20d") or 0),
                     single_bull_share=float(item.get("single_bull_bar_return_share_20d") or 0),
                     consolidation_days=int(item.get("impulse_consolidation_days") or 0),
-                    amount_ratio=float(item.get("amount_ratio_20d") or 0),
+                    volume_ratio=float(item.get("volume_ratio_5d_20d") or 0),
                     strong_context=strong_context,
                 )
             )

@@ -14,7 +14,9 @@ from workflows.jobs.daily_strategy_signal_production import (
     _fetch_kline_rows,
     _policy_from_strategy_payload,
     _resolve_settings,
+    _stock_context_sql,
     _write_candidates_csv,
+    _write_markdown_report,
     build_parser,
 )
 
@@ -99,6 +101,17 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
         self.assertTrue(policy.require_context_strength)
         self.assertEqual(200_000, policy.min_avg_amount_20d)
 
+    def test_stock_context_sql_consumes_published_5d_20d_volume_ratio(self) -> None:
+        sql = _stock_context_sql()
+
+        self.assertIn("pub_stock_daily_indicator", sql)
+        self.assertIn("indicator_name = 'volume_ratio_5d_20d'", sql)
+        self.assertIn("indicator_version = 'legacy_v1'", sql)
+        self.assertIn("params_hash = 'default'", sql)
+        self.assertIn("volume_ratio_5d_20d", sql)
+        self.assertIn("published_volume_ratio AS (", sql)
+        self.assertIn("GROUP BY asset_id", sql)
+
     def test_write_candidates_csv_renders_list_fields(self) -> None:
         with TemporaryDirectory() as tempdir:
             output_path = Path(tempdir) / "candidates.csv"
@@ -119,6 +132,34 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
 
         self.assertIn("000001.SZ", text)
         self.assertIn("概念A;概念B", text)
+        self.assertIn("volume_ratio_5d_20d", text.splitlines()[0])
+
+    def test_markdown_report_renders_5d_20d_volume_ratio(self) -> None:
+        with TemporaryDirectory() as tempdir:
+            output_path = Path(tempdir) / "report.md"
+            _write_markdown_report(
+                output_path,
+                {
+                    "trade_date": "20260710",
+                    "strategy_id": "strategy.test",
+                    "strategy_version": "candidate_v1",
+                    "candidate_mode": "pre_breakout",
+                    "metric_count": 1,
+                    "candidate_count": 1,
+                    "candidates": [
+                        {
+                            "asset_id": "001339.SZ",
+                            "amount_ratio_20d": 1.23,
+                            "volume_ratio_5d_20d": 1.34,
+                        }
+                    ],
+                },
+            )
+
+            text = output_path.read_text(encoding="utf-8")
+
+        self.assertIn("5/20日成交量比", text)
+        self.assertIn("| 1.34 |", text)
 
     def test_job_script_exposes_help_as_direct_file_entrypoint(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]

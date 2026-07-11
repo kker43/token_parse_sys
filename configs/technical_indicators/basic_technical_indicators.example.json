@@ -93,6 +93,15 @@
       "description": "Current amount divided by the preceding 20-trading-day average amount"
     },
     {
+      "name": "volume_ratio_5d_20d",
+      "version": "legacy_v1",
+      "params": {"recent_window": 5, "baseline_window": 20, "volume_field": "vol"},
+      "value_type": "numeric",
+      "source_product": "pub_stock_daily_indicator",
+      "source_column": "indicator_value",
+      "description": "Recent 5-day average volume divided by recent 20-day average volume"
+    },
+    {
       "name": "close_new_high_60d_flag",
       "version": "v1",
       "params": {"window": 60, "price_field": "close"},

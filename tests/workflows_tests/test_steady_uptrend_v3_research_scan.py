@@ -16,6 +16,7 @@ class SteadyUptrendV3ResearchScanJobTest(unittest.TestCase):
             tmp_path = Path(tmpdir)
             kline_path = tmp_path / "kline.tsv"
             config_path = tmp_path / "v3_config.json"
+            context_path = tmp_path / "stock_context.tsv"
             output_path = tmp_path / "scan.json"
             kline_path.write_text(
                 "\n".join(
@@ -23,6 +24,13 @@ class SteadyUptrendV3ResearchScanJobTest(unittest.TestCase):
                     + _pre_breakout_rows("000002.SZ")
                     + _hot_amount_rows("000003.SZ")
                 ),
+                encoding="utf-8",
+            )
+            context_path.write_text(
+                "asset_id\ttrade_date\tvolume_ratio_5d_20d\n"
+                "000001.SZ\t20260140\t1.3\n"
+                "000002.SZ\t20260140\t1.3\n"
+                "000003.SZ\t20260140\t3.0\n",
                 encoding="utf-8",
             )
             config_path.write_text(
@@ -35,14 +43,14 @@ class SteadyUptrendV3ResearchScanJobTest(unittest.TestCase):
                             "require_context_strength": False,
                             "require_weekly_uptrend": False,
                             "min_red_k_ratio_20d": 0.45,
+                            "min_volume_ratio_5d_20d": 1.2,
                         },
                         "v3_filter_policy": {
                             "require_market_temperature": True,
                             "min_market_temperature_sample_size": 1,
                             "max_market_breadth_ma20": 1.0,
                             "max_market_avg_return_20d": 1.0,
-                            "max_market_avg_amount_ratio": 10.0,
-                            "max_amount_ratio_20d": 2.5,
+                            "max_volume_ratio_5d_20d": 2.5,
                             "max_single_bull_bar_return_share_20d": 0.9,
                             "top_n_per_date": 20,
                             "cooldown_trade_days": 0,
@@ -58,6 +66,8 @@ class SteadyUptrendV3ResearchScanJobTest(unittest.TestCase):
                     str(kline_path),
                     "--strategy-config-path",
                     str(config_path),
+                    "--stock-context-tsv-path",
+                    str(context_path),
                     "--output-path",
                     str(output_path),
                 ]
@@ -73,7 +83,7 @@ class SteadyUptrendV3ResearchScanJobTest(unittest.TestCase):
             self.assertEqual(1, payload["breakout_candidate_count"])
             self.assertEqual(["000002.SZ"], [item["asset_id"] for item in payload["observation_candidates"]])
             self.assertEqual(["000001.SZ"], [item["asset_id"] for item in payload["breakout_candidates"]])
-            self.assertIn("amount_ratio_overheated", payload["v3_rejection_reason_counts"])
+            self.assertIn("volume_ratio_5d_20d_overheated", payload["v3_rejection_reason_counts"])
             self.assertEqual(["000003.SZ"], [item["asset_id"] for item in payload["v3_rejected_candidates"]])
             self.assertTrue(payload["market_temperature_summary"]["date_count"] > 0)
 

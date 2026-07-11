@@ -119,7 +119,7 @@ def build_default_label_registry() -> LabelRegistry:
             version="v1",
             primitive_ids=(
                 "moving_average.close_above_ma20",
-                "volume_liquidity.amount_ratio_20d_high",
+                "volume_liquidity.volume_ratio_5d_20d_high",
                 "level_breakout.close_new_high_60d",
             ),
             description="Price is above MA20 with volume expansion and a new high.",
@@ -142,7 +142,7 @@ def build_default_label_registry() -> LabelRegistry:
                 "weekly_context.weekly_trend_context_pass",
                 "context.industry_or_concept_strength_hit",
                 "level_breakout.close_new_high_60d",
-                "volume_liquidity.amount_ratio_20d_high",
+                "volume_liquidity.volume_ratio_5d_20d_high",
             ),
             description="Composite watch setup for steady trend stocks breaking upward.",
         ),

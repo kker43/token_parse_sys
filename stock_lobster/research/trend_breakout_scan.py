@@ -104,6 +104,7 @@ class TrendBreakoutMetrics:
     weekly_ma20_slope_4w: float | None = None
     weekly_max_drawdown_26w: float | None = None
     weekly_trend_pass: bool = True
+    volume_ratio_5d_20d: float | None = None
 
     def to_mapping(self) -> dict[str, object]:
         """Render this metrics object as a JSON-friendly mapping."""
@@ -125,6 +126,7 @@ class TrendBreakoutMetrics:
             "ma20_slope_20d": self.ma20_slope_20d,
             "amount_ratio_20d": self.amount_ratio_20d,
             "amount_ratio_prev_20d": self.amount_ratio_prev_20d,
+            "volume_ratio_5d_20d": self.volume_ratio_5d_20d,
             "max_drawdown_60d": self.max_drawdown_60d,
             "max_drawdown_120d": self.max_drawdown_120d,
             "convergence_5_10_20_pct": self.convergence_5_10_20_pct,
@@ -182,7 +184,7 @@ class TrendBreakoutMetrics:
 class TrendBreakoutScanPolicy:
     """Thresholds for the steady uptrend breakout candidate scanner."""
 
-    min_amount_ratio_20d: float = 1.5
+    min_volume_ratio_5d_20d: float = 1.2
     max_abs_drawdown_60d: float = 0.40
     max_abs_drawdown_120d: float = 0.55
     min_red_k_ratio_20d: float = 0.45
@@ -193,7 +195,6 @@ class TrendBreakoutScanPolicy:
     max_weekly_ma20_deviation_pct: float | None = None
     min_close_to_high_60d_pct: float = -0.08
     max_close_to_high_60d_pct: float = -0.002
-    min_pre_breakout_amount_ratio_20d: float = 0.80
     max_ma20_deviation_pct: float = 0.35
     max_ma30_deviation_pct: float = 0.35
     min_sustained_ma30_hold_ratio_90d: float = 0.75
@@ -238,6 +239,7 @@ class StockSignalContext:
     strong_concept_hit: bool = False
     strong_industry_names: tuple[str, ...] = ()
     strong_concept_names: tuple[str, ...] = ()
+    volume_ratio_5d_20d: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,6 +338,7 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
         "strong_concept_hit",
         "strong_industry_names",
         "strong_concept_names",
+        "volume_ratio_5d_20d",
     )
     has_header = rows[0].split("\t")[0] in {"asset_id", "ts_code"}
     if has_header:
@@ -366,6 +369,7 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
                 strong_concept_hit=_truthy(row.get("strong_concept_hit")),
                 strong_industry_names=_split_names(row.get("strong_industry_names")),
                 strong_concept_names=_split_names(row.get("strong_concept_names")),
+                volume_ratio_5d_20d=_optional_float(row.get("volume_ratio_5d_20d")),
             )
         )
     return tuple(contexts)
@@ -577,10 +581,15 @@ def _metrics_for_index(
         policy.max_convergence_5_10_20_pct is None
         or convergence_5_10_20_pct <= policy.max_convergence_5_10_20_pct
     )
+    volume_ratio_5d_20d = stock_context.volume_ratio_5d_20d if stock_context else None
+    volume_ratio_pass = (
+        volume_ratio_5d_20d is not None
+        and volume_ratio_5d_20d >= policy.min_volume_ratio_5d_20d
+    )
     breakout_watch = (
         steady_uptrend
         and close_new_high_60d_flag
-        and amount_ratio_20d >= policy.min_amount_ratio_20d
+        and volume_ratio_pass
         and convergence_ok
     )
     pre_breakout_watch = (
@@ -588,7 +597,7 @@ def _metrics_for_index(
         and not close_new_high_60d_flag
         and pre_breakout_sustained_pass
         and policy.min_close_to_high_60d_pct <= close_to_high_60d_pct <= policy.max_close_to_high_60d_pct
-        and amount_ratio_20d >= policy.min_pre_breakout_amount_ratio_20d
+        and volume_ratio_pass
         and ma20_deviation_pct <= policy.max_ma20_deviation_pct
         and ma30_deviation_pct <= policy.max_ma30_deviation_pct
     )
@@ -652,6 +661,7 @@ def _metrics_for_index(
         weekly_ma20_slope_4w=weekly_context.ma20_slope_4w if weekly_context else None,
         weekly_max_drawdown_26w=weekly_context.max_drawdown_26w if weekly_context else None,
         weekly_trend_pass=weekly_trend_pass,
+        volume_ratio_5d_20d=volume_ratio_5d_20d,
         steady_uptrend=steady_uptrend,
         pre_breakout_watch=pre_breakout_watch,
         breakout_watch=breakout_watch,

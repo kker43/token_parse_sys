@@ -83,8 +83,7 @@ def ordered_blockers(
     metric: Mapping[str, object] | None,
     *,
     mode: str,
-    min_amount_ratio_20d: float = 1.5,
-    min_pre_breakout_amount_ratio_20d: float = 0.8,
+    min_volume_ratio_5d_20d: float = 1.2,
     min_close_to_high_60d_pct: float = -0.08,
     max_close_to_high_60d_pct: float = -0.002,
     min_sustained_ma30_hold_ratio_90d: float = 0.75,
@@ -100,12 +99,14 @@ def ordered_blockers(
         return ("steady_uptrend_failed",)
 
     new_high = bool(metric.get("close_new_high_60d_flag"))
-    amount_ratio = float(metric.get("amount_ratio_20d", 0.0))
+    volume_ratio_raw = metric.get("volume_ratio_5d_20d")
     if mode == "breakout":
         if not new_high:
             return ("close_not_new_high_60d",)
-        if amount_ratio < min_amount_ratio_20d:
-            return (f"amount_ratio_below_{min_amount_ratio_20d:g}",)
+        if volume_ratio_raw in (None, ""):
+            return ("volume_ratio_5d_20d_missing",)
+        if float(volume_ratio_raw) < min_volume_ratio_5d_20d:
+            return (f"volume_ratio_5d_20d_below_{min_volume_ratio_5d_20d:g}",)
         return ()
 
     if mode == "pre_breakout":
@@ -118,8 +119,10 @@ def ordered_blockers(
             return ("pre_breakout_too_far_from_high",)
         if close_to_high > max_close_to_high_60d_pct:
             return ("pre_breakout_too_close_to_high",)
-        if amount_ratio < min_pre_breakout_amount_ratio_20d:
-            return (f"amount_ratio_below_{min_pre_breakout_amount_ratio_20d:g}",)
+        if volume_ratio_raw in (None, ""):
+            return ("volume_ratio_5d_20d_missing",)
+        if float(volume_ratio_raw) < min_volume_ratio_5d_20d:
+            return (f"volume_ratio_5d_20d_below_{min_volume_ratio_5d_20d:g}",)
         return ()
 
     if bool(metric.get("breakout_watch")) or bool(metric.get("pre_breakout_watch")):
@@ -225,8 +228,7 @@ def _add_strategy_result(
     blockers = ordered_blockers(
         mapping,
         mode=mode,
-        min_amount_ratio_20d=float(getattr(policy, "min_amount_ratio_20d")),
-        min_pre_breakout_amount_ratio_20d=float(getattr(policy, "min_pre_breakout_amount_ratio_20d")),
+        min_volume_ratio_5d_20d=float(getattr(policy, "min_volume_ratio_5d_20d")),
         min_close_to_high_60d_pct=float(getattr(policy, "min_close_to_high_60d_pct")),
         max_close_to_high_60d_pct=float(getattr(policy, "max_close_to_high_60d_pct")),
         min_sustained_ma30_hold_ratio_90d=float(
@@ -259,6 +261,7 @@ def _add_strategy_result(
         "avg_amount_20d",
         "amount_ratio_20d",
         "amount_ratio_prev_20d",
+        "volume_ratio_5d_20d",
         "ma30_hold_ratio_30d",
         "ma30_hold_ratio_60d",
         "ma30_hold_ratio_90d",
@@ -335,14 +338,15 @@ def _write_markdown(path: Path, rows: list[dict[str, object]]) -> None:
     blocker_lines = [f"- `{name}`: {count}" for name, count in blocker_counts.most_common()]
     content = "\n".join(
         [
-            "# 修复成交额后的样本策略基线",
+            "# 5/20 日成交量比统一门槛样本策略基线",
             "",
             "## 口径",
             "",
             "- `amount` 和 `avg_amount_20d` 单位：`thousand_cny`。",
             "- 2 亿元门槛：`200000 thousand_cny`。",
-            "- `amount_ratio_20d`：包含当日的20日均值。",
-            "- `amount_ratio_prev_20d`：不含当日的前20日均值。",
+            "- `volume_ratio_5d_20d`：近 5 日平均成交量 / 近 20 日平均成交量，统一硬门槛为 `>= 1.2`。",
+            "- `amount_ratio_20d`：包含当日的 20 日成交额均值，仅用于诊断和评分。",
+            "- `amount_ratio_prev_20d`：不含当日的前 20 日成交额均值，仅用于诊断和评分。",
             "- v3/v3.1 为静态门槛结果，不包含跨日 cooldown 和全市场 TopN 位置。",
             "",
             "## 策略结果",
