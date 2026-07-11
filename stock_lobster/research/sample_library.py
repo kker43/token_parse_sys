@@ -10,6 +10,26 @@ from typing import Any, Mapping
 
 POSITIVE_EVENT_PREFIX = "positive_attention"
 
+SAMPLE_EVENT_VALUE_TIERS: dict[str, str] = {
+    "positive_attention_high_value": "high",
+    "positive_attention_mid_value": "mid",
+    "weak_or_excluded_attention": "low_or_exclude",
+    "borderline_negative_recall": "borderline_negative",
+    "negative_after_close_recall": "borderline_negative",
+    "hard_negative_recall": "hard_negative",
+    "out_of_family": "out_of_family",
+}
+
+HISTORICAL_SAMPLE_EVENT_CLASSES: frozenset[str] = frozenset(
+    {
+        "positive_attention",
+        "positive_attention_best",
+        "positive_attention_risk_higher",
+    }
+)
+
+NON_LIBRARY_SAMPLE_EVENT_CLASSES: frozenset[str] = frozenset({"skip_uncertain"})
+
 
 @dataclass(frozen=True)
 class SampleLibraryGatePolicy:
@@ -200,6 +220,30 @@ def summarize_sample_library(library: Mapping[str, Any]) -> SampleLibraryCoverag
         weak_or_excluded_event_count=sum(1 for event in events if event.is_weak_or_excluded),
         missing_trade_date_events=missing_trade_date_events,
     )
+
+
+def validate_sample_label_taxonomy(library: Mapping[str, Any]) -> tuple[str, ...]:
+    """Validate sample event labels against the approved manual taxonomy."""
+
+    violations: list[str] = []
+    for event in extract_sample_events(library):
+        if event.event_class in NON_LIBRARY_SAMPLE_EVENT_CLASSES:
+            violations.append(
+                f"{event.event_id}: event_class={event.event_class} must not be written to sample library"
+            )
+            continue
+        if event.event_class in HISTORICAL_SAMPLE_EVENT_CLASSES:
+            continue
+        expected_value_tier = SAMPLE_EVENT_VALUE_TIERS.get(event.event_class)
+        if expected_value_tier is None:
+            violations.append(f"{event.event_id}: unknown event_class={event.event_class}")
+            continue
+        if event.value_tier != expected_value_tier:
+            violations.append(
+                f"{event.event_id}: event_class={event.event_class} expects value_tier={expected_value_tier}, "
+                f"got {event.value_tier}"
+            )
+    return tuple(violations)
 
 
 def evaluate_sample_library(

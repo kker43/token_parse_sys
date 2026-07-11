@@ -26,6 +26,15 @@ class KlineBar:
 
 
 @dataclass(frozen=True, slots=True)
+class AdjFactor:
+    """Daily adjustment factor for qfq/hfq price transformations."""
+
+    asset_id: str
+    trade_date: str
+    adj_factor: float
+
+
+@dataclass(frozen=True, slots=True)
 class TrendBreakoutMetrics:
     """Window metrics for one stock/date."""
 
@@ -265,6 +274,44 @@ def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
             )
         )
     return tuple(bars)
+
+
+def adjust_bars_to_qfq_asof(
+    bars: Iterable[KlineBar],
+    factors: Iterable[AdjFactor],
+    *,
+    anchor_trade_date: str,
+) -> tuple[KlineBar, ...]:
+    """Return bars with OHLC adjusted to the anchor date's qfq price basis."""
+
+    factor_by_key = {(factor.asset_id, factor.trade_date): factor.adj_factor for factor in factors}
+    anchor_by_asset = {
+        factor.asset_id: factor.adj_factor for factor in factors if factor.trade_date == anchor_trade_date
+    }
+    adjusted: list[KlineBar] = []
+    missing: list[str] = []
+    for bar in bars:
+        bar_factor = factor_by_key.get((bar.asset_id, bar.trade_date))
+        anchor_factor = anchor_by_asset.get(bar.asset_id)
+        if bar_factor is None or anchor_factor in (None, 0):
+            missing.append(f"{bar.asset_id}.{bar.trade_date}")
+            continue
+        ratio = bar_factor / anchor_factor
+        adjusted.append(
+            KlineBar(
+                asset_id=bar.asset_id,
+                trade_date=bar.trade_date,
+                open=bar.open * ratio,
+                high=bar.high * ratio,
+                low=bar.low * ratio,
+                close=bar.close * ratio,
+                amount=bar.amount,
+            )
+        )
+    if missing:
+        preview = ", ".join(missing[:5])
+        raise ValueError(f"missing adj_factor for qfq_asof adjustment: {preview}")
+    return tuple(adjusted)
 
 
 def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext, ...]:

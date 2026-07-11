@@ -1,0 +1,84 @@
+"""Tests for batch kline export used by research backtests."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+
+from workflows.jobs.research_kline_batch_export import export_kline_batch
+
+
+class ResearchKlineBatchExportTest(unittest.TestCase):
+    def test_exports_daily_and_weekly_kline_with_manifest(self) -> None:
+        with TemporaryDirectory() as tempdir:
+            root = Path(tempdir)
+            daily_path = root / "kline.tsv"
+            weekly_path = root / "weekly_kline.tsv"
+            manifest_path = root / "kline_manifest.json"
+            calls: list[tuple[str, str, str]] = []
+
+            def fetch_rows(table_name: str, start_date: str, end_date: str) -> tuple[dict[str, object], ...]:
+                calls.append((table_name, start_date, end_date))
+                if table_name == "token_daily_details":
+                    return (
+                        {
+                            "ts_code": "000001.SZ",
+                            "trade_date": "20250102",
+                            "open": 10,
+                            "high": 11,
+                            "low": 9,
+                            "close": 10.5,
+                            "amount": 100,
+                        },
+                    )
+                return (
+                    {
+                        "ts_code": "000001.SZ",
+                        "trade_date": "20240105",
+                        "open": 8,
+                        "high": 12,
+                        "low": 7,
+                        "close": 10,
+                        "amount": 500,
+                    },
+                    {
+                        "ts_code": "000001.SZ",
+                        "trade_date": "20240112",
+                        "open": 10,
+                        "high": 13,
+                        "low": 9,
+                        "close": 12,
+                        "amount": 600,
+                    },
+                )
+
+            manifest = export_kline_batch(
+                fetch_rows=fetch_rows,
+                daily_start_date="20250102",
+                daily_end_date="20250103",
+                weekly_start_date="20240101",
+                weekly_end_date="20250103",
+                daily_output_path=daily_path,
+                weekly_output_path=weekly_path,
+                manifest_path=manifest_path,
+            )
+
+            self.assertEqual(
+                [
+                    ("token_daily_details", "20250102", "20250103"),
+                    ("token_weekly_details", "20240101", "20250103"),
+                ],
+                calls,
+            )
+            self.assertEqual("000001.SZ\t20250102\t10\t11\t9\t10.5\t100", daily_path.read_text(encoding="utf-8").strip())
+            self.assertEqual(2, len(weekly_path.read_text(encoding="utf-8").splitlines()))
+            self.assertEqual(1, manifest["daily_row_count"])
+            self.assertEqual(2, manifest["weekly_row_count"])
+            self.assertEqual("20240101", manifest["weekly_start_date"])
+            self.assertEqual(manifest, json.loads(manifest_path.read_text(encoding="utf-8")))
+
+
+if __name__ == "__main__":
+    unittest.main()

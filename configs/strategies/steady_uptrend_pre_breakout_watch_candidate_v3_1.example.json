@@ -1,0 +1,172 @@
+{
+  "strategy_id": "strategy.steady_uptrend_pre_breakout_watch",
+  "version": "candidate_v3_1",
+  "status": "research_only",
+  "name": "稳健上升趋势突破前准备态关注策略 v3.1",
+  "description": "基于突破短线逻辑的 observation_top5 回撤诊断，加入量能确认下限和显式风险题材剔除。风险剔除在每日 Top5 排名后执行且不补位。v3.1 仍为 research_only，只用于短线观察池候选验证。",
+  "parent_strategy_id": "strategy.steady_uptrend_pre_breakout_watch",
+  "evaluation_profile": {
+    "strategy_timeframe": "short_breakout",
+    "primary_holding_horizon": 5,
+    "secondary_holding_horizons": [
+      10
+    ],
+    "risk_reference_holding_horizons": [
+      20
+    ],
+    "interpretation": "突破短线策略以 H5 为主评估周期，H10 用于确认延续性，H20 只作为风险延续和尾部回撤参考，不作为否定短线策略的主指标。"
+  },
+  "trade_management_diagnostic": {
+    "status": "research_only",
+    "source": "runtime/strategy_backtests/sl_eval_steady_uptrend_60_completed/results/v3_1_trade_management/diagnostics.json",
+    "candidate_rule": {
+      "max_holding_days": 5,
+      "stop_loss_pct": -0.1,
+      "take_profit_pct": null,
+      "max_entry_gap_up_pct": null
+    },
+    "interpretation": "第一轮交易管理诊断显示，-10% 止损基本保留 H5 均值，同时把 H5 最差收益从 -35.76% 收敛到 -10.00%。止盈会压低大赢家，高开过滤在当前样本影响很小。按月度和市场宽度复核后，-10% 止损主要价值是收敛 202605 左尾；市场 breadth_ma20 < 35% 时收益和胜率偏弱，后续应优先验证弱市场减少候选数或提高确认门槛。该规则仍为 research_only。"
+  },
+  "candidate_pool_variant_diagnostic": {
+    "status": "research_only",
+    "sources": [
+      "runtime/strategy_backtests/sl_eval_steady_uptrend_60_completed/results/v3_1_trade_management/weak_breadth_top2_param_diagnostics.json",
+      "runtime/strategy_backtests/sl_eval_steady_uptrend_60_completed/results/v3_1_trade_management/weak_breadth_top3_diagnostics.json",
+      "runtime/strategy_backtests/sl_eval_steady_uptrend_60_completed/results/v3_1_trade_management/weak_breadth_top2_diagnostics.json"
+    ],
+    "diagnostic_job": "workflows/jobs/steady_uptrend_trade_management_diagnostics.py",
+    "diagnostic_parameters": {
+      "weak_breadth_ma20_threshold": 0.35,
+      "weak_breadth_top_n": 2,
+      "candidate_pool_key": "observation_candidates"
+    },
+    "sensitivity_diagnostic": {
+      "source_directory": "runtime/strategy_backtests/sl_eval_steady_uptrend_60_completed/results/v3_1_trade_management/sensitivity/",
+      "tested_weak_breadth_ma20_thresholds": [
+        0.3,
+        0.35,
+        0.4,
+        0.45
+      ],
+      "tested_top_n_per_signal_date": [
+        1,
+        2,
+        3
+      ],
+      "conservative_candidate": {
+        "weak_breadth_ma20_threshold": 0.35,
+        "weak_breadth_top_n": 2,
+        "stop_loss_pct": -0.1,
+        "h5_avg_return": 0.0753,
+        "h5_median_return": 0.0735,
+        "h5_win_rate": 0.6548,
+        "sample_size": 84
+      },
+      "aggressive_candidate_for_tracking": {
+        "weak_breadth_ma20_threshold": 0.45,
+        "weak_breadth_top_n": 2,
+        "stop_loss_pct": -0.1,
+        "h5_avg_return": 0.0774,
+        "h5_median_return": 0.0744,
+        "h5_win_rate": 0.6627,
+        "sample_size": 83,
+        "caution": "35%-45% breadth bucket only has 5 baseline samples in the current window; keep as test_tracking candidate rather than hard promotion."
+      }
+    },
+    "candidate_rule": "当 market_temperature.breadth_ma20 < 0.35 时，每个信号日最多保留 v3.1 observation 排名前 2 个；其他市场宽度环境沿用 v3.1 observation top5 no-refill。",
+    "interpretation": "弱市场候选数限制是当前最有价值的 v3.2 候选方向。weak_breadth_top2 + -10% stop 将 H5 均值从 6.68% 提高到 7.53%，胜率从 61.00% 提高到 65.48%，中位数从 5.99% 提高到 7.35%，同时保持最差收益 -10.00%。参数敏感性显示 top2 比 top1 更适合保留样本覆盖；breadth_ma20 < 0.45 + top2 在当前窗口略优，但 35%-45% 分桶样本只有 5 个，应作为 test_tracking 激进候选继续验证，而不是直接硬晋升。"
+  },
+  "candidate_scan_policy": {
+    "min_amount_ratio_20d": 1.5,
+    "max_abs_drawdown_60d": 0.4,
+    "max_abs_drawdown_120d": 0.55,
+    "min_red_k_ratio_20d": 0.45,
+    "max_long_shadow_ratio_20d": 0.65,
+    "require_close_above_ma30": true,
+    "require_weekly_uptrend": true,
+    "max_abs_weekly_drawdown_26w": 0.55,
+    "max_weekly_ma20_deviation_pct": null,
+    "max_ma30_deviation_pct": 0.35,
+    "min_sustained_ma30_hold_ratio_90d": 0.75,
+    "min_recent_ma30_hold_ratio_30d": 0.75,
+    "min_recent_ma30_hold_ratio_60d": 0.55,
+    "min_base_breakout_ma30_hold_ratio_60d": 0.5,
+    "min_base_breakout_return_20d": 0.2,
+    "require_pre_breakout_sustained_ma30": true,
+    "require_normal_listing": true,
+    "min_total_mv": 1000000,
+    "min_avg_amount_20d": 200000,
+    "min_avg_amount_20d_note": "输入单位为千元人民币；200,000 千元对应 2 亿元。",
+    "max_turnover_rate_20d": 20,
+    "max_turnover_spike_ratio_20d": null,
+    "require_context_strength": true,
+    "max_convergence_5_10_20_pct": null,
+    "enable_weak_shape_filter": false,
+    "min_large_bearish_body_pct": 0.025,
+    "max_large_bearish_body_ratio_20d": null,
+    "max_consecutive_green_k_20d": null,
+    "max_single_bull_bar_return_share_20d": null,
+    "min_impulse_consolidation_days": null,
+    "min_ma5_10_20_30_convergence_pct": null,
+    "start_date": null
+  },
+  "v3_filter_policy": {
+    "require_market_temperature": true,
+    "max_market_breadth_ma20": null,
+    "max_market_avg_return_20d": null,
+    "max_market_avg_amount_ratio": null,
+    "min_market_temperature_sample_size": 100,
+    "min_red_k_ratio_20d": null,
+    "min_amount_ratio_20d": 1.0,
+    "max_amount_ratio_20d": null,
+    "min_close_to_high_60d_pct": -0.06,
+    "max_close_to_high_60d_pct": -0.02,
+    "max_ma30_deviation_pct": null,
+    "max_single_bull_bar_return_share_20d": null,
+    "top_n_per_date": 5,
+    "cooldown_trade_days": 10,
+    "blocked_context_names": [
+      "液冷服务器",
+      "第三代半导体"
+    ],
+    "post_rank_no_refill_rejection_reasons": [
+      "amount_ratio_below_v3_threshold",
+      "blocked_risk_context"
+    ],
+    "fading_concept_names": [
+      "算力租赁",
+      "数据中心",
+      "储能",
+      "华为概念"
+    ],
+    "preferred_rotation_concept_names": [
+      "PCB概念",
+      "存储芯片",
+      "先进封装",
+      "光纤概念"
+    ],
+    "ignored_context_names": [
+      "中证500成份股",
+      "上证180成份股",
+      "上证380成份股",
+      "上证50样本股"
+    ]
+  },
+  "threshold_definition": {
+    "amount_ratio_below_v3_threshold": "个股当日成交额 / 20 日均成交额低于 1，表示观察位缺少量能确认。60 日 observation_top5 诊断中该组整体质量偏弱，v3.1 在 Top5 后剔除且不补位。",
+    "blocked_risk_context": "命中显式风险题材即剔除，不使用 preferred_rotation 豁免。当前仅包括 60 日窗口左尾集中出现的 液冷服务器、第三代半导体。v3.1 在 Top5 后剔除且不补位。",
+    "post_rank_no_refill_rejection_reasons": "这些拒绝原因不参与 Top5 前的候选补位；先取每日 Top5，再剔除风险项，从而允许坏名额空出，而不是用更低排序样本补满。",
+    "market_temperature_overheated": "市场温度字段包括 ma20 上方占比、全市场 20 日平均涨幅、全市场 20 日平均量比。60 个完整信号日回测不支持默认硬过滤，当前只进入 v3_score 评分惩罚和诊断。",
+    "pre_breakout_too_close_or_far": "预突破观察位要求距离 60 日高点在 -6% 到 -2% 之间；太近容易追高，太远表示尚未接近突破。",
+    "fading_context_without_preferred_rotation": "命中降权题材且未命中优先轮动题材时剔除。"
+  },
+  "validation_plan": {
+    "status": "research_only",
+    "minimum_checks": [
+      "对 observation_candidates 使用 candidate_pool_key=observation_candidates 做 H5/H10/H20 回测，其中 H5 为主指标，H10 为延续性辅助指标，H20 为风险参考。",
+      "优先比较 v3.1 observation_top5 与 v3 observation_top5 的 H5 收益、H5 胜率、H10 收益、H10 胜率、最大回撤和最差收益。",
+      "用滚动窗口复核 blocked_context_names，避免把当期题材表现过拟合为长期规则。",
+      "共封装光学(CPO) 暂不进入默认硬过滤，只保留诊断。"
+    ]
+  }
+}
