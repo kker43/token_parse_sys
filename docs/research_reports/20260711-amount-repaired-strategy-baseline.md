@@ -1,11 +1,12 @@
-# 修复成交额后的样本策略基线
+# 5/20 日成交量比统一门槛样本策略基线
 
 ## 口径
 
 - `amount` 和 `avg_amount_20d` 单位：`thousand_cny`。
 - 2 亿元门槛：`200000 thousand_cny`。
-- `amount_ratio_20d`：包含当日的20日均值。
-- `amount_ratio_prev_20d`：不含当日的前20日均值。
+- `volume_ratio_5d_20d`：近 5 日平均成交量 / 近 20 日平均成交量，统一硬门槛为 `>= 1.2`。
+- `amount_ratio_20d`：包含当日的 20 日成交额均值，仅用于诊断和评分。
+- `amount_ratio_prev_20d`：不含当日的前 20 日成交额均值，仅用于诊断和评分。
 - v3/v3.1 为静态门槛结果，不包含跨日 cooldown 和全市场 TopN 位置。
 
 ## 策略结果
