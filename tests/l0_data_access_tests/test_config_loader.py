@@ -47,6 +47,10 @@ def sample_catalog_payload() -> dict[str, object]:
                 },
                 "consumer_contract": {
                     "check_quality_status_before_query": True,
+                    "field_units": {
+                        "amount": "thousand_cny",
+                        "vol": "lot",
+                    },
                 },
             }
         ],
@@ -67,3 +71,7 @@ class DataAssetCatalogLoaderTest(unittest.TestCase):
         self.assertEqual(("ready",), asset.allowed_statuses)
         self.assertEqual(("pass", "warning"), asset.allowed_quality_levels)
         self.assertEqual(("asset_id", "trade_date"), asset.primary_key)
+        self.assertEqual("thousand_cny", asset.field_units["amount"])
+        asset.require_field_unit("amount", "thousand_cny")
+        with self.assertRaisesRegex(ValueError, "amount unit mismatch"):
+            asset.require_field_unit("amount", "cny")

@@ -69,6 +69,10 @@
       "consumer_contract": {
         "check_quality_status_before_query": true,
         "date_semantics": "market_local_trade_date",
+        "field_units": {
+          "amount": "thousand_cny",
+          "vol": "lot"
+        },
         "no_future_data": true
       },
       "data_asset_id": "external_provider.pub_stock_daily_kline",

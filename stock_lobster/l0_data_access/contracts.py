@@ -27,11 +27,21 @@ class DataAsset:
     allowed_statuses: tuple[str, ...] = field(default_factory=tuple)
     allowed_quality_levels: tuple[str, ...] = field(default_factory=tuple)
     consumer_contract: Mapping[str, object] = field(default_factory=dict)
+    field_units: Mapping[str, str] = field(default_factory=dict)
     owner_layer: str = "L0"
     table_name: str | None = None
     storage_path: str | None = None
     first_available_date: str | None = None
     latest_available_date: str | None = None
+
+    def require_field_unit(self, field_name: str, expected_unit: str) -> None:
+        """Require one external field to use the unit expected by the consumer."""
+
+        actual = self.field_units.get(field_name)
+        if actual != expected_unit:
+            raise ValueError(
+                f"{self.asset_id}.{field_name} unit mismatch: expected {expected_unit}, got {actual}"
+            )
 
 
 @dataclass(frozen=True, slots=True)
