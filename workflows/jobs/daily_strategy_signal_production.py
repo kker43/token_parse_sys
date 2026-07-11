@@ -649,6 +649,7 @@ def _write_candidates_csv(path: Path, candidates: Sequence[Mapping[str, object]]
         "impulse_consolidation_days",
         "ma5_10_20_30_convergence_pct",
         "weak_shape_pass",
+        "volume_ratio_5d_20d",
         "amount_ratio_20d",
         "max_turnover_rate_20d",
         "strong_industry_hit",
@@ -693,7 +694,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
         lines.append("本次没有命中候选。")
     else:
         lines.append(
-            "| 股票 | 名称 | 行业 | 收盘 | 分数 | 距60日高点 | MA30乖离 | MA30站上90日 | 红K比 | 大阴柱比 | 单阳主导 | 盘整天数 | 量比 | 强上下文 |"
+            "| 股票 | 名称 | 行业 | 收盘 | 分数 | 距60日高点 | MA30乖离 | MA30站上90日 | 红K比 | 大阴柱比 | 单阳主导 | 盘整天数 | 5/20日成交量比 | 强上下文 |"
         )
         lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
         for item in candidates:
@@ -707,7 +708,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
                 )
             )
             lines.append(
-                "| {asset_id} | {name} | {industry} | {close:.2f} | {score:.2f} | {high_gap:.2%} | {ma30_dev:.2%} | {ma30_hold:.2%} | {red_ratio:.2%} | {bearish_ratio:.2%} | {single_bull_share:.2%} | {consolidation_days} | {amount_ratio:.2f} | {strong_context} |".format(
+                "| {asset_id} | {name} | {industry} | {close:.2f} | {score:.2f} | {high_gap:.2%} | {ma30_dev:.2%} | {ma30_hold:.2%} | {red_ratio:.2%} | {bearish_ratio:.2%} | {single_bull_share:.2%} | {consolidation_days} | {volume_ratio:.2f} | {strong_context} |".format(
                     asset_id=item.get("asset_id", ""),
                     name=item.get("name", ""),
                     industry=item.get("industry", ""),
@@ -720,7 +721,7 @@ def _write_markdown_report(path: Path, payload: Mapping[str, object]) -> None:
                     bearish_ratio=float(item.get("large_bearish_body_ratio_20d") or 0),
                     single_bull_share=float(item.get("single_bull_bar_return_share_20d") or 0),
                     consolidation_days=int(item.get("impulse_consolidation_days") or 0),
-                    amount_ratio=float(item.get("amount_ratio_20d") or 0),
+                    volume_ratio=float(item.get("volume_ratio_5d_20d") or 0),
                     strong_context=strong_context,
                 )
             )
