@@ -72,6 +72,16 @@ from stock_lobster.research.layered_recall_signal import (
     select_layered_candidates,
 )
 from stock_lobster.research.trend_recall_subpools import TrendRecallSubpoolPolicy
+from stock_lobster.research.steady_uptrend_s1_s5_mvp import (
+    StabilityRefinementDecision,
+    StageDecision,
+    SteadyUptrendMvpCandidate,
+    SteadyUptrendMvpPolicy,
+    StructureRecallDecision,
+    evaluate_stability_refinement,
+    evaluate_steady_uptrend_mvp,
+    evaluate_structure_recall,
+)
 
 __all__ = [
     "BacktestAcceptancePolicy",
@@ -132,4 +142,12 @@ __all__ = [
     "assess_signal_state",
     "build_layered_recall_decision",
     "select_layered_candidates",
+    "StabilityRefinementDecision",
+    "StageDecision",
+    "SteadyUptrendMvpCandidate",
+    "SteadyUptrendMvpPolicy",
+    "StructureRecallDecision",
+    "evaluate_stability_refinement",
+    "evaluate_steady_uptrend_mvp",
+    "evaluate_structure_recall",
 ]

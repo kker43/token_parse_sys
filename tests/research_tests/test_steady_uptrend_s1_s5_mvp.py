@@ -1,0 +1,391 @@
+"""Behavior tests for the steady-uptrend S1-S5 MVP evaluator."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from datetime import date, timedelta
+import math
+import unittest
+
+from stock_lobster.research.steady_uptrend_s1_s5_mvp import (
+    SteadyUptrendMvpPolicy,
+    evaluate_stability_refinement,
+    evaluate_structure_recall,
+    evaluate_steady_uptrend_mvp,
+)
+from stock_lobster.research.trend_breakout_scan import KlineBar, StockSignalContext
+
+
+class SteadyUptrendS1S5MvpTest(unittest.TestCase):
+    def test_healthy_mature_trend_passes_s1_and_s2(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35)
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            _context("301217.SZ", daily[-1].trade_date),
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertTrue(result.stages["s1_quality_filter"].passed)
+        self.assertTrue(result.stages["s2_mature_trend_filter"].passed)
+        self.assertTrue(result.stages["s3_structure_recall"].passed)
+        self.assertTrue(result.stages["s4_stability_refinement"].passed)
+        self.assertGreaterEqual(result.metrics["ma60_hold_ratio_60d"], 0.50)
+        self.assertGreaterEqual(result.metrics["return_60d"], 0.05)
+
+    def test_s1_thresholds_are_inclusive(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35, amount=200_000.0)
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+        context = replace(
+            _context("301217.SZ", daily[-1].trade_date),
+            total_mv=1_000_000.0,
+            avg_amount_20d=200_000.0,
+        )
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            context,
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertTrue(result.stages["s1_quality_filter"].passed)
+
+    def test_s1_reports_market_cap_and_liquidity_blockers(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35)
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+        context = replace(
+            _context("301217.SZ", daily[-1].trade_date),
+            total_mv=999_999.0,
+            avg_amount_20d=199_999.0,
+        )
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            context,
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertEqual(
+            ("market_cap_below_minimum", "avg_amount_20d_below_minimum"),
+            result.stages["s1_quality_filter"].blockers,
+        )
+        self.assertFalse(result.stages["s2_mature_trend_filter"].evaluated)
+
+    def test_s2_requires_strict_weekly_ma_stack(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35)
+        weekly = list(_rising_bars("301217.SZ", 130, step=1.0, weekly=True))
+        flat_close = weekly[-1].close
+        for index in range(70, len(weekly)):
+            weekly[index] = _with_close(weekly[index], flat_close)
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            _context("301217.SZ", daily[-1].trade_date),
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertFalse(result.stages["s2_mature_trend_filter"].passed)
+        self.assertIn(
+            "weekly_mature_trend_failed",
+            result.stages["s2_mature_trend_filter"].blockers,
+        )
+
+    def test_policy_uses_approved_thresholds(self) -> None:
+        policy = SteadyUptrendMvpPolicy()
+
+        self.assertEqual(1_000_000.0, policy.min_total_mv)
+        self.assertEqual(200_000.0, policy.min_avg_amount_20d)
+        self.assertEqual(0.50, policy.min_ma60_hold_ratio_60d)
+        self.assertEqual(-0.10, policy.min_close_to_high_60d_pct)
+        self.assertEqual(0.60, policy.min_upper_shadow_ratio)
+        self.assertEqual(5, policy.min_upper_shadow_days_20d)
+        self.assertEqual(0.56, policy.min_avg_total_shadow_share_60d)
+        self.assertEqual(5, policy.min_ma_alignment_transitions_60d)
+        self.assertEqual(0.45, policy.min_red_k_ratio_60d)
+        self.assertEqual(0.07, policy.min_extreme_bearish_drop)
+        self.assertEqual(3, policy.min_extreme_bearish_days_10d)
+
+    def test_s3_a_accepts_exactly_ten_percent_below_60d_high(self) -> None:
+        closes = [70.0] * 100
+        closes[-20] = 100.0
+        closes[-1] = 90.0
+        bars = _bars_from_closes("301217.SZ", closes)
+
+        decision = evaluate_structure_recall(bars, signal_date=bars[-1].trade_date)
+
+        self.assertIn("s3_a_high_position", decision.matched_structures)
+        self.assertAlmostEqual(-0.10, decision.metrics["close_to_high_60d_pct"])
+
+    def test_s3_b_recalls_healthy_pullback_and_recovery(self) -> None:
+        closes = [50.0 + index * 0.25 for index in range(100)]
+        closes.extend(
+            [
+                78.0,
+                82.0,
+                86.0,
+                90.0,
+                94.0,
+                100.0,
+                97.0,
+                94.0,
+                91.0,
+                88.0,
+                89.0,
+                90.0,
+                91.0,
+                92.0,
+                93.0,
+                94.0,
+                95.0,
+                96.0,
+                97.0,
+                98.0,
+                99.0,
+            ]
+        )
+        bars = _bars_from_closes("301217.SZ", closes)
+
+        decision = evaluate_structure_recall(bars, signal_date=bars[-1].trade_date)
+
+        self.assertIn("s3_b_pullback_recovery", decision.matched_structures)
+        self.assertLessEqual(decision.metrics["pullback_depth"], -0.05)
+        self.assertGreaterEqual(decision.metrics["recovery_from_trough"], 0.03)
+
+    def test_s3_b_rejects_effective_ma60_breakdown(self) -> None:
+        closes = [80.0 + index * 0.1 for index in range(100)]
+        closes.extend(
+            [
+                100.0,
+                98.0,
+                95.0,
+                88.0,
+                70.0,
+                69.0,
+                72.0,
+                75.0,
+                78.0,
+                80.0,
+                82.0,
+                84.0,
+                86.0,
+                88.0,
+                90.0,
+                92.0,
+                94.0,
+                95.0,
+                96.0,
+                97.0,
+                98.0,
+            ]
+        )
+        bars = _bars_from_closes("301217.SZ", closes)
+
+        decision = evaluate_structure_recall(bars, signal_date=bars[-1].trade_date)
+
+        self.assertTrue(decision.metrics["effective_ma60_breakdown"])
+        self.assertNotIn("s3_b_pullback_recovery", decision.matched_structures)
+
+    def test_s3_c_rejects_wide_swing_rebound(self) -> None:
+        closes = [50.0 + index * 0.3 for index in range(110)]
+        start = closes[-1]
+        closes.extend(
+            [
+                start * 0.99,
+                start * 0.98,
+                start * 0.97,
+                start * 0.95,
+                start * 0.94,
+                start * 0.98,
+                start * 1.02,
+                start * 1.08,
+                start * 1.14,
+                start * 1.20,
+            ]
+        )
+        bars = _bars_from_closes("301217.SZ", closes)
+
+        decision = evaluate_structure_recall(bars, signal_date=bars[-1].trade_date)
+
+        self.assertTrue(decision.metrics["wide_swing_rebound"])
+        self.assertNotIn("s3_c_steady_ma", decision.matched_structures)
+
+    def test_s4_shadow_noise_requires_all_three_composite_conditions(self) -> None:
+        bars = _noisy_shadow_bars("301217.SZ")
+
+        decision = evaluate_stability_refinement(
+            bars,
+            signal_date=bars[-1].trade_date,
+        )
+
+        self.assertEqual(5, decision.metrics["upper_shadow_days_20d"])
+        self.assertGreaterEqual(decision.metrics["avg_total_shadow_share_60d"], 0.56)
+        self.assertGreaterEqual(decision.metrics["ma_alignment_transitions_60d"], 5)
+        self.assertIn("noisy_shadow_ma_flip_composite", decision.blockers)
+
+    def test_s4_upper_shadows_alone_do_not_reject(self) -> None:
+        bars = list(_noisy_shadow_bars("301217.SZ"))
+        for index in range(len(bars) - 61, len(bars) - 1):
+            bar = bars[index]
+            bars[index] = replace(
+                bar,
+                open=bar.close - 0.8,
+                high=bar.close + 0.2,
+                low=bar.close - 0.8,
+            )
+        for index in range(len(bars) - 21, len(bars) - 16):
+            bar = bars[index]
+            bars[index] = replace(
+                bar,
+                open=bar.close - 0.4,
+                high=bar.close + 0.6,
+                low=bar.close - 0.4,
+            )
+
+        decision = evaluate_stability_refinement(
+            bars,
+            signal_date=bars[-1].trade_date,
+        )
+
+        self.assertEqual(5, decision.metrics["upper_shadow_days_20d"])
+        self.assertLess(decision.metrics["avg_total_shadow_share_60d"], 0.56)
+        self.assertNotIn("noisy_shadow_ma_flip_composite", decision.blockers)
+
+    def test_s4_rejects_red_k_ratio_below_45_percent(self) -> None:
+        bars = list(_rising_bars("301217.SZ", 100, step=0.2))
+        prior_60_start = len(bars) - 61
+        for offset in range(60):
+            index = prior_60_start + offset
+            bar = bars[index]
+            open_value = bar.close - 0.2 if offset < 26 else bar.close + 0.2
+            bars[index] = replace(bar, open=open_value)
+
+        decision = evaluate_stability_refinement(
+            bars,
+            signal_date=bars[-1].trade_date,
+        )
+
+        self.assertAlmostEqual(26 / 60, decision.metrics["red_k_ratio_60d"])
+        self.assertIn("low_red_k_ratio_60d", decision.blockers)
+
+    def test_s4_rejects_three_extreme_bearish_days_in_previous_ten(self) -> None:
+        closes = [100.0] * 89 + [100.0, 92.0, 96.0, 88.0, 93.0, 85.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0]
+        bars = list(_bars_from_closes("301217.SZ", closes))
+        for index in (-11, -9, -7):
+            bars[index] = replace(bars[index], open=bars[index].close + 1.0)
+
+        decision = evaluate_stability_refinement(
+            bars,
+            signal_date=bars[-1].trade_date,
+        )
+
+        self.assertEqual(3, decision.metrics["extreme_bearish_days_10d"])
+        self.assertIn("frequent_extreme_bearish_days_10d", decision.blockers)
+
+
+def _rising_bars(
+    asset_id: str,
+    count: int,
+    *,
+    step: float,
+    amount: float = 300_000.0,
+    weekly: bool = False,
+) -> tuple[KlineBar, ...]:
+    start = date(2020, 1, 3) if weekly else date(2023, 1, 2)
+    spacing = 7 if weekly else 1
+    bars = []
+    for index in range(count):
+        close = 30.0 + step * index
+        bars.append(
+            KlineBar(
+                asset_id=asset_id,
+                trade_date=(start + timedelta(days=index * spacing)).strftime("%Y%m%d"),
+                open=close - 0.2,
+                high=close + 0.4,
+                low=close - 0.5,
+                close=close,
+                amount=amount,
+                volume=100_000.0,
+            )
+        )
+    return tuple(bars)
+
+
+def _context(asset_id: str, trade_date: str) -> StockSignalContext:
+    return StockSignalContext(
+        asset_id=asset_id,
+        trade_date=trade_date,
+        name="铜冠铜箔",
+        industry="电子元件",
+        market="创业板",
+        list_status="L",
+        total_mv=1_200_000.0,
+        avg_amount_20d=300_000.0,
+        strong_industry_hit=True,
+        strong_concept_hit=False,
+        strong_industry_names=("电子元件",),
+        strong_concept_names=("先进封装",),
+    )
+
+
+def _bars_from_closes(asset_id: str, closes: list[float]) -> tuple[KlineBar, ...]:
+    start = date(2023, 1, 2)
+    return tuple(
+        KlineBar(
+            asset_id=asset_id,
+            trade_date=(start + timedelta(days=index)).strftime("%Y%m%d"),
+            open=close - 0.2,
+            high=close + 0.4,
+            low=close - 0.5,
+            close=close,
+            amount=300_000.0,
+            volume=100_000.0,
+        )
+        for index, close in enumerate(closes)
+    )
+
+
+def _noisy_shadow_bars(asset_id: str) -> tuple[KlineBar, ...]:
+    start = date(2023, 1, 2)
+    bars = []
+    for index in range(100):
+        close = 100.0 + index * 0.12 + 3.0 * math.sin(index * math.pi / 4)
+        bars.append(
+            KlineBar(
+                asset_id=asset_id,
+                trade_date=(start + timedelta(days=index)).strftime("%Y%m%d"),
+                open=close - 0.44,
+                high=close + 0.30,
+                low=close - 0.70,
+                close=close,
+                amount=300_000.0,
+                volume=100_000.0,
+            )
+        )
+    for index in range(len(bars) - 21, len(bars) - 16):
+        bar = bars[index]
+        bars[index] = replace(
+            bar,
+            open=bar.close - 0.4,
+            high=bar.close + 0.6,
+            low=bar.close - 0.8,
+        )
+    return tuple(bars)
+
+
+def _with_close(bar: KlineBar, close: float) -> KlineBar:
+    return replace(
+        bar,
+        open=close,
+        high=close + 0.2,
+        low=close - 0.2,
+        close=close,
+    )
+
+
+if __name__ == "__main__":
+    unittest.main()
