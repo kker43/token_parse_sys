@@ -63,6 +63,8 @@ from stock_lobster.research.annotation_queue import (
 )
 from stock_lobster.research.layered_recall_signal import (
     LayeredRecallDecision,
+    SignalStateAssessment,
+    assess_signal_state,
     build_layered_recall_decision,
 )
 from stock_lobster.research.trend_recall_subpools import TrendRecallSubpoolPolicy
@@ -118,6 +120,8 @@ __all__ = [
     "ReviewLabelOption",
     "build_annotation_queue",
     "LayeredRecallDecision",
+    "SignalStateAssessment",
     "TrendRecallSubpoolPolicy",
+    "assess_signal_state",
     "build_layered_recall_decision",
 ]
