@@ -154,6 +154,11 @@ def evaluate_steady_uptrend_mvp(
         s5_blockers.append("ma5_entry_unavailable")
     elif close <= ma5:
         s5_blockers.append("close_not_above_ma5")
+    prior_high_close_20d = float(metrics["prior_high_close_20d"] or 0)
+    if prior_high_close_20d <= 0:
+        s5_blockers.append("prior_high_close_20d_unavailable")
+    elif close <= prior_high_close_20d:
+        s5_blockers.append("close_not_above_prior_high_20d")
     ma20 = float(metrics["ma20"] or 0)
     if ma20 <= 0:
         s5_blockers.append("ma20_deviation_unavailable")
@@ -302,6 +307,8 @@ def _candidate_mapping(
         "strong_concept_names": list(context.strong_concept_names) if context else [],
         "close": item.metrics.get("close"),
         "ma5": item.metrics.get("ma5"),
+        "prior_high_close_20d": item.metrics.get("prior_high_close_20d"),
+        "return_3d": item.metrics.get("return_3d"),
         "ma20": item.metrics.get("ma20"),
         "ma20_deviation_pct": item.metrics.get("ma20_deviation_pct"),
         "ma20_deviation_level": item.metrics.get("ma20_deviation_level"),
@@ -716,6 +723,8 @@ def _mature_trend_metrics(
     return {
         "close": daily_closes[-1],
         "ma5": daily_ma5[-1],
+        "prior_high_close_20d": max(daily_closes[-21:-1]),
+        "return_3d": daily_closes[-1] / daily_closes[-4] - 1,
         "ma20": daily_ma20[-1],
         "ma60": daily_ma60[-1],
         "return_60d": daily_closes[-1] / daily_closes[-61] - 1,
