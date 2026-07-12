@@ -172,6 +172,6 @@ Expected: all tests pass and `git diff --check` has no output.
 
 Run the repository's import-boundary and config/schema validation commands discovered from `sys_command.md`; report any suite that cannot run and why.
 
-- [ ] **Step 5: Commit final documentation/fixes**
+- [x] **Step 5: Commit final documentation/fixes**
 
 Commit with message `docs: document steady uptrend S1-S5 MVP`.
