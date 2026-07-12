@@ -525,28 +525,119 @@ def _fetch_quality_status_rows(
     connection: Any,
     requested_date: str | None,
 ) -> tuple[Mapping[str, object], ...]:
-    sql = """
+    candidate_dates: list[str] = []
+    if requested_date is not None:
+        candidate_dates.append(requested_date)
+    else:
+        upper_bound: str | None = None
+        for _ in range(10):
+            sql = "SELECT MAX(trade_date) AS trade_date FROM pub_stock_daily_kline"
+            params: tuple[object, ...] = ()
+            if upper_bound is not None:
+                sql += " WHERE trade_date < %s"
+                params = (upper_bound,)
+            rows = _fetch_rows(connection, sql, params)
+            candidate = str(rows[0].get("trade_date") or "") if rows else ""
+            if not candidate:
+                break
+            candidate_dates.append(candidate)
+            upper_bound = candidate
+
+    selected_date: str | None = None
+    daily_evidence: list[Mapping[str, object]] = []
+    for candidate_date in candidate_dates:
+        rows = _fetch_rows(
+            connection,
+            """
 SELECT
   data_product, data_date, market, asset_type, status, quality_level,
   record_count, expected_min_records, source_tables, source_end_date,
   published_at, data_version, error_message
 FROM pub_data_quality_status
-WHERE market = %s
+WHERE data_date = %s
+  AND market = %s
   AND asset_type = %s
-  AND data_product IN (%s, %s, %s, %s, %s)
-"""
-    params: list[object] = [
-        "CN_A",
-        "stock",
-        *DAILY_QUALITY_PRODUCTS,
-        WEEKLY_QUALITY_PRODUCT,
-    ]
-    if requested_date is not None:
-        sql += " AND data_date <= %s"
-        params.append(requested_date)
-    sql += " ORDER BY data_date DESC, data_product"
-    rows = _fetch_rows(connection, sql, tuple(params))
-    return tuple(_json_safe_mapping(row) for row in rows)
+  AND data_product IN (%s, %s, %s, %s)
+ORDER BY data_product
+""",
+            (
+                candidate_date,
+                "CN_A",
+                "stock",
+                *DAILY_QUALITY_PRODUCTS,
+            ),
+        )
+        normalized = tuple(_json_safe_mapping(row) for row in rows)
+        daily_evidence.extend(normalized)
+        ready_products = {
+            str(item.get("data_product"))
+            for item in normalized
+            if _is_ready(item)
+            and str(item.get("source_end_date") or "") == candidate_date
+            and str(item.get("data_version") or "")
+        }
+        if ready_products == set(DAILY_QUALITY_PRODUCTS):
+            selected_date = candidate_date
+            break
+        if requested_date is not None:
+            break
+
+    if selected_date is None:
+        return tuple(daily_evidence)
+
+    weekly_date_rows = _fetch_rows(
+        connection,
+        """
+SELECT MAX(period_end_date) AS weekly_date
+FROM pub_stock_weekly_kline
+WHERE period_end_date <= %s
+""",
+        (selected_date,),
+    )
+    weekly_date = (
+        str(weekly_date_rows[0].get("weekly_date") or "")
+        if weekly_date_rows
+        else ""
+    )
+    if not weekly_date:
+        return tuple(daily_evidence)
+    weekly_rows = _fetch_rows(
+        connection,
+        """
+SELECT
+  COUNT(*) AS record_count,
+  MIN(data_version) AS min_data_version,
+  MAX(data_version) AS max_data_version,
+  MAX(published_at) AS published_at
+FROM pub_stock_weekly_kline
+WHERE period_end_date = %s
+""",
+        (weekly_date,),
+    )
+    weekly_summary = (
+        _json_safe_mapping(weekly_rows[0]) if weekly_rows else {}
+    )
+    record_count = int(weekly_summary.get("record_count") or 0)
+    min_version = str(weekly_summary.get("min_data_version") or "")
+    max_version = str(weekly_summary.get("max_data_version") or "")
+    version = min_version if min_version == max_version else ""
+    weekly_evidence = {
+        "data_product": WEEKLY_QUALITY_PRODUCT,
+        "data_date": weekly_date,
+        "market": "CN_A",
+        "asset_type": "stock",
+        "status": "ready" if record_count > 0 and version else "blocked",
+        "quality_level": "pass" if record_count > 0 and version else "failed",
+        "record_count": record_count,
+        "expected_min_records": 1,
+        "source_tables": "pub_stock_weekly_kline",
+        "source_end_date": weekly_date,
+        "published_at": weekly_summary.get("published_at"),
+        "data_version": version,
+        "error_message": None if record_count > 0 and version else "weekly product is unavailable",
+        "evidence_source": "consumer_observed_published_product",
+    }
+    return (*daily_evidence, weekly_evidence)
 
 
 def _export_kline_inputs(**kwargs: object) -> Mapping[str, object]:

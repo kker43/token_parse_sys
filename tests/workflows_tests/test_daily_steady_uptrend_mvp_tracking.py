@@ -15,6 +15,7 @@ from unittest import mock
 from workflows.jobs.daily_steady_uptrend_mvp_tracking import (
     PipelineDependencies,
     TrackingSchedule,
+    _fetch_quality_status_rows,
     execute_tracking_job,
     main,
     resolve_readiness,
@@ -219,6 +220,45 @@ class DailySteadyUptrendMvpTrackingTest(unittest.TestCase):
                 (schedule.job_result_root / "20260710.json").read_text(encoding="utf-8")
             )
             self.assertEqual("initialize", failure["failed_stage"])
+
+    def test_quality_reader_uses_exact_daily_gate_and_bounded_weekly_queries(self) -> None:
+        daily_rows = tuple(
+            _quality(product, "20260710") for product in DAILY_PRODUCTS
+        )
+        calls: list[tuple[str, object]] = []
+
+        def fetch_rows(connection: object, sql: str, params: object):
+            calls.append((sql, params))
+            if "FROM pub_data_quality_status" in sql:
+                return daily_rows
+            if "MAX(period_end_date)" in sql:
+                return ({"weekly_date": "20260710"},)
+            if "COUNT(*) AS record_count" in sql:
+                return (
+                    {
+                        "record_count": 5605,
+                        "min_data_version": "v1",
+                        "max_data_version": "v1",
+                        "published_at": "2026-07-10 23:59:59",
+                    },
+                )
+            raise AssertionError(sql)
+
+        with mock.patch(
+            "workflows.jobs.daily_steady_uptrend_mvp_tracking._fetch_rows",
+            side_effect=fetch_rows,
+        ):
+            rows = _fetch_quality_status_rows(object(), "20260710")
+
+        self.assertEqual(5, len(rows))
+        weekly = rows[-1]
+        self.assertEqual("pub_stock_weekly_kline", weekly["data_product"])
+        self.assertEqual(5605, weekly["record_count"])
+        sql_text = "\n".join(sql for sql, _ in calls)
+        self.assertNotIn("data_date <=", sql_text)
+        self.assertIn("data_date = %s", sql_text)
+        self.assertIn("MAX(period_end_date)", sql_text)
+        self.assertIn("period_end_date = %s", sql_text)
 
 
 def _quality(
