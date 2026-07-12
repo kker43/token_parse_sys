@@ -147,6 +147,7 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
         self.assertEqual(0.45, policy.min_red_k_ratio_60d)
         self.assertEqual(0.07, policy.min_extreme_bearish_drop)
         self.assertEqual(3, policy.min_extreme_bearish_days_10d)
+        self.assertEqual(-0.05, policy.min_close_to_prior_high_20d_pct)
 
     def test_s3_a_accepts_exactly_ten_percent_below_60d_high(self) -> None:
         closes = [70.0] * 100
@@ -429,11 +430,11 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
         )
         self.assertIn("ma20_deviation_pct", result.metrics)
 
-    def test_s5_requires_close_strictly_above_prior_20d_close_high(self) -> None:
+    def test_s5_accepts_exactly_five_percent_below_prior_20d_close_high(self) -> None:
         daily = list(_rising_bars("301217.SZ", 150, step=0.35))
         weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
-        prior_20d_close_high = max(bar.close for bar in daily[-21:-1])
-        daily[-1] = _with_close(daily[-1], prior_20d_close_high)
+        current_close = daily[-1].close
+        daily[-20] = _with_close(daily[-20], current_close / 0.95)
 
         result = evaluate_steady_uptrend_mvp(
             daily,
@@ -444,11 +445,31 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
 
         self.assertGreater(result.metrics["close"], result.metrics["ma5"])
         self.assertAlmostEqual(
-            result.metrics["close"],
-            result.metrics["prior_high_close_20d"],
+            -0.05,
+            result.metrics["close_to_prior_high_20d_pct"],
         )
+        self.assertNotIn(
+            "close_too_far_below_prior_high_20d",
+            result.stages["s5_entry_selection"].blockers,
+        )
+
+    def test_s5_rejects_below_prior_20d_high_tolerance(self) -> None:
+        daily = list(_rising_bars("301217.SZ", 150, step=0.35))
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+        current_close = daily[-1].close
+        daily[-20] = _with_close(daily[-20], current_close / 0.949)
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            _context("301217.SZ", daily[-1].trade_date),
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertGreater(result.metrics["close"], result.metrics["ma5"])
+        self.assertLess(result.metrics["close_to_prior_high_20d_pct"], -0.05)
         self.assertIn(
-            "close_not_above_prior_high_20d",
+            "close_too_far_below_prior_high_20d",
             result.stages["s5_entry_selection"].blockers,
         )
 

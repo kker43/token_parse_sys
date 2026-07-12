@@ -3,7 +3,7 @@
   "version": "candidate_v1",
   "status": "research_only",
   "name": "稳健上升趋势 S1-S5 MVP",
-  "description": "成熟趋势背景下，依次执行质量、趋势、结构召回、股性稳健性和介入筛选。介入要求命中强势行业或概念、收盘价高于 MA5，并严格突破信号日前20个交易日的最高收盘价；近3日涨幅和 MA20 偏离度只用于诊断与排序。",
+  "description": "成熟趋势背景下，依次执行质量、趋势、结构召回、股性稳健性和介入筛选。介入要求命中强势行业或概念、收盘价高于 MA5，并且距离信号日前20个交易日的最高收盘价不低于 -5%；近3日涨幅和 MA20 偏离度只用于诊断与排序。",
   "policy": {
     "min_total_mv": 1000000,
     "min_avg_amount_20d": 200000,
@@ -18,6 +18,7 @@
     "min_ma_alignment_transitions_60d": 5,
     "min_red_k_ratio_60d": 0.45,
     "min_extreme_bearish_drop": 0.07,
-    "min_extreme_bearish_days_10d": 3
+    "min_extreme_bearish_days_10d": 3,
+    "min_close_to_prior_high_20d_pct": -0.05
   }
 }

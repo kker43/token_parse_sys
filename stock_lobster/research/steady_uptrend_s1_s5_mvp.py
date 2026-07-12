@@ -28,6 +28,7 @@ class SteadyUptrendMvpPolicy:
     min_red_k_ratio_60d: float = 0.45
     min_extreme_bearish_drop: float = 0.07
     min_extreme_bearish_days_10d: int = 3
+    min_close_to_prior_high_20d_pct: float = -0.05
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,8 +158,11 @@ def evaluate_steady_uptrend_mvp(
     prior_high_close_20d = float(metrics["prior_high_close_20d"] or 0)
     if prior_high_close_20d <= 0:
         s5_blockers.append("prior_high_close_20d_unavailable")
-    elif close <= prior_high_close_20d:
-        s5_blockers.append("close_not_above_prior_high_20d")
+    elif (
+        float(metrics["close_to_prior_high_20d_pct"] or 0)
+        < active_policy.min_close_to_prior_high_20d_pct - 1e-12
+    ):
+        s5_blockers.append("close_too_far_below_prior_high_20d")
     ma20 = float(metrics["ma20"] or 0)
     if ma20 <= 0:
         s5_blockers.append("ma20_deviation_unavailable")
@@ -308,6 +312,9 @@ def _candidate_mapping(
         "close": item.metrics.get("close"),
         "ma5": item.metrics.get("ma5"),
         "prior_high_close_20d": item.metrics.get("prior_high_close_20d"),
+        "close_to_prior_high_20d_pct": item.metrics.get(
+            "close_to_prior_high_20d_pct"
+        ),
         "return_3d": item.metrics.get("return_3d"),
         "ma20": item.metrics.get("ma20"),
         "ma20_deviation_pct": item.metrics.get("ma20_deviation_pct"),
@@ -720,10 +727,14 @@ def _mature_trend_metrics(
         for close, ma in zip(daily_closes[-60:], daily_ma60[-60:])
         if ma is not None
     )
+    prior_high_close_20d = max(daily_closes[-21:-1])
     return {
         "close": daily_closes[-1],
         "ma5": daily_ma5[-1],
-        "prior_high_close_20d": max(daily_closes[-21:-1]),
+        "prior_high_close_20d": prior_high_close_20d,
+        "close_to_prior_high_20d_pct": (
+            daily_closes[-1] / prior_high_close_20d - 1
+        ),
         "return_3d": daily_closes[-1] / daily_closes[-4] - 1,
         "ma20": daily_ma20[-1],
         "ma60": daily_ma60[-1],
