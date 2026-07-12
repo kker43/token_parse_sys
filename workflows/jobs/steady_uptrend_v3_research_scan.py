@@ -110,7 +110,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "mode": "all",
             "description": (
                 "Base recall pool before v3 market-temperature, rotation-context, ranking, "
-                "and cooldown filters; includes breakout_watch and pre_breakout_watch."
+                "and daily TopN filters; includes breakout_watch and pre_breakout_watch."
             ),
         },
         "candidate_scan_policy": _policy_mapping(scan_policy),
@@ -129,7 +129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "stage_candidate_pool_policy": {
             "candidate_pool": "breakout_watch == true OR pre_breakout_watch == true",
             "observation_pool": "pre_breakout_watch == true and no v3 rejection reasons",
-            "signal_pool": "breakout_watch == true and no v3 rejection reasons, after TopN and cooldown",
+            "signal_pool": "breakout_watch == true and no v3 rejection reasons, after daily TopN",
         },
         "stage_candidate_pool_counts": {
             "candidate_pool": len(candidate_pool),

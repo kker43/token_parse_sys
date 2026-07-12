@@ -53,7 +53,6 @@ class SteadyUptrendV3ResearchScanJobTest(unittest.TestCase):
                             "max_volume_ratio_5d_20d": 2.5,
                             "max_single_bull_bar_return_share_20d": 0.9,
                             "top_n_per_date": 20,
-                            "cooldown_trade_days": 0,
                         },
                     }
                 ),

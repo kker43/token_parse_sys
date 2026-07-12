@@ -52,7 +52,6 @@
     "max_ma30_deviation_pct": null,
     "max_single_bull_bar_return_share_20d": null,
     "top_n_per_date": 20,
-    "cooldown_trade_days": 10,
     "fading_concept_names": [
       "算力租赁",
       "数据中心",

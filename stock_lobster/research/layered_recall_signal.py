@@ -45,7 +45,6 @@ class LayeredSignalPolicy:
     weak_market_breadth_ma20_threshold: float = 0.35
     weak_market_top_n: int = 2
     normal_market_top_n: int = 3
-    cooldown_trade_days: int = 10
     acceleration_min_return_20d: float = 0.30
     acceleration_min_consolidation_days: int = 5
     overextended_min_return_20d: float = 0.60
@@ -297,9 +296,7 @@ def _rank_topn(
         else provided_date_order + tuple(sorted(dates.difference(provided_date_order)))
     )
     ordered_dates = tuple(date for date in full_date_order if date in dates)
-    date_index = {trade_date: index for index, trade_date in enumerate(full_date_order)}
     selected: list[LayeredCandidate] = []
-    last_selected_by_asset: dict[str, int] = {}
     for trade_date in ordered_dates:
         temperature = market_temperatures.get(trade_date)
         top_n = (
@@ -314,18 +311,8 @@ def _rank_topn(
         )
         selected_on_date = 0
         for candidate in ranked:
-            metric = candidate.decision.metric
-            current_index = date_index[trade_date]
-            last_index = last_selected_by_asset.get(metric.asset_id)
-            if (
-                last_index is not None
-                and policy.cooldown_trade_days > 0
-                and current_index - last_index <= policy.cooldown_trade_days
-            ):
-                continue
             selected.append(candidate)
             selected_on_date += 1
-            last_selected_by_asset[metric.asset_id] = current_index
             if selected_on_date >= top_n:
                 break
     return tuple(selected)

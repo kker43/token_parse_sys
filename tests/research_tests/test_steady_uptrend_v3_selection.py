@@ -151,7 +151,6 @@ class SteadyUptrendV3SelectionTest(unittest.TestCase):
     def test_can_apply_post_rank_rejections_without_daily_refill(self) -> None:
         policy = SteadyUptrendV3Policy(
             top_n_per_date=1,
-            cooldown_trade_days=0,
             min_volume_ratio_5d_20d=1.2,
             post_rank_no_refill_rejection_reasons=("volume_ratio_5d_20d_below_v3_threshold",),
         )
@@ -178,8 +177,8 @@ class SteadyUptrendV3SelectionTest(unittest.TestCase):
 
         self.assertEqual((), selected)
 
-    def test_applies_daily_top_n_and_asset_cooldown_to_signal_candidates(self) -> None:
-        policy = SteadyUptrendV3Policy(top_n_per_date=1, cooldown_trade_days=2)
+    def test_applies_daily_top_n_and_allows_same_stock_on_adjacent_dates(self) -> None:
+        policy = SteadyUptrendV3Policy(top_n_per_date=1)
         metrics = (
             _metric("000001.SZ", "20260601", breakout_watch=True, setup_score=60),
             _metric("000002.SZ", "20260601", breakout_watch=True, setup_score=80),
@@ -196,7 +195,11 @@ class SteadyUptrendV3SelectionTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            [("000002.SZ", "20260601"), ("000003.SZ", "20260603")],
+            [
+                ("000002.SZ", "20260601"),
+                ("000002.SZ", "20260602"),
+                ("000003.SZ", "20260603"),
+            ],
             [(item.asset_id, item.trade_date) for item in selected],
         )
 
