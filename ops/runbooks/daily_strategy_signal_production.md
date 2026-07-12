@@ -28,11 +28,12 @@ configs/schedules/daily_steady_uptrend_mvp_tracking.json
 
 ```text
 外部事实数据完成
--> 生成并校验只读输入 artifact
 -> 解析业务策略注册表
 -> 验证仅一个 routine_selection_enabled=true
+-> 从 pub_data_quality_status 解析完整交易日
+-> 生成并校验只读输入 artifact
 -> 执行该策略的 selection_job
--> 写入 test_tracking 观察结果和审计明细
+-> 原子发布 test_tracking 报告和审计明细
 ```
 
 当前 MVP 的具体命令、输入文件和输出检查见 `ops/runbooks/daily_steady_uptrend_mvp_tracking.md`。
@@ -43,7 +44,7 @@ configs/schedules/daily_steady_uptrend_mvp_tracking.json
 
 ```bash
 python3 -m unittest discover -s tests -p 'test_*.py'
-python3 workflows/jobs/steady_uptrend_s1_s5_mvp_scan.py --help
+python3 workflows/jobs/daily_steady_uptrend_mvp_tracking.py --help
 ```
 
 同时确认：注册表仅有一个例行策略、旧业务绑定均未启用、结果中的策略 ID/版本/状态与注册表一致、输入依赖版本完整。

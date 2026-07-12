@@ -73,13 +73,19 @@ class StrategyRegistryTest(unittest.TestCase):
             "routine_business_schedule_binding", mvp["artifact_type"]
         )
         self.assertEqual(
-            "/home/ubuntu/token_parse_sys/configs/strategies/steady_uptrend_mvp.json",
+            "/home/ubuntu/token_parse_sys_mvp/configs/strategies/steady_uptrend_mvp.json",
             mvp["strategy_config_path"],
         )
         self.assertEqual(
-            "workflows/jobs/steady_uptrend_s1_s5_mvp_scan.py",
+            "workflows/jobs/daily_steady_uptrend_mvp_tracking.py",
             mvp["job"],
         )
+        self.assertEqual(
+            "/home/ubuntu/token_parse_sys/runtime/strategy_tracking/reports",
+            mvp["report_root"],
+        )
+        self.assertEqual(440, mvp["daily_lookback_calendar_days"])
+        self.assertEqual(950, mvp["weekly_lookback_calendar_days"])
 
 
 if __name__ == "__main__":
