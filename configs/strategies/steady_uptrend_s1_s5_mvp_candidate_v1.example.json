@@ -1,0 +1,28 @@
+{
+  "strategy_id": "steady_uptrend_s1_s5_mvp_candidate_v1",
+  "version": "candidate_v1",
+  "status": "test_tracking",
+  "name": "稳健上升趋势 S1-S5 MVP",
+  "description": "成熟趋势背景下，依次执行质量、趋势、结构召回、股性稳健性和强势行业或概念介入筛选。MA20 偏离度只提醒和排序。",
+  "policy": {
+    "min_total_mv": 1000000,
+    "min_avg_amount_20d": 200000,
+    "min_return_60d": 0.05,
+    "min_ma60_hold_ratio_60d": 0.5,
+    "max_abs_drawdown_60d": 0.5,
+    "max_abs_weekly_drawdown_26w": 0.5,
+    "min_close_to_high_60d_pct": -0.1,
+    "min_upper_shadow_ratio": 0.6,
+    "min_upper_shadow_days_20d": 5,
+    "min_avg_total_shadow_share_60d": 0.56,
+    "min_ma_alignment_transitions_60d": 5,
+    "min_red_k_ratio_60d": 0.45,
+    "min_extreme_bearish_drop": 0.07,
+    "min_extreme_bearish_days_10d": 3
+  },
+  "data_dependency_versions": {
+    "daily_kline": "replace-with-export-version",
+    "weekly_kline": "replace-with-export-version",
+    "stock_context": "replace-with-export-version"
+  }
+}
