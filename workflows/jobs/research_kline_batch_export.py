@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -111,8 +112,22 @@ def export_kline_batch(
         "weekly_start_date": weekly_start_date,
         "weekly_end_date": weekly_end_date,
         "price_basis": price_basis,
+        "field_units": {
+            "amount": "thousand_cny",
+            "vol": "lot",
+        },
+        "data_versions": {
+            "daily_kline": "v1",
+            "weekly_kline": "v1",
+        },
+        "daily_sha256": _sha256_file(daily_output_path),
+        "weekly_sha256": _sha256_file(weekly_output_path),
         "daily_row_count": len(daily_rows),
         "weekly_row_count": len(weekly_rows),
+        "weekly_latest_trade_date": max(
+            (str(row["trade_date"] or "") for row in weekly_rows),
+            default="",
+        ),
         "columns": list(KLINE_COLUMNS),
     }
     if manifest_path is not None:
@@ -171,6 +186,14 @@ def _fetch_kline_rows(
 
 def _normalize_kline_rows(rows: Sequence[Mapping[str, object]]) -> tuple[dict[str, object], ...]:
     return tuple({column: row.get(column) for column in KLINE_COLUMNS} for row in rows)
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file_handle:
+        for chunk in iter(lambda: file_handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 if __name__ == "__main__":

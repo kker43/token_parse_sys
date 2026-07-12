@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from collections import Counter, defaultdict
+from datetime import datetime, timedelta
 from typing import Iterable, Mapping
 
 from stock_lobster.research.trend_breakout_scan import KlineBar, StockSignalContext
@@ -619,6 +620,14 @@ def _s1_blockers(
     policy: SteadyUptrendMvpPolicy,
 ) -> tuple[str, ...]:
     blockers: list[str] = []
+    duplicate_daily = _has_duplicate_trade_dates(daily)
+    duplicate_weekly = _has_duplicate_trade_dates(weekly)
+    if duplicate_daily:
+        blockers.append("duplicate_daily_trade_date")
+    if duplicate_weekly:
+        blockers.append("duplicate_weekly_trade_date")
+    if weekly and not _weekly_asof_matches(weekly[-1].trade_date, signal_date):
+        blockers.append("weekly_asof_mismatch")
     if (
         context is None
         or context.trade_date != signal_date
@@ -627,6 +636,8 @@ def _s1_blockers(
         or daily[-1].trade_date != signal_date
         or any(not _valid_bar(bar) for bar in daily[-120:])
         or any(not _valid_bar(bar) for bar in weekly[-64:])
+        or duplicate_daily
+        or duplicate_weekly
     ):
         blockers.append("data_quality_unavailable")
     if context is None or context.list_status.upper() != "L":
@@ -642,6 +653,23 @@ def _s1_blockers(
     ):
         blockers.append("avg_amount_20d_below_minimum")
     return tuple(blockers)
+
+
+def _has_duplicate_trade_dates(bars: tuple[KlineBar, ...]) -> bool:
+    trade_dates = [bar.trade_date for bar in bars]
+    return len(trade_dates) != len(set(trade_dates))
+
+
+def _weekly_asof_matches(weekly_trade_date: str, signal_date: str) -> bool:
+    try:
+        signal = datetime.strptime(signal_date, "%Y%m%d").date()
+        weekly = datetime.strptime(weekly_trade_date, "%Y%m%d").date()
+    except ValueError:
+        return False
+    if signal.weekday() == 4:
+        return weekly == signal
+    expected_previous_week = (signal - timedelta(days=7)).isocalendar()[:2]
+    return weekly.isocalendar()[:2] == expected_previous_week
 
 
 def _valid_bar(bar: KlineBar) -> bool:

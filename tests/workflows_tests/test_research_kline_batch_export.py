@@ -84,6 +84,17 @@ class ResearchKlineBatchExportTest(unittest.TestCase):
             self.assertEqual(2, manifest["weekly_row_count"])
             self.assertEqual("20240101", manifest["weekly_start_date"])
             self.assertEqual("qfq_asof", manifest["price_basis"])
+            self.assertEqual(
+                {"amount": "thousand_cny", "vol": "lot"},
+                manifest["field_units"],
+            )
+            self.assertEqual(
+                {"daily_kline": "v1", "weekly_kline": "v1"},
+                manifest["data_versions"],
+            )
+            self.assertEqual(64, len(manifest["daily_sha256"]))
+            self.assertEqual(64, len(manifest["weekly_sha256"]))
+            self.assertEqual("20240112", manifest["weekly_latest_trade_date"])
             self.assertEqual("vol", manifest["columns"][-1])
             self.assertEqual(manifest, json.loads(manifest_path.read_text(encoding="utf-8")))
 

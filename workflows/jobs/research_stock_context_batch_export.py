@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -123,6 +124,12 @@ def export_stock_context_batch(
         "row_count": len(rows),
         "rows_by_trade_date": rows_by_trade_date,
         "columns": list(STOCK_CONTEXT_HEADER),
+        "field_units": {
+            "total_mv": "ten_thousand_cny",
+            "avg_amount_20d": "thousand_cny",
+        },
+        "data_version": "v1",
+        "sha256": _sha256_file(output_path),
     }
     if manifest_path is not None:
         write_json_payload(manifest_path, manifest)
@@ -162,6 +169,14 @@ def _normalize_trade_dates(trade_dates: Sequence[str]) -> tuple[str, ...]:
     if not normalized:
         raise ValueError("at least one trade date is required")
     return normalized
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file_handle:
+        for chunk in iter(lambda: file_handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 if __name__ == "__main__":

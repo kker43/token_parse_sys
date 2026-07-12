@@ -35,7 +35,7 @@ class ResearchStockContextBatchExportTest(unittest.TestCase):
                         "turnover_rate": 1.2,
                         "max_turnover_rate_20d": 3.4,
                         "avg_turnover_rate_20d": 1.5,
-                        "avg_amount_20d": 2_000_000_000,
+                        "avg_amount_20d": 2_000_000,
                         "strong_industry_hit": 1,
                         "strong_concept_hit": 0,
                         "strong_industry_names": "PCB概念",
@@ -71,6 +71,15 @@ class ResearchStockContextBatchExportTest(unittest.TestCase):
                 manifest["rows_by_trade_date"],
             )
             self.assertEqual(2, manifest["row_count"])
+            self.assertEqual(
+                {
+                    "total_mv": "ten_thousand_cny",
+                    "avg_amount_20d": "thousand_cny",
+                },
+                manifest["field_units"],
+            )
+            self.assertEqual("v1", manifest["data_version"])
+            self.assertEqual(64, len(manifest["sha256"]))
             self.assertEqual(manifest, persisted_manifest)
 
 

@@ -99,6 +99,40 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
             result.stages["s2_mature_trend_filter"].blockers,
         )
 
+    def test_s1_rejects_stale_weekly_context(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35)
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)[:-1]
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            _context("301217.SZ", daily[-1].trade_date),
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertIn(
+            "weekly_asof_mismatch",
+            result.stages["s1_quality_filter"].blockers,
+        )
+
+    def test_s1_rejects_duplicate_daily_trade_date(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35)
+        duplicate = replace(daily[-1], close=daily[-1].close * 2)
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+
+        result = evaluate_steady_uptrend_mvp(
+            daily + (duplicate,),
+            weekly,
+            _context("301217.SZ", daily[-1].trade_date),
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertIn(
+            "duplicate_daily_trade_date",
+            result.stages["s1_quality_filter"].blockers,
+        )
+        self.assertFalse(result.stages["s2_mature_trend_filter"].evaluated)
+
     def test_policy_uses_approved_thresholds(self) -> None:
         policy = SteadyUptrendMvpPolicy()
 
@@ -290,6 +324,50 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
         self.assertEqual(3, decision.metrics["extreme_bearish_days_10d"])
         self.assertIn("frequent_extreme_bearish_days_10d", decision.blockers)
 
+    def test_s4_inclusive_composite_boundaries_reject(self) -> None:
+        bars = _boundary_composite_bars("301217.SZ")
+
+        decision = evaluate_stability_refinement(
+            bars,
+            signal_date=bars[-1].trade_date,
+        )
+
+        self.assertEqual(5, decision.metrics["upper_shadow_days_20d"])
+        self.assertAlmostEqual(0.56, decision.metrics["avg_total_shadow_share_60d"])
+        self.assertEqual(5, decision.metrics["ma_alignment_transitions_60d"])
+        self.assertIn("noisy_shadow_ma_flip_composite", decision.blockers)
+
+    def test_s4_red_k_ratio_exactly_45_percent_passes(self) -> None:
+        bars = list(_rising_bars("301217.SZ", 100, step=0.2))
+        prior_60_start = len(bars) - 61
+        for offset in range(60):
+            index = prior_60_start + offset
+            bar = bars[index]
+            open_value = bar.close - 0.2 if offset < 27 else bar.close + 0.2
+            bars[index] = replace(bar, open=open_value)
+
+        decision = evaluate_stability_refinement(
+            bars,
+            signal_date=bars[-1].trade_date,
+        )
+
+        self.assertEqual(0.45, decision.metrics["red_k_ratio_60d"])
+        self.assertNotIn("low_red_k_ratio_60d", decision.blockers)
+
+    def test_s4_extreme_bearish_drop_exactly_seven_percent_counts(self) -> None:
+        closes = [100.0] * 89 + [100.0, 93.0, 100.0, 93.0, 100.0, 93.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
+        bars = list(_bars_from_closes("301217.SZ", closes))
+        for index in (-11, -9, -7):
+            bars[index] = replace(bars[index], open=bars[index].close + 1.0)
+
+        decision = evaluate_stability_refinement(
+            bars,
+            signal_date=bars[-1].trade_date,
+        )
+
+        self.assertEqual(3, decision.metrics["extreme_bearish_days_10d"])
+        self.assertIn("frequent_extreme_bearish_days_10d", decision.blockers)
+
     def test_s5_accepts_either_strong_industry_or_strong_concept(self) -> None:
         daily = _rising_bars("301217.SZ", 150, step=0.35)
         weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
@@ -380,7 +458,11 @@ def _rising_bars(
     amount: float = 300_000.0,
     weekly: bool = False,
 ) -> tuple[KlineBar, ...]:
-    start = date(2020, 1, 3) if weekly else date(2023, 1, 2)
+    start = (
+        date(2023, 5, 26) - timedelta(weeks=count - 1)
+        if weekly
+        else date(2023, 1, 2)
+    )
     spacing = 7 if weekly else 1
     bars = []
     for index in range(count):
@@ -458,6 +540,38 @@ def _noisy_shadow_bars(asset_id: str) -> tuple[KlineBar, ...]:
             open=bar.close - 0.4,
             high=bar.close + 0.6,
             low=bar.close - 0.8,
+        )
+    return tuple(bars)
+
+
+def _boundary_composite_bars(asset_id: str) -> tuple[KlineBar, ...]:
+    start = date(2023, 1, 2)
+    base_shadow_share = (0.56 * 60 - 0.60 * 5) / 55
+    base_total_shadow = base_shadow_share / (1 - base_shadow_share)
+    bars = []
+    for index in range(100):
+        close = 100.0 + index * 0.12 + math.sin(index * 2 * math.pi / 22)
+        open_value = close - 1.0
+        upper_shadow = 0.2
+        lower_shadow = base_total_shadow - upper_shadow
+        bars.append(
+            KlineBar(
+                asset_id=asset_id,
+                trade_date=(start + timedelta(days=index)).strftime("%Y%m%d"),
+                open=open_value,
+                high=close + upper_shadow,
+                low=open_value - lower_shadow,
+                close=close,
+                amount=300_000.0,
+                volume=100_000.0,
+            )
+        )
+    for index in range(len(bars) - 21, len(bars) - 16):
+        bar = bars[index]
+        bars[index] = replace(
+            bar,
+            high=bar.close + 1.5,
+            low=bar.open,
         )
     return tuple(bars)
 

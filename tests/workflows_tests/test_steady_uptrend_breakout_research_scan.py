@@ -15,9 +15,20 @@ class SteadyUptrendBreakoutResearchScanJobTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
             kline_path = tmp_path / "kline.tsv"
+            context_path = tmp_path / "context.tsv"
             output_path = tmp_path / "scan.json"
             rows = _breakout_rows("000001.SZ") + _pre_breakout_rows("000002.SZ")
             kline_path.write_text("\n".join(rows), encoding="utf-8")
+            context_path.write_text(
+                "\n".join(
+                    (
+                        "asset_id\ttrade_date\tvolume_ratio_5d_20d",
+                        "000001.SZ\t20260140\t1.5",
+                        "000002.SZ\t20260140\t1.5",
+                    )
+                ),
+                encoding="utf-8",
+            )
 
             exit_code = main(
                 [
@@ -25,6 +36,8 @@ class SteadyUptrendBreakoutResearchScanJobTest(unittest.TestCase):
                     str(kline_path),
                     "--output-path",
                     str(output_path),
+                    "--stock-context-tsv-path",
+                    str(context_path),
                     "--start-date",
                     "20260001",
                     "--candidate-mode",
