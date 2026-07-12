@@ -40,6 +40,9 @@ STOCK_CONTEXT_HEADER = (
     "strong_industry_names",
     "strong_concept_names",
     "volume_ratio_5d_20d",
+    "max_volume_ratio_5d_20d",
+    "turnover_ratio_5d_20d",
+    "adj_factor_changed_20d",
 )
 
 

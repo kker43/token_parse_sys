@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
@@ -13,12 +14,38 @@ from stock_lobster.research import (
     TrendBreakoutScanPolicy,
     scan_trend_breakouts,
     select_candidates,
+    read_kline_tsv,
     read_stock_signal_context_tsv,
     summarize_breakout_scan,
 )
 
 
 class TrendBreakoutScanTest(unittest.TestCase):
+    def test_reads_optional_kline_volume_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "kline.tsv"
+            path.write_text(
+                "000001.SZ\t20260710\t10\t11\t9\t10.5\t200000\t3000\n",
+                encoding="utf-8",
+            )
+
+            bar = read_kline_tsv(path)[0]
+
+        self.assertEqual(200000.0, bar.amount)
+        self.assertEqual(3000.0, bar.volume)
+
+    def test_old_kline_without_volume_stays_readable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "kline.tsv"
+            path.write_text(
+                "000001.SZ\t20260710\t10\t11\t9\t10.5\t200000\n",
+                encoding="utf-8",
+            )
+
+            bar = read_kline_tsv(path)[0]
+
+        self.assertIsNone(bar.volume)
+
     def test_amount_ratio_prev_20d_excludes_signal_day(self) -> None:
         bars = _daily_breakout_bars("000099.SZ")
         previous_average = sum(bar.amount for bar in bars[-21:-1]) / 20
@@ -31,6 +58,76 @@ class TrendBreakoutScanTest(unittest.TestCase):
             places=6,
         )
         self.assertLess(latest.amount_ratio_20d, latest.amount_ratio_prev_20d)
+
+    def test_derives_post_impulse_stall_and_volume_decay(self) -> None:
+        bars = [replace(bar, volume=100.0) for bar in _daily_breakout_bars("000098.SZ")]
+        base = bars[-6].close
+        recent_closes = (base + 0.2, base + 3.2, base + 3.1, base + 3.1, base + 3.0)
+        recent_volumes = (100.0, 500.0, 200.0, 200.0, 200.0)
+        for position, (close, volume) in enumerate(zip(recent_closes, recent_volumes)):
+            index = position - 5
+            bars[index] = replace(
+                bars[index],
+                open=close,
+                high=close,
+                low=close,
+                close=close,
+                volume=volume,
+            )
+
+        latest = scan_trend_breakouts(
+            bars,
+            stock_contexts=_volume_context(bars, 1.0),
+        )[-1]
+
+        self.assertLess(latest.post_impulse_followthrough_return, 0)
+        self.assertGreater(latest.recent_impulse_return, 0.05)
+        self.assertAlmostEqual(0.4, latest.volume_decay_after_impulse, places=6)
+
+    def test_same_day_impulse_has_no_followthrough_judgement(self) -> None:
+        bars = [replace(bar, volume=100.0) for bar in _daily_breakout_bars("000097.SZ")]
+        bars[-1] = replace(bars[-1], volume=500.0)
+
+        latest = scan_trend_breakouts(
+            bars,
+            stock_contexts=_volume_context(bars, 1.5),
+        )[-1]
+
+        self.assertIsNone(latest.post_impulse_followthrough_return)
+        self.assertIsNone(latest.volume_decay_after_impulse)
+
+    def test_derives_high_volume_bearish_close(self) -> None:
+        bars = [replace(bar, volume=100.0) for bar in _daily_breakout_bars("000096.SZ")]
+        bars[-1] = replace(
+            bars[-1],
+            open=bars[-1].close + 1.0,
+            high=bars[-1].close + 1.0,
+            volume=300.0,
+        )
+
+        latest = scan_trend_breakouts(
+            bars,
+            stock_contexts=_volume_context(bars, 1.5),
+        )[-1]
+
+        self.assertTrue(latest.high_volume_bearish_close)
+
+    def test_price_volume_efficiency_uses_turnover_across_adj_change(self) -> None:
+        bars = [replace(bar, volume=100.0) for bar in _daily_breakout_bars("000095.SZ")]
+        context = StockSignalContext(
+            asset_id=bars[-1].asset_id,
+            trade_date=bars[-1].trade_date,
+            volume_ratio_5d_20d=1.6,
+            turnover_ratio_5d_20d=0.8,
+            adj_factor_changed_20d=True,
+        )
+
+        latest = scan_trend_breakouts(bars, stock_contexts=(context,))[-1]
+        expected = (bars[-1].close / bars[-6].close - 1) / 0.8
+
+        self.assertEqual(0.8, latest.turnover_ratio_5d_20d)
+        self.assertTrue(latest.adj_factor_changed_20d)
+        self.assertAlmostEqual(expected, latest.price_volume_efficiency_5d, places=6)
 
     def test_detects_breakout_watch_candidate(self) -> None:
         bars: list[KlineBar] = []
@@ -349,6 +446,21 @@ class TrendBreakoutScanTest(unittest.TestCase):
         self.assertFalse(contexts[0].strong_concept_hit)
         self.assertEqual(("半导体",), contexts[0].strong_industry_names)
         self.assertEqual(1.25, contexts[0].volume_ratio_5d_20d)
+
+    def test_reads_layered_volume_confirmation_context_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "context.tsv"
+            path.write_text(
+                "asset_id\ttrade_date\tmax_volume_ratio_5d_20d\tturnover_ratio_5d_20d\tadj_factor_changed_20d\n"
+                "000001.SZ\t20260710\t2.13\t1.29\t1.00000000\n",
+                encoding="utf-8",
+            )
+
+            context = read_stock_signal_context_tsv(path)[0]
+
+        self.assertEqual(2.13, context.max_volume_ratio_5d_20d)
+        self.assertEqual(1.29, context.turnover_ratio_5d_20d)
+        self.assertTrue(context.adj_factor_changed_20d)
 
     def test_select_candidates_limits_top_n_per_date_by_setup_score(self) -> None:
         candidates = (

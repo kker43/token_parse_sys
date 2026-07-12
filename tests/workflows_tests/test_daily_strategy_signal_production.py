@@ -77,6 +77,7 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
 
         self.assertEqual("002768.SZ", rows[0]["ts_code"])
         self.assertIn("JOIN stock_adj_factor_daily f", connection.cursor_obj.executed_sql)
+        self.assertIn("k.vol", connection.cursor_obj.executed_sql)
         self.assertIn("anchor.trade_date = %s", connection.cursor_obj.executed_sql)
         self.assertEqual(("20260708", "20260601", "20260708"), connection.cursor_obj.executed_params)
 
@@ -109,6 +110,9 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
         self.assertIn("indicator_version = 'legacy_v1'", sql)
         self.assertIn("params_hash = 'default'", sql)
         self.assertIn("volume_ratio_5d_20d", sql)
+        self.assertIn("indicator_name = 'max_volume_ratio_5d_20d'", sql)
+        self.assertIn("indicator_name = 'turnover_ratio_5d_20d'", sql)
+        self.assertIn("indicator_name = 'adj_factor_changed_20d'", sql)
         self.assertIn("published_volume_ratio AS (", sql)
         self.assertIn("GROUP BY asset_id", sql)
 

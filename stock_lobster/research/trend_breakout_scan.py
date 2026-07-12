@@ -23,6 +23,7 @@ class KlineBar:
     low: float
     close: float
     amount: float
+    volume: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +106,13 @@ class TrendBreakoutMetrics:
     weekly_max_drawdown_26w: float | None = None
     weekly_trend_pass: bool = True
     volume_ratio_5d_20d: float | None = None
+    turnover_ratio_5d_20d: float | None = None
+    adj_factor_changed_20d: bool = False
+    recent_impulse_return: float | None = None
+    post_impulse_followthrough_return: float | None = None
+    volume_decay_after_impulse: float | None = None
+    high_volume_bearish_close: bool = False
+    price_volume_efficiency_5d: float | None = None
 
     def to_mapping(self) -> dict[str, object]:
         """Render this metrics object as a JSON-friendly mapping."""
@@ -127,6 +135,13 @@ class TrendBreakoutMetrics:
             "amount_ratio_20d": self.amount_ratio_20d,
             "amount_ratio_prev_20d": self.amount_ratio_prev_20d,
             "volume_ratio_5d_20d": self.volume_ratio_5d_20d,
+            "turnover_ratio_5d_20d": self.turnover_ratio_5d_20d,
+            "adj_factor_changed_20d": self.adj_factor_changed_20d,
+            "recent_impulse_return": self.recent_impulse_return,
+            "post_impulse_followthrough_return": self.post_impulse_followthrough_return,
+            "volume_decay_after_impulse": self.volume_decay_after_impulse,
+            "high_volume_bearish_close": self.high_volume_bearish_close,
+            "price_volume_efficiency_5d": self.price_volume_efficiency_5d,
             "max_drawdown_60d": self.max_drawdown_60d,
             "max_drawdown_120d": self.max_drawdown_120d,
             "convergence_5_10_20_pct": self.convergence_5_10_20_pct,
@@ -240,6 +255,9 @@ class StockSignalContext:
     strong_industry_names: tuple[str, ...] = ()
     strong_concept_names: tuple[str, ...] = ()
     volume_ratio_5d_20d: float | None = None
+    max_volume_ratio_5d_20d: float | None = None
+    turnover_ratio_5d_20d: float | None = None
+    adj_factor_changed_20d: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,7 +281,11 @@ def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
-        asset_id, trade_date, open_value, high, low, close, amount = line.split("\t")
+        values = line.split("\t")
+        if len(values) not in {7, 8}:
+            raise ValueError(f"kline TSV row must have 7 or 8 columns, got {len(values)}")
+        asset_id, trade_date, open_value, high, low, close, amount = values[:7]
+        volume = values[7] if len(values) == 8 else None
         bars.append(
             KlineBar(
                 asset_id=asset_id,
@@ -273,6 +295,7 @@ def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
                 low=float(low),
                 close=float(close),
                 amount=float(amount),
+                volume=_optional_float(volume),
             )
         )
     return tuple(bars)
@@ -308,6 +331,7 @@ def adjust_bars_to_qfq_asof(
                 low=bar.low * ratio,
                 close=bar.close * ratio,
                 amount=bar.amount,
+                volume=bar.volume,
             )
         )
     if missing:
@@ -339,6 +363,9 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
         "strong_industry_names",
         "strong_concept_names",
         "volume_ratio_5d_20d",
+        "max_volume_ratio_5d_20d",
+        "turnover_ratio_5d_20d",
+        "adj_factor_changed_20d",
     )
     has_header = rows[0].split("\t")[0] in {"asset_id", "ts_code"}
     if has_header:
@@ -370,6 +397,9 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
                 strong_industry_names=_split_names(row.get("strong_industry_names")),
                 strong_concept_names=_split_names(row.get("strong_concept_names")),
                 volume_ratio_5d_20d=_optional_float(row.get("volume_ratio_5d_20d")),
+                max_volume_ratio_5d_20d=_optional_float(row.get("max_volume_ratio_5d_20d")),
+                turnover_ratio_5d_20d=_optional_float(row.get("turnover_ratio_5d_20d")),
+                adj_factor_changed_20d=_truthy(row.get("adj_factor_changed_20d")),
             )
         )
     return tuple(contexts)
@@ -582,6 +612,22 @@ def _metrics_for_index(
         or convergence_5_10_20_pct <= policy.max_convergence_5_10_20_pct
     )
     volume_ratio_5d_20d = stock_context.volume_ratio_5d_20d if stock_context else None
+    turnover_ratio_5d_20d = stock_context.turnover_ratio_5d_20d if stock_context else None
+    adj_factor_changed_20d = stock_context.adj_factor_changed_20d if stock_context else False
+    effective_activity_ratio = (
+        turnover_ratio_5d_20d if adj_factor_changed_20d else volume_ratio_5d_20d
+    )
+    (
+        recent_impulse_return,
+        post_impulse_followthrough_return,
+        volume_decay_after_impulse,
+    ) = _post_impulse_activity(bars, closes, index, 5)
+    high_volume_bearish_close = _high_volume_bearish_close(bars, index, 20)
+    price_volume_efficiency_5d = _price_volume_efficiency(
+        closes,
+        index,
+        effective_activity_ratio,
+    )
     volume_ratio_pass = (
         volume_ratio_5d_20d is not None
         and volume_ratio_5d_20d >= policy.min_volume_ratio_5d_20d
@@ -662,6 +708,13 @@ def _metrics_for_index(
         weekly_max_drawdown_26w=weekly_context.max_drawdown_26w if weekly_context else None,
         weekly_trend_pass=weekly_trend_pass,
         volume_ratio_5d_20d=volume_ratio_5d_20d,
+        turnover_ratio_5d_20d=turnover_ratio_5d_20d,
+        adj_factor_changed_20d=adj_factor_changed_20d,
+        recent_impulse_return=recent_impulse_return,
+        post_impulse_followthrough_return=post_impulse_followthrough_return,
+        volume_decay_after_impulse=volume_decay_after_impulse,
+        high_volume_bearish_close=high_volume_bearish_close,
+        price_volume_efficiency_5d=price_volume_efficiency_5d,
         steady_uptrend=steady_uptrend,
         pre_breakout_watch=pre_breakout_watch,
         breakout_watch=breakout_watch,
@@ -1031,6 +1084,70 @@ def _impulse_consolidation_days(closes: list[float], index: int, window: int) ->
     return index - best_index
 
 
+def _post_impulse_activity(
+    bars: list[KlineBar],
+    closes: list[float],
+    index: int,
+    window: int,
+) -> tuple[float | None, float | None, float | None]:
+    start = max(1, index - window + 1)
+    impulse_index = max(
+        range(start, index + 1),
+        key=lambda current_index: closes[current_index] / closes[current_index - 1] - 1,
+    )
+    impulse_return = closes[impulse_index] / closes[impulse_index - 1] - 1
+    if impulse_index == index or closes[impulse_index] == 0:
+        return impulse_return, None, None
+
+    followthrough_return = closes[index] / closes[impulse_index] - 1
+    impulse_volume = bars[impulse_index].volume
+    followthrough_volumes = [
+        bar.volume for bar in bars[impulse_index + 1 : index + 1]
+    ]
+    if (
+        impulse_volume is None
+        or impulse_volume <= 0
+        or not followthrough_volumes
+        or any(volume is None for volume in followthrough_volumes)
+    ):
+        return impulse_return, followthrough_return, None
+    volume_decay = sum(float(volume) for volume in followthrough_volumes) / (
+        len(followthrough_volumes) * impulse_volume
+    )
+    return impulse_return, followthrough_return, volume_decay
+
+
+def _high_volume_bearish_close(
+    bars: list[KlineBar],
+    index: int,
+    window: int,
+) -> bool:
+    window_bars = bars[index - window + 1 : index + 1]
+    volumes = [bar.volume for bar in window_bars]
+    if len(window_bars) < window or any(volume is None for volume in volumes):
+        return False
+    average_volume = sum(float(volume) for volume in volumes) / window
+    current = bars[index]
+    return (
+        average_volume > 0
+        and current.volume is not None
+        and current.volume / average_volume >= 1.5
+        and current.close < current.open
+    )
+
+
+def _price_volume_efficiency(
+    closes: list[float],
+    index: int,
+    effective_activity_ratio: float | None,
+) -> float | None:
+    if index < 5 or closes[index - 5] == 0:
+        return None
+    if effective_activity_ratio is None or effective_activity_ratio <= 0:
+        return None
+    return (closes[index] / closes[index - 5] - 1) / effective_activity_ratio
+
+
 def _moving_average_series(values: list[float], window: int) -> list[float | None]:
     result: list[float | None] = [None] * len(values)
     rolling_sum = 0.0
@@ -1088,7 +1205,13 @@ def _optional_float(value: object) -> float | None:
 def _truthy(value: object) -> bool:
     if value is None:
         return False
-    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+    text = str(value).strip().lower()
+    if text in {"true", "yes", "y"}:
+        return True
+    try:
+        return float(text) != 0
+    except ValueError:
+        return False
 
 
 def _split_names(value: object) -> tuple[str, ...]:

@@ -61,6 +61,17 @@ from stock_lobster.research.annotation_queue import (
     ReviewLabelOption,
     build_annotation_queue,
 )
+from stock_lobster.research.layered_recall_signal import (
+    LayeredCandidate,
+    LayeredRecallDecision,
+    LayeredSelectionResult,
+    LayeredSignalPolicy,
+    SignalStateAssessment,
+    assess_signal_state,
+    build_layered_recall_decision,
+    select_layered_candidates,
+)
+from stock_lobster.research.trend_recall_subpools import TrendRecallSubpoolPolicy
 
 __all__ = [
     "BacktestAcceptancePolicy",
@@ -112,4 +123,13 @@ __all__ = [
     "DEFAULT_REVIEW_LABEL_OPTIONS",
     "ReviewLabelOption",
     "build_annotation_queue",
+    "LayeredCandidate",
+    "LayeredRecallDecision",
+    "LayeredSelectionResult",
+    "LayeredSignalPolicy",
+    "SignalStateAssessment",
+    "TrendRecallSubpoolPolicy",
+    "assess_signal_state",
+    "build_layered_recall_decision",
+    "select_layered_candidates",
 ]

@@ -19,7 +19,7 @@ from stock_lobster.l0_data_access.adapters.external_mysql import (
 from workflows.jobs.daily_strategy_signal_production import _fetch_rows, _write_tsv
 from workflows.jobs.support import write_json_payload
 
-KLINE_COLUMNS = ("ts_code", "trade_date", "open", "high", "low", "close", "amount")
+KLINE_COLUMNS = ("ts_code", "trade_date", "open", "high", "low", "close", "amount", "vol")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,6 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--daily-output-path", required=True)
     parser.add_argument("--weekly-output-path", required=True)
     parser.add_argument("--manifest-path")
+    parser.add_argument(
+        "--price-basis",
+        choices=("raw", "qfq_asof"),
+        default="qfq_asof",
+    )
     return parser
 
 
@@ -54,6 +59,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 table_name=table_name,
                 start_date=start_date,
                 end_date=end_date,
+                price_basis=args.price_basis,
             ),
             daily_start_date=args.daily_start_date,
             daily_end_date=args.daily_end_date,
@@ -62,6 +68,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             daily_output_path=Path(args.daily_output_path),
             weekly_output_path=Path(args.weekly_output_path),
             manifest_path=Path(args.manifest_path) if args.manifest_path else None,
+            price_basis=args.price_basis,
         )
     finally:
         close = getattr(connection, "close", None)
@@ -82,6 +89,7 @@ def export_kline_batch(
     daily_output_path: Path,
     weekly_output_path: Path,
     manifest_path: Path | None = None,
+    price_basis: str = "qfq_asof",
 ) -> dict[str, object]:
     """Export deterministic daily and weekly kline TSVs plus a manifest."""
 
@@ -102,6 +110,7 @@ def export_kline_batch(
         "daily_end_date": daily_end_date,
         "weekly_start_date": weekly_start_date,
         "weekly_end_date": weekly_end_date,
+        "price_basis": price_basis,
         "daily_row_count": len(daily_rows),
         "weekly_row_count": len(weekly_rows),
         "columns": list(KLINE_COLUMNS),
@@ -117,18 +126,46 @@ def _fetch_kline_rows(
     table_name: str,
     start_date: str,
     end_date: str,
+    price_basis: str = "qfq_asof",
 ) -> tuple[Mapping[str, object], ...]:
     if table_name not in {"token_daily_details", "token_weekly_details"}:
         raise ValueError(f"unsupported kline table: {table_name}")
+    if price_basis == "raw":
+        return _fetch_rows(
+            connection,
+            f"""
+            SELECT ts_code, trade_date, open, high, low, close, amount, vol
+            FROM {table_name}
+            WHERE trade_date BETWEEN %s AND %s
+            ORDER BY ts_code, trade_date
+            """,
+            (start_date, end_date),
+        )
+    if price_basis != "qfq_asof":
+        raise ValueError("price_basis must be raw or qfq_asof")
     return _fetch_rows(
         connection,
         f"""
-        SELECT ts_code, trade_date, open, high, low, close, amount
-        FROM {table_name}
-        WHERE trade_date BETWEEN %s AND %s
-        ORDER BY ts_code, trade_date
+        SELECT
+          k.ts_code,
+          k.trade_date,
+          k.open * f.adj_factor / anchor.adj_factor AS open,
+          k.high * f.adj_factor / anchor.adj_factor AS high,
+          k.low * f.adj_factor / anchor.adj_factor AS low,
+          k.close * f.adj_factor / anchor.adj_factor AS close,
+          k.amount,
+          k.vol
+        FROM {table_name} k
+        JOIN stock_adj_factor_daily f
+          ON f.ts_code = k.ts_code
+         AND f.trade_date = k.trade_date
+        JOIN stock_adj_factor_daily anchor
+          ON anchor.ts_code = k.ts_code
+         AND anchor.trade_date = %s
+        WHERE k.trade_date BETWEEN %s AND %s
+        ORDER BY k.ts_code, k.trade_date
         """,
-        (start_date, end_date),
+        (end_date, start_date, end_date),
     )
 
 
