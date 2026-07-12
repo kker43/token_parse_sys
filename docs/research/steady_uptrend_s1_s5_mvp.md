@@ -128,10 +128,10 @@ S4 的 16 只均命中 `noisy_shadow_ma_flip_composite`。S5 的 30 只均因 `c
 本次证据使用：
 
 ```text
-run_id = steady-uptrend-s1-s5-20260710-r1
-daily = v1:<daily_tsv_sha256前12位>
-weekly = v1:<weekly_tsv_sha256前12位>
-context = v1:<stock_context_tsv_sha256前12位>
+run_id = steady-uptrend-s1-s5-20260710-r2
+daily = v1:55628a08ff3a
+weekly = v1:5c99c4f29502
+context = v1:bd01edb31a4f
 ```
 
 远端持久产物：
@@ -142,6 +142,7 @@ context = v1:<stock_context_tsv_sha256前12位>
   steady_uptrend_s1_s5_mvp_candidate_v1/result.md
   steady_uptrend_s1_s5_mvp_candidate_v1/kline_manifest.json
   steady_uptrend_s1_s5_mvp_candidate_v1/stock_context_manifest.json
+  steady_uptrend_s1_s5_mvp_candidate_v1/quality_status.json
 ```
 
 ## 7. 验证注意事项
