@@ -50,7 +50,7 @@ python workflows/jobs/steady_uptrend_v3_research_scan.py \
   --kline-tsv-path runtime/strategy_backtests/sl_eval_steady_uptrend_extended/input/kline.tsv \
   --weekly-kline-tsv-path runtime/strategy_backtests/sl_eval_steady_uptrend_extended/input/weekly_kline.tsv \
   --stock-context-tsv-path runtime/strategy_backtests/sl_eval_steady_uptrend_extended/input/stock_context.tsv \
-  --strategy-config-path configs/strategies/steady_uptrend_pre_breakout_watch_candidate_v3_1.example.json \
+  --strategy-config-path configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch_candidate_v3_1.example.json \
   --output-path runtime/strategy_backtests/sl_eval_steady_uptrend_extended/results/v3_1_observation_top5/scan_result.json \
   --start-date 20260101
 ```

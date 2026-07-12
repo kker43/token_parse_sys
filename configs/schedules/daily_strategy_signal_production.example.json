@@ -1,6 +1,12 @@
 {
+  "enabled": false,
+  "status": "deprecated",
+  "artifact_type": "legacy_business_schedule_binding",
+  "workflow_capability_status": "supported",
+  "replacement_schedule": "configs/schedules/daily_steady_uptrend_mvp_tracking.example.json",
+  "deprecation_reason": "仅退役旧 pre-breakout 业务策略绑定；例行执行器、取数契约、回放和报告能力继续保留。",
   "mysql_config_path": "/home/ubuntu/token_parse_sys/ops/env/external_mysql.json",
-  "strategy_config_path": "/home/ubuntu/token_parse_sys/configs/strategies/steady_uptrend_pre_breakout_watch.example.json",
+  "strategy_config_path": "/home/ubuntu/token_parse_sys/configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch.example.json",
   "output_root": "/home/ubuntu/token_parse_sys/runtime/strategy_signal_production",
   "job_result_path": "/home/ubuntu/token_parse_sys/runtime/strategy_signal_production/latest_result.json",
   "price_basis": "qfq_asof",

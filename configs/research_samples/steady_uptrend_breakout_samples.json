@@ -37,8 +37,6 @@
       "sample_class": "positive",
       "pattern_family": "上升趋势强势突破",
       "evidence_images": [
-        "docs/assets/research_samples/steady_uptrend_breakout/603256_honghe_weekly_breakout.png",
-        "docs/assets/research_samples/steady_uptrend_breakout/603256_honghe_daily_breakout_points.png",
         "docs/assets/research_samples/steady_uptrend_breakout/603256_honghe_daily_20260409_20260429_20260522_20260611_revised.png",
         "docs/assets/research_samples/steady_uptrend_breakout/603256_honghe_weekly_high_level_breakout_revised.png"
       ],
@@ -159,8 +157,6 @@
       "sample_class": "mixed_positive_weak",
       "pattern_family": "上升趋势强势突破",
       "evidence_images": [
-        "docs/assets/research_samples/steady_uptrend_breakout/301217_tongguan_daily_breakout_points.png",
-        "docs/assets/research_samples/steady_uptrend_breakout/301217_tongguan_weekly_breakout.png",
         "docs/assets/research_samples/steady_uptrend_breakout/301217_tongguan_daily_20260427_20260526_20260629_revised.png",
         "docs/assets/research_samples/steady_uptrend_breakout/301217_tongguan_weekly_high_level_breakout_revised.png"
       ],

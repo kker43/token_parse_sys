@@ -41,28 +41,33 @@ from stock_lobster.research.steady_uptrend_v3 import SteadyUptrendV3Policy
 
 
 STRATEGIES = (
-    ("breakout_v1", "configs/strategies/steady_uptrend_breakout_watch.example.json", "breakout", False),
+    (
+        "breakout_v1",
+        "configs/strategies/archive/steady_uptrend/steady_uptrend_breakout_watch.example.json",
+        "breakout",
+        False,
+    ),
     (
         "breakout_v2_weak_shape",
-        "configs/strategies/steady_uptrend_breakout_watch_candidate_v2.example.json",
+        "configs/strategies/archive/steady_uptrend/steady_uptrend_breakout_watch_candidate_v2.example.json",
         "breakout",
         False,
     ),
     (
         "pre_breakout_v1",
-        "configs/strategies/steady_uptrend_pre_breakout_watch.example.json",
+        "configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch.example.json",
         "pre_breakout",
         False,
     ),
     (
         "pre_breakout_v3",
-        "configs/strategies/steady_uptrend_pre_breakout_watch_candidate_v3.example.json",
+        "configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch_candidate_v3.example.json",
         "all",
         True,
     ),
     (
         "pre_breakout_v3_1",
-        "configs/strategies/steady_uptrend_pre_breakout_watch_candidate_v3_1.example.json",
+        "configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch_candidate_v3_1.example.json",
         "all",
         True,
     ),
@@ -200,7 +205,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
 
     v4_config = json.loads(
-        (PROJECT_ROOT / "configs/strategies/steady_uptrend_layered_signal_candidate_v4.example.json")
+        (
+            PROJECT_ROOT
+            / "configs/strategies/archive/steady_uptrend/steady_uptrend_layered_signal_candidate_v4.example.json"
+        )
         .read_text(encoding="utf-8")
     )
     v4_scan_policy = _policy_from_strategy_payload(v4_config, min_event_date)

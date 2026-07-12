@@ -51,6 +51,28 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
         self.assertEqual(60, settings["lookback_weekly_trade_days"])
         self.assertEqual("qfq_asof", settings["price_basis"])
 
+    def test_resolve_settings_rejects_disabled_schedule(self) -> None:
+        with TemporaryDirectory() as tempdir:
+            schedule_path = Path(tempdir) / "schedule.json"
+            schedule_path.write_text(
+                json.dumps(
+                    {
+                        "enabled": False,
+                        "status": "deprecated",
+                        "mysql_config_path": "mysql.json",
+                        "strategy_config_path": "strategy.json",
+                        "output_root": "runtime/signals",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            args = build_parser().parse_args(
+                ["--schedule-config-path", str(schedule_path)]
+            )
+
+            with self.assertRaisesRegex(ValueError, "schedule is disabled"):
+                _resolve_settings(args)
+
     def test_fetch_kline_rows_uses_qfq_anchor_factor(self) -> None:
         connection = _FakeConnection(
             [

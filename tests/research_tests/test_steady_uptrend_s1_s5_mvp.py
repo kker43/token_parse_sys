@@ -493,7 +493,7 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
 
         report = build_steady_uptrend_mvp_report(
             candidates,
-            strategy_id="steady_uptrend_s1_s5_mvp_candidate_v1",
+            strategy_id="strategy.steady_uptrend_mvp",
             run_id="test-run",
             signal_date="20260710",
             data_dependency_versions={"daily": "fixture-v1"},

@@ -4,15 +4,17 @@
 
 ## 当前状态
 
-- 已有项目文件：`requirements.md`、`sys_command.md`、`AGENTS.md` 和本计划。
-- 工作区已经在 `main` 分支初始化为 Git 仓库。
-- M1 已经具备最小 Python 包脚手架，并有严格的导入边界测试。
+- L0-L6、研究工作流、样本回放、回测、生命周期 gate 和远程研究执行能力均已具备实现与测试。
+- 当前唯一例行选股策略为 `strategy.steady_uptrend_mvp/v1`，生命周期为 `test_tracking`，不发布正式 L5 信号。
+- 旧 breakout、pre-breakout、v3、v3.1、v4 和五子池策略已退出例行选股，只保留链路、因子、样本回放和研究证据。
+- 当前业务策略注册表为 `configs/strategies/strategy_registry.example.json`，任何例行选股入口必须以该注册表为业务真相源。
+- 技术体系中的例行任务、执行器、输入契约、回放、因子和审计能力长期保留；策略注册表只管理可替换的业务选股口径。
 - 标准系统结构和模型指导记录在 `docs/standards/001-system-structure-and-model-guidance.md`。
 - 数据基础集成指导记录在 `docs/standards/002-data-foundation-integration.md`。
 - 远程执行布局记录在 `docs/standards/003-remote-system-execution-layout.md`。
 - 宏观大类资产投研扩展的 PRD 记录在 `docs/product/001-macro-cross-asset-research-prd.md`，系统 spec 记录在 `docs/standards/010-macro-cross-asset-research-spec.md`，第一批 DataAsset 示例记录在 `configs/data_assets/macro_cross_asset_data_assets.example.json`。
-- 远程空骨架位于 `/home/ubuntu/token_parse_sys`。
-- 下一步实现是 Workflow 001：`docs/workflows/001-data-foundation-mvp.md`。
+- 远程项目位于 `/home/ubuntu/token_parse_sys`；MVP 先进入例行 `test_tracking`，达到生命周期门槛并经用户批准后再迁移到正式 L3-L5 生产链路。
+- 当前下一步是积累例行跟踪天数、未来收益和失败案例，不扩展新的日常选股策略。
 
 ## 不可协商边界
 

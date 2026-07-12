@@ -1,50 +1,49 @@
-# 每日策略信号生产运行手册
+# 每日策略选股例行任务运行手册
 
-## 目标
+## 技术边界
 
-`token_parse_sys` 接管策略生产调度和报告归档，但基础事实数据生产逻辑保持与 `token_fetch` 一致。Phase A 的边界是：
+本手册描述长期保留的例行任务能力，不固化某一版业务选股口径。技术体系负责：
 
-- 基础数据生产：由 `token_parse_sys` 的 `daily_fact_data_production.py` 作为外层入口，实际调用 `/home/ubuntu/token_fetch/cron_script/daily_master_scheduler.py`。
-- 策略信号生产：基础任务完成后，`daily_strategy_signal_production.py` 从 MySQL 读取日线、周线、基础信息、行业/概念上下文，执行已注册测试策略。
-- 报告落点：`/home/ubuntu/token_parse_sys/runtime/strategy_signal_production/YYYYMMDD/`。
+- 在外部事实数据就绪后读取只读输入 artifact。
+- 校验 K 线、上下文、质量状态和版本 manifest。
+- 调用业务策略注册表中唯一启用的策略执行入口。
+- 生成可复现的候选、分层审计和任务状态产物。
+- 保留样本回放、因子计算和历史结果复核能力。
 
-## 例行任务
+策略配置、阈值、过滤顺序和排序规则属于业务层。旧策略退役只会禁用其调度绑定，不会删除例行任务、执行器、输入契约或回放能力。
 
-建议服务器 crontab 使用：
+## 当前业务绑定
 
-```cron
-0 18 * * * cd /home/ubuntu/token_parse_sys && /usr/bin/python3 /home/ubuntu/token_parse_sys/workflows/jobs/daily_fact_data_production.py --schedule-config-path /home/ubuntu/token_parse_sys/configs/schedules/daily_fact_data_production.json >> /home/ubuntu/token_parse_sys/runtime/daily_fact_data_production/cron.log 2>&1
-30 0 * * 2-6 cd /home/ubuntu/token_parse_sys && /usr/bin/python3 /home/ubuntu/token_parse_sys/workflows/jobs/daily_strategy_signal_production.py --schedule-config-path /home/ubuntu/token_parse_sys/configs/schedules/daily_strategy_signal_production.json >> /home/ubuntu/token_parse_sys/runtime/strategy_signal_production/cron.log 2>&1
+当前唯一启用的业务策略为 `strategy.steady_uptrend_mvp/v1`，生命周期为 `test_tracking`。配置入口：
+
+```text
+configs/strategies/strategy_registry.json
+configs/strategies/steady_uptrend_mvp.json
+configs/schedules/daily_steady_uptrend_mvp_tracking.json
 ```
 
-第一条任务保持 `token_fetch` 当前生产逻辑不变，只迁移调度归属。第二条任务在次日凌晨运行，默认读取最新交易日，避免基础数据生产多轮重试后尚未完成。
+旧 `daily_strategy_signal_production.json` 是 pre-breakout 业务策略的历史绑定，必须保持 `enabled=false`。`workflows/jobs/daily_strategy_signal_production.py` 及其取数、报告辅助能力继续保留，不因旧绑定停用而废弃。
 
-## 手动执行
+## 执行顺序
+
+```text
+外部事实数据完成
+-> 生成并校验只读输入 artifact
+-> 解析业务策略注册表
+-> 验证仅一个 routine_selection_enabled=true
+-> 执行该策略的 selection_job
+-> 写入 test_tracking 观察结果和审计明细
+```
+
+当前 MVP 的具体命令、输入文件和输出检查见 `ops/runbooks/daily_steady_uptrend_mvp_tracking.md`。
+
+## 发布检查
+
+每次替换业务策略绑定时至少检查：
 
 ```bash
-cd /home/ubuntu/token_parse_sys
-/usr/bin/python3 workflows/jobs/daily_strategy_signal_production.py \
-  --schedule-config-path configs/schedules/daily_strategy_signal_production.json \
-  --date 20260703
+python3 -m unittest discover -s tests -p 'test_*.py'
+python3 workflows/jobs/steady_uptrend_s1_s5_mvp_scan.py --help
 ```
 
-## 产出文件
-
-- `input/kline.tsv`：本次扫描用日线窗口。
-- `input/weekly_kline.tsv`：本次扫描用周线窗口，按日线日期自动取不晚于当日的最近周线。
-- `input/stock_context.tsv`：上市状态、市值、换手率、20 日均成交额、强行业/强概念命中。
-- `candidates.json`：完整结构化结果。
-- `candidates.csv`：便于人工查看的候选表。
-- `report.md`：每日中文报告。
-- `latest_result.json`：最新任务状态指针。
-
-## 质量检查
-
-每次部署或口径调整后至少检查：
-
-```bash
-python -m unittest discover -s tests
-python workflows/jobs/daily_strategy_signal_production.py --help
-```
-
-如果策略报告候选异常偏多或偏少，先看 `input/stock_context.tsv` 中 `strong_industry_hit`、`strong_concept_hit`、`max_turnover_rate_20d`、`avg_amount_20d` 是否符合预期，再判断是否需要修改策略阈值。
+同时确认：注册表仅有一个例行策略、旧业务绑定均未启用、结果中的策略 ID/版本/状态与注册表一致、输入依赖版本完整。

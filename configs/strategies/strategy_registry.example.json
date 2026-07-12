@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "registry_id": "routine_business_strategy_registry",
+  "scope": "business_selection_policies_only",
+  "strategies": [
+    {
+      "strategy_id": "strategy.steady_uptrend_mvp",
+      "version": "v1",
+      "status": "test_tracking",
+      "role": "routine_primary",
+      "routine_selection_enabled": true,
+      "config_path": "configs/strategies/steady_uptrend_mvp.example.json",
+      "selection_job": "workflows/jobs/steady_uptrend_s1_s5_mvp_scan.py",
+      "notes": "当前唯一例行选股策略；输出为 test_tracking 观察候选，不是 active_production 正式信号。"
+    },
+    {
+      "strategy_id": "strategy.steady_uptrend_breakout_watch",
+      "version": "candidate_v1",
+      "status": "deprecated",
+      "role": "replay_only",
+      "routine_selection_enabled": false,
+      "config_path": "configs/strategies/archive/steady_uptrend/steady_uptrend_breakout_watch.example.json",
+      "preserved_capabilities": ["突破链路", "周线趋势", "量价因子", "样本回放"]
+    },
+    {
+      "strategy_id": "strategy.steady_uptrend_breakout_watch",
+      "version": "candidate_v2",
+      "status": "deprecated",
+      "role": "replay_only",
+      "routine_selection_enabled": false,
+      "config_path": "configs/strategies/archive/steady_uptrend/steady_uptrend_breakout_watch_candidate_v2.example.json",
+      "preserved_capabilities": ["弱形态过滤", "单阳柱主导", "均线缠绕诊断", "样本回放"]
+    },
+    {
+      "strategy_id": "strategy.steady_uptrend_pre_breakout_watch",
+      "version": "candidate_v1",
+      "status": "deprecated",
+      "role": "replay_only",
+      "routine_selection_enabled": false,
+      "config_path": "configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch.example.json",
+      "preserved_capabilities": ["预突破链路", "前高距离", "MA20偏离", "样本回放"]
+    },
+    {
+      "strategy_id": "strategy.steady_uptrend_pre_breakout_watch",
+      "version": "candidate_v3",
+      "status": "deprecated",
+      "role": "replay_only",
+      "routine_selection_enabled": false,
+      "config_path": "configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch_candidate_v3.example.json",
+      "preserved_capabilities": ["市场温度", "题材轮动", "拥挤度", "样本回放"]
+    },
+    {
+      "strategy_id": "strategy.steady_uptrend_pre_breakout_watch",
+      "version": "candidate_v3_1",
+      "status": "deprecated",
+      "role": "replay_only",
+      "routine_selection_enabled": false,
+      "config_path": "configs/strategies/archive/steady_uptrend/steady_uptrend_pre_breakout_watch_candidate_v3_1.example.json",
+      "preserved_capabilities": ["量能确认", "后置风险诊断", "样本回放"]
+    },
+    {
+      "strategy_id": "strategy.steady_uptrend_layered_signal",
+      "version": "candidate_v4",
+      "status": "deprecated",
+      "role": "replay_only",
+      "routine_selection_enabled": false,
+      "config_path": "configs/strategies/archive/steady_uptrend/steady_uptrend_layered_signal_candidate_v4.example.json",
+      "preserved_capabilities": ["分层召回", "信号状态", "动态TopN", "样本回放"]
+    },
+    {
+      "strategy_id": "strategy.trend_recall_subpools_candidate_v1",
+      "version": "candidate_v1",
+      "status": "deprecated",
+      "role": "replay_only",
+      "routine_selection_enabled": false,
+      "config_path": "configs/strategies/archive/steady_uptrend/trend_recall_subpools_candidate_v1.example.json",
+      "preserved_capabilities": ["五类结构召回", "形态因子", "样本回放"]
+    }
+  ]
+}

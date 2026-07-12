@@ -11,6 +11,7 @@ import unittest
 
 from workflows.jobs.steady_uptrend_s1_s5_mvp_scan import (
     _evaluate_universe,
+    _required_strategy_status,
     build_parser,
     main,
     validate_scan_input_contracts,
@@ -23,6 +24,20 @@ class SteadyUptrendS1S5MvpScanTest(unittest.TestCase):
     def test_parser_requires_all_fact_inputs_and_run_metadata(self) -> None:
         with self.assertRaises(SystemExit):
             build_parser().parse_args([])
+
+    def test_scanner_accepts_research_and_test_tracking_statuses(self) -> None:
+        self.assertEqual(
+            "research_only",
+            _required_strategy_status({"status": "research_only"}),
+        )
+        self.assertEqual(
+            "test_tracking",
+            _required_strategy_status({"status": "test_tracking"}),
+        )
+
+    def test_scanner_rejects_active_production_status(self) -> None:
+        with self.assertRaisesRegex(ValueError, "research_only or test_tracking"):
+            _required_strategy_status({"status": "active_production"})
 
     def test_scan_writes_stage_audit_json_and_grouped_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -46,9 +61,9 @@ class SteadyUptrendS1S5MvpScanTest(unittest.TestCase):
             config_path.write_text(
                 json.dumps(
                     {
-                        "strategy_id": "steady_uptrend_s1_s5_mvp_candidate_v1",
-                        "version": "candidate_v1",
-                        "status": "research_only",
+                        "strategy_id": "strategy.steady_uptrend_mvp",
+                        "version": "v1",
+                        "status": "test_tracking",
                         "policy": {},
                     }
                 ),
@@ -84,8 +99,12 @@ class SteadyUptrendS1S5MvpScanTest(unittest.TestCase):
 
             payload = json.loads(output_path.read_text(encoding="utf-8"))
             self.assertEqual(0, exit_code)
-            self.assertEqual("steady_uptrend_s1_s5_mvp_candidate_v1", payload["strategy_id"])
-            self.assertEqual("research_only", payload["status"])
+            self.assertEqual("strategy.steady_uptrend_mvp", payload["strategy_id"])
+            self.assertEqual("test_tracking", payload["status"])
+            self.assertEqual(
+                "test_tracking_observation_candidates",
+                payload["output_kind"],
+            )
             self.assertTrue(payload["data_dependency_versions"]["daily_kline"].startswith("v1:"))
             self.assertEqual(2, payload["stage_counts"]["s1_quality_filter"]["passed"])
             self.assertEqual(2, payload["stage_counts"]["s4_stability_refinement"]["passed"])

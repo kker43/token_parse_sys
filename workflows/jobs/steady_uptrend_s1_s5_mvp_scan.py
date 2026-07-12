@@ -1,4 +1,4 @@
-"""Research-only S1-S5 scan for the mature steady-uptrend MVP."""
+"""Research and test-tracking scan for the mature steady-uptrend MVP."""
 
 from __future__ import annotations
 
@@ -94,6 +94,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             "scanner": "steady_uptrend_s1_s5_mvp_scan",
             "version": version,
             "status": status,
+            "output_kind": (
+                "test_tracking_observation_candidates"
+                if status == "test_tracking"
+                else "research_candidates"
+            ),
             "policy": asdict(policy),
             "input_contracts": {
                 "kline_manifest_path": args.kline_manifest_path,
@@ -193,8 +198,10 @@ def _required_string(payload: Mapping[str, object], key: str) -> str:
 
 def _required_strategy_status(payload: Mapping[str, object]) -> str:
     status = _required_string(payload, "status")
-    if status != "research_only":
-        raise ValueError("S1-S5 MVP research scan status must be research_only")
+    if status not in {"research_only", "test_tracking"}:
+        raise ValueError(
+            "S1-S5 MVP scan status must be research_only or test_tracking"
+        )
     return status
 
 

@@ -181,6 +181,8 @@ def _resolve_settings(args: argparse.Namespace) -> dict[str, object]:
     if args.schedule_config_path:
         config_path = Path(args.schedule_config_path).resolve()
         config = _read_json_object(config_path)
+        if config.get("enabled") is False:
+            raise ValueError("daily strategy signal production schedule is disabled")
         config_dir = config_path.parent
 
     mysql_config_path = args.mysql_config_path or _resolve_path(config.get("mysql_config_path"), config_dir)

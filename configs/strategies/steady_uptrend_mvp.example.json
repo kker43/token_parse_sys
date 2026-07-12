@@ -1,7 +1,7 @@
 {
-  "strategy_id": "steady_uptrend_s1_s5_mvp_candidate_v1",
-  "version": "candidate_v1",
-  "status": "research_only",
+  "strategy_id": "strategy.steady_uptrend_mvp",
+  "version": "v1",
+  "status": "test_tracking",
   "name": "稳健上升趋势 S1-S5 MVP",
   "description": "成熟趋势背景下，依次执行质量、趋势、结构召回、股性稳健性和介入筛选。介入要求命中强势行业或概念、收盘价高于 MA5，并且距离信号日前20个交易日的最高收盘价不低于 -5%；近3日涨幅和 MA20 偏离度只用于诊断与排序。",
   "policy": {
