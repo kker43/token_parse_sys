@@ -73,8 +73,10 @@
     }
   ],
   "notes": [
+    "review_label_options 是人工确认样本事件类别的固定入口，应与 docs/standards/004-experience-primitive-label-standard.md 保持一致。",
     "系统只能写 suggested_event_class，不能自动写 confirmed_event_class。",
     "人工确认时只填写数字 code，不需要输入标签文字。",
+    "细分原因写入 derived_l2_candidates、derived_l3_candidates、human_interpretation 或 l4_implication，不新增近义 event_class/value_tier。",
     "label_status=proposed 的样本不能作为策略晋升证据。",
     "人工确认后再转入 configs/research_samples/ 下的正式样本库。"
   ]

@@ -7,10 +7,12 @@ import tempfile
 import unittest
 
 from stock_lobster.research import (
+    AdjFactor,
     KlineBar,
     StockSignalContext,
     TrendBreakoutMetrics,
     TrendBreakoutScanPolicy,
+    adjust_bars_to_qfq_asof,
     scan_trend_breakouts,
     select_candidates,
     read_stock_signal_context_tsv,
@@ -327,6 +329,23 @@ class TrendBreakoutScanTest(unittest.TestCase):
 
         self.assertEqual(["000001.SZ", "000002.SZ"], [item.asset_id for item in selected])
 
+    def test_qfq_asof_adjustment_prevents_ex_right_ma30_false_negative(self) -> None:
+        raw_bars, factors = _ex_right_raw_bars_and_factors("002768.SZ")
+
+        raw_latest = scan_trend_breakouts(
+            raw_bars,
+            TrendBreakoutScanPolicy(start_date=raw_bars[-1].trade_date),
+        )[-1]
+        adjusted_latest = scan_trend_breakouts(
+            adjust_bars_to_qfq_asof(raw_bars, factors, anchor_trade_date=raw_bars[-1].trade_date),
+            TrendBreakoutScanPolicy(start_date=raw_bars[-1].trade_date),
+        )[-1]
+
+        self.assertLess(raw_latest.close, raw_latest.ma30)
+        self.assertFalse(raw_latest.daily_quality_pass)
+        self.assertGreater(adjusted_latest.close, adjusted_latest.ma30)
+        self.assertTrue(adjusted_latest.daily_quality_pass)
+
 
 def _daily_breakout_bars(asset_id: str) -> list[KlineBar]:
     bars: list[KlineBar] = []
@@ -464,6 +483,29 @@ def _one_bar_pump_after_choppy_green_bars(asset_id: str) -> list[KlineBar]:
             )
         )
     return bars
+
+
+def _ex_right_raw_bars_and_factors(asset_id: str) -> tuple[list[KlineBar], tuple[AdjFactor, ...]]:
+    bars: list[KlineBar] = []
+    factors: list[AdjFactor] = []
+    for index in range(140):
+        trade_date = f"2026{index + 1:04d}"
+        adjusted_close = 20.0 + index * 0.2
+        adj_factor = 0.67 if index < 120 else 1.0
+        raw_close = adjusted_close / adj_factor
+        bars.append(
+            KlineBar(
+                asset_id=asset_id,
+                trade_date=trade_date,
+                open=raw_close,
+                high=raw_close,
+                low=raw_close,
+                close=raw_close,
+                amount=100.0,
+            )
+        )
+        factors.append(AdjFactor(asset_id=asset_id, trade_date=trade_date, adj_factor=adj_factor))
+    return bars, tuple(factors)
 
 
 def _metric(

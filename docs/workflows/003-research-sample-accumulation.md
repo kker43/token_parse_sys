@@ -19,16 +19,36 @@
 
 ## 样本事件分类
 
-样本事件不要只分正负，应使用更细粒度分类：
+样本事件不要只分正负，应使用固定的 review code、`event_class` 和 `value_tier`。
 
-| 分类 | 含义 |
+| code | event_class | value_tier | 含义 |
+| ---: | --- | --- | --- |
+| 1 | `positive_attention_high_value` | `high` | 高价值正样本，用于核心口径校准 |
+| 2 | `positive_attention_mid_value` | `mid` | 中价值正样本，可参与召回但需要降权或更强风控 |
+| 3 | `weak_or_excluded_attention` | `low_or_exclude` | 弱样本或排除候选，用于降权和过滤 |
+| 4 | `borderline_negative_recall` | `borderline_negative` | 边界负样本；召回可能有道理，但需要确认、风控、等待或退出规则 |
+| 5 | `negative_after_close_recall` | `borderline_negative` | 召回后失败样本，优先进入失败归因 |
+| 6 | `hard_negative_recall` | `hard_negative` | 硬负样本，用于入口排除和趋势质量过滤 |
+| 7 | `out_of_family` | `out_of_family` | 不属于本形态族，但可保留为研究边界样本 |
+| 8 | `skip_uncertain` | `uncertain` | 证据不足，暂不入库 |
+
+正式样本库只能写入 code 1-7。code 8 只能留在待审队列、研究备注或下一轮复核清单。
+
+### 标注收敛规则
+
+新增人工样本必须先选固定 code，再把具体原因写进 L2/L3 候选或人工解释。
+
+| 人工判断 | 标准处理 |
 | --- | --- |
-| `positive_attention_high_value` | 高价值正样本，用于核心口径校准 |
-| `positive_attention_mid_value` | 中价值正样本，可参与召回但需要降权或更强风控 |
-| `weak_or_excluded_attention` | 弱样本或排除候选，用于降权和过滤 |
-| `borderline_negative_recall` | 边界负样本，用于确认、风控和退出规则 |
-| `negative_after_close_recall` | 召回后失败样本，优先进入失败归因 |
-| `hard_negative_recall` | 硬负样本，用于入口排除和趋势质量过滤 |
+| 高价值或中价值 | 选 code 1 或 code 2 |
+| 加速后无盘整、休整时间太短、性价比偏弱 | 选 code 3 |
+| 高位盘整但还需要等待、W 形未确认、突破确认不足 | 选 code 4 |
+| 召回后走坏，但入口当时不一定完全错 | 选 code 5 |
+| 明确不该召回，例如单根大阳后多根阴线回调 | 选 code 6 |
+| 形态有研究意义但不是当前形态族 | 选 code 7 |
+| 看不清或证据不足 | 选 code 8，不写入正式样本库 |
+
+不要为细分原因新增近义 `event_class` 或 `value_tier`，例如 `wait_for_w_base`、`weak_deprioritize`、`low_or_deprioritize`、`single_bull_false_positive`。这些原因应进入 `derived_l2_candidates`、`derived_l3_candidates`、`human_interpretation` 或 `l4_implication`。
 
 ## 最小结构
 

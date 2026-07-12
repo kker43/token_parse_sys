@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+from collections.abc import Sequence as SequenceAbc
 from typing import Mapping, Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="steady_uptrend_breakout_event_backtest")
     parser.add_argument("--kline-tsv-path", required=True)
     parser.add_argument("--scan-result-path", required=True)
+    parser.add_argument("--candidate-pool-key", default="breakout_candidates")
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--holding-horizon", action="append", type=int, dest="holding_horizons")
     parser.add_argument("--entry-offset", type=int, default=1)
@@ -44,7 +46,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     holding_horizons = tuple(args.holding_horizons or (5, 10, 20))
     bars = _read_price_bars(args.kline_tsv_path)
-    events = _read_events(args.scan_result_path)
+    events = _read_events(args.scan_result_path, candidate_pool_key=args.candidate_pool_key)
     reports = []
     for holding_horizon in holding_horizons:
         report = run_event_backtest(
@@ -66,6 +68,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "schema_version": 1,
         "job_name": "steady_uptrend_breakout_event_backtest",
         "source_scan_result_path": args.scan_result_path,
+        "candidate_pool_key": args.candidate_pool_key,
         "kline_tsv_path": args.kline_tsv_path,
         "event_count": len(events),
         "reports": reports,
@@ -103,9 +106,9 @@ def _read_price_bars(path: str | Path) -> tuple[PriceBar, ...]:
     return tuple(bars)
 
 
-def _read_events(path: str | Path) -> tuple[BacktestEvent, ...]:
+def _read_events(path: str | Path, candidate_pool_key: str = "breakout_candidates") -> tuple[BacktestEvent, ...]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    candidates = payload.get("breakout_candidates", ())
+    candidates = _candidate_rows(payload, candidate_pool_key=candidate_pool_key)
     events: list[BacktestEvent] = []
     for candidate in candidates:
         if not isinstance(candidate, Mapping):
@@ -120,6 +123,26 @@ def _read_events(path: str | Path) -> tuple[BacktestEvent, ...]:
             )
         )
     return tuple(events)
+
+
+def _candidate_rows(payload: object, *, candidate_pool_key: str) -> Sequence[object]:
+    if not isinstance(payload, Mapping):
+        raise ValueError("scan result payload must be a JSON object")
+    value = _lookup_candidate_pool(payload, candidate_pool_key)
+    if value is None:
+        raise ValueError(f"scan result payload does not contain requested pool: {candidate_pool_key}")
+    if not isinstance(value, SequenceAbc) or isinstance(value, (str, bytes)):
+        raise ValueError(f"{candidate_pool_key} must be a JSON array")
+    return value
+
+
+def _lookup_candidate_pool(payload: Mapping[str, object], key: str) -> object:
+    if key in payload:
+        return payload.get(key)
+    stage_pools = payload.get("stage_candidate_pools")
+    if isinstance(stage_pools, Mapping) and key in stage_pools:
+        return stage_pools.get(key)
+    return None
 
 
 if __name__ == "__main__":

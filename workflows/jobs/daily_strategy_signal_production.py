@@ -43,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-root")
     parser.add_argument("--date")
     parser.add_argument("--job-result-path")
+    parser.add_argument("--price-basis", choices=("raw", "qfq_asof"))
     return parser
 
 
@@ -74,12 +75,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 connection=connection,
                 trade_date=trade_date,
                 lookback_trade_days=int(settings["lookback_daily_trade_days"]),
+                price_basis=str(settings["price_basis"]),
                 output_path=daily_path,
             )
             _export_weekly_kline(
                 connection=connection,
                 trade_date=trade_date,
                 lookback_trade_days=int(settings["lookback_weekly_trade_days"]),
+                price_basis=str(settings["price_basis"]),
                 output_path=weekly_path,
             )
             _export_stock_context(connection=connection, trade_date=trade_date, output_path=context_path)
@@ -118,6 +121,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "strategy_id": strategy_payload.get("strategy_id"),
                 "strategy_version": strategy_payload.get("version"),
                 "candidate_mode": candidate_mode,
+                "price_basis": settings["price_basis"],
                 "top_n_per_date": top_n_per_date,
                 "candidate_count": len(candidate_payloads),
                 "metric_count": len(metrics),
@@ -183,6 +187,9 @@ def _resolve_settings(args: argparse.Namespace) -> dict[str, object]:
     strategy_config_path = args.strategy_config_path or _resolve_path(config.get("strategy_config_path"), config_dir)
     output_root = args.output_root or _resolve_path(config.get("output_root"), config_dir)
     job_result_path = args.job_result_path or _resolve_path(config.get("job_result_path"), config_dir)
+    price_basis = args.price_basis or str(config.get("price_basis", "raw"))
+    if price_basis not in {"raw", "qfq_asof"}:
+        raise ValueError("price_basis must be raw or qfq_asof")
     if mysql_config_path is None:
         raise ValueError("mysql_config_path must be provided")
     if strategy_config_path is None:
@@ -199,6 +206,7 @@ def _resolve_settings(args: argparse.Namespace) -> dict[str, object]:
         "output_root": output_root,
         "date": args.date or config.get("date"),
         "job_result_path": job_result_path,
+        "price_basis": price_basis,
         "lookback_daily_trade_days": int(
             config.get("lookback_daily_trade_days", DEFAULT_LOOKBACK_DAILY_TRADE_DAYS)
         ),
@@ -265,6 +273,7 @@ def _export_daily_kline(
     connection: Any,
     trade_date: str,
     lookback_trade_days: int,
+    price_basis: str,
     output_path: Path,
 ) -> None:
     start_date, end_date = _trade_day_bounds(
@@ -273,15 +282,13 @@ def _export_daily_kline(
         trade_date,
         lookback_trade_days,
     )
-    rows = _fetch_rows(
-        connection,
-        """
-        SELECT ts_code, trade_date, open, high, low, close, amount
-        FROM token_daily_details
-        WHERE trade_date BETWEEN %s AND %s
-        ORDER BY ts_code, trade_date
-        """,
-        (start_date, end_date),
+    rows = _fetch_kline_rows(
+        connection=connection,
+        table_name="token_daily_details",
+        signal_date=trade_date,
+        start_date=start_date,
+        end_date=end_date,
+        price_basis=price_basis,
     )
     _write_tsv(output_path, rows, header=None)
 
@@ -291,6 +298,7 @@ def _export_weekly_kline(
     connection: Any,
     trade_date: str,
     lookback_trade_days: int,
+    price_basis: str,
     output_path: Path,
 ) -> None:
     start_date, end_date = _trade_day_bounds(
@@ -299,17 +307,62 @@ def _export_weekly_kline(
         trade_date,
         lookback_trade_days,
     )
-    rows = _fetch_rows(
-        connection,
-        """
-        SELECT ts_code, trade_date, open, high, low, close, amount
-        FROM token_weekly_details
-        WHERE trade_date BETWEEN %s AND %s
-        ORDER BY ts_code, trade_date
-        """,
-        (start_date, end_date),
+    rows = _fetch_kline_rows(
+        connection=connection,
+        table_name="token_weekly_details",
+        signal_date=trade_date,
+        start_date=start_date,
+        end_date=end_date,
+        price_basis=price_basis,
     )
     _write_tsv(output_path, rows, header=None)
+
+
+def _fetch_kline_rows(
+    *,
+    connection: Any,
+    table_name: str,
+    signal_date: str,
+    start_date: str,
+    end_date: str,
+    price_basis: str,
+) -> tuple[Mapping[str, object], ...]:
+    if price_basis == "raw":
+        return _fetch_rows(
+            connection,
+            f"""
+            SELECT ts_code, trade_date, open, high, low, close, amount
+            FROM {table_name}
+            WHERE trade_date BETWEEN %s AND %s
+            ORDER BY ts_code, trade_date
+            """,
+            (start_date, end_date),
+        )
+    if price_basis != "qfq_asof":
+        raise ValueError("price_basis must be raw or qfq_asof")
+    return _fetch_rows(
+        connection,
+        f"""
+        SELECT
+          k.ts_code,
+          k.trade_date,
+          k.open * f.adj_factor / anchor.adj_factor AS open,
+          k.high * f.adj_factor / anchor.adj_factor AS high,
+          k.low * f.adj_factor / anchor.adj_factor AS low,
+          k.close * f.adj_factor / anchor.adj_factor AS close,
+          k.amount
+        FROM {table_name} k
+        JOIN stock_adj_factor_daily f
+          ON f.ts_code = k.ts_code
+         AND f.trade_date = k.trade_date
+        JOIN stock_adj_factor_daily anchor
+          ON anchor.ts_code = k.ts_code
+         AND anchor.trade_date = %s
+        WHERE k.trade_date BETWEEN %s AND %s
+        ORDER BY k.ts_code, k.trade_date
+        """,
+        (signal_date, start_date, end_date),
+    )
 
 
 def _export_stock_context(*, connection: Any, trade_date: str, output_path: Path) -> None:

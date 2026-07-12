@@ -97,6 +97,74 @@
       "next_review_trigger": "当需要建设主题生命周期框架，或已有 AI/半导体/算力/机器人正反样本积累后再评审。",
       "created_at": "2026-07-06",
       "updated_at": "2026-07-06"
+    },
+    {
+      "topic_id": "topic.event_driven_multiview_signal_brief_20260711",
+      "title": "事件驱动多视角研究简报与信号评估",
+      "status": "topic_backlog",
+      "priority": "unranked",
+      "source_type": "manual_research_note",
+      "summary": "评估一种由新闻或公告事件触发，综合证券代码映射、价格技术状态、同行相对强弱、宏观环境、期权定价和历史信号后，输出方向倾向、等待确认条件、失效条件和风险计划的多视角研究简报；重点判断它应作为独立事件研究旁路，还是在验证后把部分确定性规则接入现有 L2-L5。",
+      "why_keep": "该方向可以补充当前以 A 股形态扫描为主的链路，探索事件驱动观察和研究解释能力；同时它与现有资产范围、事实数据契约、期权数据和确定性信号定义差异较大，适合先保留为课题，不直接扩展当前生产主链。",
+      "research_questions": [
+        "事件驱动多视角简报相对单纯新闻摘要，是否能稳定提高后续观察和确认效率？",
+        "新闻、证券身份、行情、同行、宏观和期权数据中，哪些必须由外部事实契约提供？",
+        "EventAssessment、ObservationCard 与正式 L5 StrategySignal 应如何划分边界？",
+        "方向倾向、do_trade、等待确认和 conviction 应如何结构化并保持可复现？",
+        "应如何衡量事实错误率、数据时效、事件后收益、假突破率和评分校准度？",
+        "该能力应先限定为 A 股事件研究，还是把美股和期权作为独立扩展阶段？"
+      ],
+      "blocked_by": [
+        "event/news factual DataAsset and provenance contract",
+        "security identity, historical ticker and corporate-action mapping",
+        "event-driven positive/negative sample set with as-of timestamps",
+        "deterministic EventAssessment and conviction calibration definition",
+        "US market and option-chain DataAssets outside the current phase-one scope",
+        "event research lifecycle and promotion gate definition"
+      ],
+      "references": [
+        {
+          "reference_id": "ref.user_event_signal_brief_avgo_20260711",
+          "source_type": "manual_research_note",
+          "title": "AVGO 事件驱动多视角消息推送示例",
+          "author": null,
+          "url": null,
+          "published_at": "2026-07-09",
+          "captured_at": "2026-07-11",
+          "relevance": "作为消息结构和能力范围的示例，用于评估事件研究旁路，不作为 AVGO 事件、价格、技术指标或期权数据的事实证据。",
+          "paraphrased_claims": [
+            "示例把事件催化、证券代码修正、技术状态、同行比较、宏观环境和期权条件组织为一张研究简报。",
+            "示例将方向偏多与 do_trade=false 分开，要求突破或回踩确认后才考虑交易载体。",
+            "示例同时给出止损、止盈、持有期、仓位限制、硬失效条件和最大不确定性。"
+          ],
+          "claims_to_verify": [
+            "示例中的 AVGO 事件、协议金额、产量、价格、均线、ADX、VP 和期权 IV 数据均需独立核验。",
+            "多视角研究简报能否比结构化事件事实或单一技术规则提供更稳定的前瞻价值。",
+            "conviction 分数能否通过历史样本进行校准，而不是成为主观文字评分。",
+            "等待突破或回踩确认的规则能否降低消息驱动后的追高和假突破风险。"
+          ],
+          "counterpoints": [
+            "多来源叙事可能掩盖时间戳不一致、数据冲突和事后解释偏差。",
+            "美股和期权能力会显著扩大当前以 A 股为第一阶段的项目范围。",
+            "未经样本验证的交易载体和点位建议不应进入正式 L5 信号。"
+          ],
+          "copyright_policy": "只保存用户提供示例的结构化转述和待验证事项，不保存外部文章全文。"
+        }
+      ],
+      "candidate_outputs": [
+        "FrameworkRequirement: event intelligence bounded context",
+        "DataAssetRequirement: event/news provenance and security identity mapping",
+        "ResearchObjectRequirement: EventAssessment and ObservationCard",
+        "LifecycleRequirement: topic_backlog -> research_only -> test_tracking promotion gates",
+        "Optional future extension: US market and option-chain research inputs"
+      ],
+      "candidate_workflow_refs": [
+        "docs/product/002-research-topic-module-prd.md",
+        "docs/standards/012-research-topic-module-spec.md"
+      ],
+      "next_review_trigger": "当用户决定排期事件驱动研究简报，或已具备可靠的事件/新闻契约、证券身份映射及一批带结果标注的正反样本时再评审。",
+      "created_at": "2026-07-11",
+      "updated_at": "2026-07-11"
     }
   ]
 }

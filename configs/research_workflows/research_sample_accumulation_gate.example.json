@@ -22,7 +22,8 @@
     "weak_or_excluded_attention",
     "borderline_negative_recall",
     "negative_after_close_recall",
-    "hard_negative_recall"
+    "hard_negative_recall",
+    "out_of_family"
   ],
   "sample_sourcing_lanes": [
     {
@@ -44,6 +45,8 @@
   ],
   "notes": [
     "该配置只约束经验样本积累，不生产事实数据。",
+    "新增人工标注应使用 Standard 004 和 Workflow 003 定义的固定 event_class/value_tier；细分原因写入 L2/L3 候选，不新增近义主标签。",
+    "skip_uncertain 只能留在待审队列或研究备注中，不写入正式样本库。",
     "样本覆盖通过后，仍需要 L6 事件回测、阈值稳定性检查和用户审批，才能升级策略状态。"
   ]
 }

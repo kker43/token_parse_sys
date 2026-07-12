@@ -11,6 +11,7 @@ import unittest
 
 from stock_lobster.research import TrendBreakoutScanPolicy
 from workflows.jobs.daily_strategy_signal_production import (
+    _fetch_kline_rows,
     _policy_from_strategy_payload,
     _resolve_settings,
     _write_candidates_csv,
@@ -31,6 +32,7 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
                         "output_root": "runtime/signals",
                         "lookback_daily_trade_days": 120,
                         "lookback_weekly_trade_days": 60,
+                        "price_basis": "qfq_asof",
                     }
                 ),
                 encoding="utf-8",
@@ -45,6 +47,36 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
         self.assertEqual("20260703", settings["date"])
         self.assertEqual(120, settings["lookback_daily_trade_days"])
         self.assertEqual(60, settings["lookback_weekly_trade_days"])
+        self.assertEqual("qfq_asof", settings["price_basis"])
+
+    def test_fetch_kline_rows_uses_qfq_anchor_factor(self) -> None:
+        connection = _FakeConnection(
+            [
+                {
+                    "ts_code": "002768.SZ",
+                    "trade_date": "20260618",
+                    "open": 54.5,
+                    "high": 55.0,
+                    "low": 53.0,
+                    "close": 54.8,
+                    "amount": 100.0,
+                }
+            ]
+        )
+
+        rows = _fetch_kline_rows(
+            connection=connection,
+            table_name="token_daily_details",
+            signal_date="20260708",
+            start_date="20260601",
+            end_date="20260708",
+            price_basis="qfq_asof",
+        )
+
+        self.assertEqual("002768.SZ", rows[0]["ts_code"])
+        self.assertIn("JOIN stock_adj_factor_daily f", connection.cursor_obj.executed_sql)
+        self.assertIn("anchor.trade_date = %s", connection.cursor_obj.executed_sql)
+        self.assertEqual(("20260708", "20260601", "20260708"), connection.cursor_obj.executed_params)
 
     def test_policy_from_strategy_payload_keeps_only_scanner_fields(self) -> None:
         policy = _policy_from_strategy_payload(
@@ -102,3 +134,28 @@ class DailyStrategySignalProductionJobTest(unittest.TestCase):
 
         self.assertEqual(0, completed.returncode, msg=completed.stderr)
         self.assertIn("daily_strategy_signal_production", completed.stdout)
+
+
+class _FakeConnection:
+    def __init__(self, rows: list[dict[str, object]]) -> None:
+        self.cursor_obj = _FakeCursor(rows)
+
+    def cursor(self) -> "_FakeCursor":
+        return self.cursor_obj
+
+
+class _FakeCursor:
+    def __init__(self, rows: list[dict[str, object]]) -> None:
+        self.rows = rows
+        self.executed_sql = ""
+        self.executed_params: object = None
+
+    def execute(self, sql: str, params: object) -> None:
+        self.executed_sql = sql
+        self.executed_params = params
+
+    def fetchall(self) -> list[dict[str, object]]:
+        return self.rows
+
+    def close(self) -> None:
+        return None

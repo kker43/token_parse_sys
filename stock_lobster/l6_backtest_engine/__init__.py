@@ -25,6 +25,12 @@ from stock_lobster.l6_backtest_engine.profiles import (
     load_evaluation_profile,
 )
 from stock_lobster.l6_backtest_engine.result import BacktestResult
+from stock_lobster.l6_backtest_engine.trade_management import (
+    ManagedTradeResult,
+    TradeManagementPolicy,
+    TradeManagementReport,
+    run_trade_management_backtest,
+)
 
 __all__ = [
     "BacktestAcceptancePolicy",
@@ -38,10 +44,14 @@ __all__ = [
     "EventBacktestPolicy",
     "EventBacktestReport",
     "EventTradeResult",
+    "ManagedTradeResult",
     "PriceBar",
+    "TradeManagementPolicy",
+    "TradeManagementReport",
     "build_promotion_evidence_mapping",
     "load_evaluation_profile",
     "review_backtest_result",
     "run_candidate_pool_equal_weight_benchmark",
     "run_event_backtest",
+    "run_trade_management_backtest",
 ]

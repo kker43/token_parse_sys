@@ -141,7 +141,91 @@ L4 才可以表达：
 回测口径
 ```
 
-## 3. L2 分类标准
+## 3. 研究样本标注标准
+
+研究样本标注必须先使用稳定的样本事件类别，再把细分原因沉淀为 L2/L3 候选语义。
+
+### 3.1 样本事件类别
+
+人工确认样本时，优先使用下表。新增样本不得随手发明近义 `event_class` 或 `value_tier`。
+
+| code | event_class | value_tier | 含义 |
+| ---: | --- | --- | --- |
+| 1 | `positive_attention_high_value` | `high` | 高价值正样本，用于核心口径校准 |
+| 2 | `positive_attention_mid_value` | `mid` | 中价值正样本，可参与召回但需要降权、确认或更强风控 |
+| 3 | `weak_or_excluded_attention` | `low_or_exclude` | 弱样本或排除候选，用于降权和过滤 |
+| 4 | `borderline_negative_recall` | `borderline_negative` | 边界负样本；召回可能有道理，但需要优化确认、风控、等待或退出规则 |
+| 5 | `negative_after_close_recall` | `borderline_negative` | 召回后失败样本，优先进入失败归因，不直接等同入口错误 |
+| 6 | `hard_negative_recall` | `hard_negative` | 硬负样本；入口形态或趋势质量明确失败，适合沉淀排除条件 |
+| 7 | `out_of_family` | `out_of_family` | 有研究价值，但不属于当前形态族 |
+| 8 | `skip_uncertain` | `uncertain` | 证据不足，暂不写入正式样本库 |
+
+允许保留历史样本里的早期标签，例如 `positive_attention`、`positive_attention_best`、`positive_attention_risk_higher`。新增人工标注应向上表收敛；只有周线背景或纯上下文事件可以继续使用 `value_tier = context`。
+
+### 3.2 标注决策规则
+
+人工描述应先映射到固定事件类别：
+
+| 人工判断 | 标准映射 |
+| --- | --- |
+| 高价值、非常好的介入/关注点 | `positive_attention_high_value` / `high` |
+| 中价值、可召回但需要降权或确认 | `positive_attention_mid_value` / `mid` |
+| 形态偏弱、加速后无盘整、短休整、性价比低 | `weak_or_excluded_attention` / `low_or_exclude` |
+| 有一定道理但当前只能等待、需要 W 形/平台/突破确认 | `borderline_negative_recall` / `borderline_negative` |
+| 召回后表现失败，但入口未必完全错 | `negative_after_close_recall` / `borderline_negative` |
+| 明确不应召回、入口形态错误、趋势质量明确失败 | `hard_negative_recall` / `hard_negative` |
+| 不属于当前形态族 | `out_of_family` / `out_of_family` |
+| 看不清、缺日期、缺事实证据 | `skip_uncertain` / `uncertain`，不写入正式样本库 |
+
+示例：
+
+- “高位盘整阶段，目前只能等待，盘整还不够”应标为 `borderline_negative_recall`，原因写入 `structure.high_level_consolidation_wait` 或 `risk.breakout_confirmation_missing`。
+- “V 形太陡，最好等 W 形”应标为 `borderline_negative_recall`，原因写入 `structure.v_shape_rebound_too_steep` 和 `structure.w_base_confirmation_missing`。
+- “不应该被召回，大阳柱后多阴回调”应标为 `hard_negative_recall`，原因写入 `candlestick.single_bull_bar_dominance` 和 `risk.bearish_pullback_after_single_bull_bar`。
+
+### 3.3 细分原因放置规则
+
+`event_class` 和 `value_tier` 只表达样本价值层级，不表达所有细节。
+
+细分原因必须放在：
+
+```text
+derived_l2_candidates
+derived_l3_candidates
+human_interpretation
+l4_implication
+```
+
+不允许为了细节新增近义事件类别，例如：
+
+```text
+wait_uncertain
+wait_for_w_base
+weak_deprioritize
+low_or_deprioritize
+single_bull_false_positive
+```
+
+这些语义应分别进入 L2/L3 候选，例如：
+
+```text
+structure.high_level_consolidation_wait
+structure.w_base_confirmation_missing
+risk.breakout_without_enough_consolidation
+risk_state.single_bull_bar_pullback_recall_false_positive
+```
+
+### 3.4 修改样本库前检查
+
+写入 `configs/research_samples/` 前必须检查：
+
+1. `event_class` 是否能映射到 3.1 的固定表。
+2. `value_tier` 是否与该 `event_class` 匹配。
+3. 如果只是原因更细，是否可以放入 L2/L3 候选，而不是新增事件类别。
+4. 新增 L2/L3 候选是否能归入本文档的 L2/L3 主类。
+5. `skip_uncertain` 不得写入正式样本库，只能留在待审队列或研究备注中。
+
+## 4. L2 分类标准
 
 L2 按 MECE 原则划分为以下主类。每个 L2 原语只能选择一个主类。
 
@@ -166,7 +250,7 @@ L2 按 MECE 原则划分为以下主类。每个 L2 原语只能选择一个主�
 | `context_theme` | 题材/概念/热度环境 | 题材热度是否上升？ | boolean, numeric, category |
 | `risk` | 风险状态 | 是否过热、波动失控、流动性不足？ | boolean, category |
 
-### 3.1 L2 命名规则
+### 4.1 L2 命名规则
 
 ```text
 <category>.<atomic_state_name>
@@ -196,7 +280,7 @@ strategy_selected
 
 原因：这些已经带有策略意图，应放到 L4 或更后面。
 
-### 3.2 L2 注册字段
+### 4.2 L2 注册字段
 
 每个 L2 原语必须记录：
 
@@ -232,7 +316,7 @@ notes
 - `owner`：负责维护的模块或人。
 - `notes`：中文说明。
 
-## 4. L3 分类标准
+## 5. L3 分类标准
 
 L3 按 MECE 原则划分为以下主类。每个 L3 标签只能选择一个主类。
 
@@ -252,7 +336,7 @@ L3 不仅包含技术形态标签。
 L3 也包含基本面画像、环境标签、风险标签、复合准备态标签。
 ```
 
-### 4.1 L3 技术形态类
+### 5.1 L3 技术形态类
 
 主类：
 
@@ -274,7 +358,7 @@ technical_pattern.high_level_distribution
 technical_pattern.exhaustion_after_rally
 ```
 
-### 4.2 L3 基本面画像类
+### 5.2 L3 基本面画像类
 
 主类：
 
@@ -293,7 +377,7 @@ fundamental_profile.valuation_repair
 fundamental_profile.weak_fundamental_risk
 ```
 
-### 4.3 L3 环境类
+### 5.3 L3 环境类
 
 主类：
 
@@ -311,7 +395,7 @@ context_regime.theme_attention_rising
 context_regime.style_small_cap_preferred
 ```
 
-### 4.4 L3 风险类
+### 5.4 L3 风险类
 
 主类：
 
@@ -329,7 +413,7 @@ risk_state.breakout_failure_risk
 risk_state.fundamental_deterioration
 ```
 
-### 4.5 L3 复合准备态类
+### 5.5 L3 复合准备态类
 
 主类：
 
@@ -359,7 +443,7 @@ high_win_rate_strategy
 
 这些属于 L4 策略或 L5 信号。
 
-### 4.6 L3 注册字段
+### 5.6 L3 注册字段
 
 每个 L3 标签必须记录：
 
@@ -393,9 +477,9 @@ notes
 - `owner`：负责维护的模块或人。
 - `notes`：中文说明。
 
-## 5. L2 和 L3 的边界示例
+## 6. L2 和 L3 的边界示例
 
-### 示例一：上升趋势中继盘整突破
+### 6.1 示例一：上升趋势中继盘整突破
 
 L2 原子状态：
 
@@ -422,7 +506,7 @@ L4 策略用法：
 按 volume_liquidity.amount_ratio_20d 排序
 ```
 
-### 示例二：下跌趋势筑底反转
+### 6.2 示例二：下跌趋势筑底反转
 
 L2 原子状态：
 
@@ -441,7 +525,7 @@ L3 语义标签：
 technical_pattern.bottoming_reversal
 ```
 
-### 示例三：低估值筑底修复
+### 6.3 示例三：低估值筑底修复
 
 L2 原子状态：
 
@@ -459,7 +543,7 @@ L3 语义标签：
 composite_setup.low_valuation_bottoming_reversal
 ```
 
-## 6. 候选到批准流程
+## 7. 候选到批准流程
 
 经验类数据必须先研究、再批准、再生产。
 
@@ -493,7 +577,7 @@ L3 标签批准条件：
 - 能区分正样本和反例。
 - 可以从版本化 L2 输出复现。
 
-## 7. 第一阶段建设顺序
+## 8. 第一阶段建设顺序
 
 建议按这个顺序建设：
 

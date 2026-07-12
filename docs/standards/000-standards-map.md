@@ -101,10 +101,11 @@ docs/standards/
 7. 如果有并行会话或文件冲突风险，阅读 `009-parallel-session-delivery-standard.md`。
 8. 如果涉及策略进入 `test_tracking` 或 `active_production`，阅读 `011-strategy-lifecycle-gates.md`。
 9. 如果只是新想法、参考文献或待排期课题，阅读 `012-research-topic-module-spec.md`。
-10. 判断是 topic_backlog、research_only、candidate 还是 production_candidate。
-11. 如果要进入生产，必须运行 production_promotion_review。
-12. 修改 registry 或 workflow 后补测试。
-13. 文档、代码、配置必须同步更新。
+10. 如果涉及研究样本、人工标注、L2 原语候选或 L3 语义标签，阅读 `004-experience-primitive-label-standard.md` 和 `docs/workflows/003-research-sample-accumulation.md`。
+11. 判断是 topic_backlog、research_only、candidate 还是 production_candidate。
+12. 如果要进入生产，必须运行 production_promotion_review。
+13. 修改 registry 或 workflow 后补测试。
+14. 文档、代码、配置必须同步更新。
 ```
 
 当 agent 不确定归属时：
