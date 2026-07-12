@@ -26,10 +26,24 @@ class RecallSubpoolMatch:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class TrendRecallSubpoolPolicy:
+    """Thresholds that define structural recall without signal filters."""
+
+    pullback_min_ma30_hold_ratio_30d: float = 0.75
+    pullback_min_ma30_hold_ratio_60d: float = 0.55
+    early_reversal_min_return_20d: float = 0.05
+    early_reversal_max_return_20d: float = 0.25
+    early_reversal_min_ma30_hold_ratio_30d: float = 0.55
+
+
 def classify_recall_subpools(
     metric: TrendBreakoutMetrics,
+    policy: TrendRecallSubpoolPolicy | None = None,
 ) -> dict[str, RecallSubpoolMatch]:
     """Classify one metric after only the basic liquidity gate."""
+
+    policy = policy or TrendRecallSubpoolPolicy()
 
     subpool_ids = (
         "long_base_breakout",
@@ -50,7 +64,6 @@ def classify_recall_subpools(
         }
 
     volume_score = _volume_score(metric.amount_ratio_prev_20d)
-    severe_shape_reasons = _severe_shape_reasons(metric)
     close_near_high = metric.close_new_high_60d_flag or metric.close_to_high_60d_pct >= -0.04
     results = {
         "long_base_breakout": _decision(
@@ -62,18 +75,16 @@ def classify_recall_subpools(
             ),
             score=volume_score,
             failure_reason="long_base_structure_failed",
-            severe_shape_reasons=severe_shape_reasons,
         ),
         "pullback_reacceleration": _decision(
             "pullback_reacceleration",
             matched=(
                 close_near_high
-                and metric.ma30_hold_ratio_30d >= 0.75
-                and metric.ma30_hold_ratio_60d >= 0.55
+                and metric.ma30_hold_ratio_30d >= policy.pullback_min_ma30_hold_ratio_30d
+                and metric.ma30_hold_ratio_60d >= policy.pullback_min_ma30_hold_ratio_60d
             ),
             score=volume_score + 1.0,
             failure_reason="recent_ma30_support_failed",
-            severe_shape_reasons=severe_shape_reasons,
         ),
         "ma10_ma20_walkup": _decision(
             "ma10_ma20_walkup",
@@ -86,26 +97,26 @@ def classify_recall_subpools(
             ),
             score=volume_score + 1.0,
             failure_reason="ma10_ma20_walkup_failed",
-            severe_shape_reasons=severe_shape_reasons,
         ),
         "trend_following": _decision(
             "trend_following",
             matched=metric.steady_uptrend or metric.ma30_hold_ratio_90d >= 0.75,
             score=volume_score + (2.0 if metric.ma30_hold_ratio_90d >= 0.75 else 0.0),
             failure_reason="mature_trend_quality_failed",
-            severe_shape_reasons=severe_shape_reasons,
         ),
         "early_reversal": _decision(
             "early_reversal",
             matched=(
                 not metric.close_new_high_60d_flag
                 and metric.ma20_slope_20d > 0
-                and 0.08 <= metric.return_20d <= 0.25
-                and metric.ma30_hold_ratio_30d >= 0.55
+                and policy.early_reversal_min_return_20d
+                <= metric.return_20d
+                <= policy.early_reversal_max_return_20d
+                and metric.ma30_hold_ratio_30d
+                >= policy.early_reversal_min_ma30_hold_ratio_30d
             ),
             score=volume_score,
             failure_reason="early_reversal_confirmation_failed",
-            severe_shape_reasons=severe_shape_reasons,
         ),
     }
     return results
@@ -121,14 +132,12 @@ def _decision(
     matched: bool,
     score: float,
     failure_reason: str,
-    severe_shape_reasons: tuple[str, ...],
 ) -> RecallSubpoolMatch:
-    reasons = severe_shape_reasons if severe_shape_reasons else (() if matched else (failure_reason,))
     return RecallSubpoolMatch(
         subpool_id=subpool_id,
-        matched=matched and not severe_shape_reasons,
+        matched=matched,
         score_adjustment=round(score, 4),
-        reasons=reasons,
+        reasons=() if matched else (failure_reason,),
     )
 
 
@@ -138,21 +147,3 @@ def _volume_score(amount_ratio_prev_20d: float) -> float:
     if amount_ratio_prev_20d >= 1.0:
         return 1.0
     return -1.0
-
-
-def _severe_shape_reasons(metric: TrendBreakoutMetrics) -> tuple[str, ...]:
-    reasons: list[str] = []
-    if (
-        metric.long_shadow_ratio_20d >= 0.55
-        and metric.large_bearish_body_ratio_20d >= 0.30
-        and metric.ma30_hold_ratio_30d < 0.90
-        and metric.ma30_deviation_pct >= 0.10
-    ):
-        reasons.append("noisy_ma30_breakdown_rebound")
-    if metric.large_bearish_body_ratio_20d > 0.30:
-        reasons.append("large_bearish_pullback_cluster")
-    if metric.single_bull_bar_return_share_20d > 0.50 and metric.impulse_consolidation_days < 5:
-        reasons.append("steep_v_shape_without_base")
-    if metric.return_20d > 0.30 and metric.impulse_consolidation_days < 5:
-        reasons.append("acceleration_without_rest")
-    return tuple(reasons)

@@ -1,7 +1,10 @@
 from types import SimpleNamespace
 import unittest
 
-from stock_lobster.research.trend_recall_subpools import classify_recall_subpools
+from stock_lobster.research.trend_recall_subpools import (
+    TrendRecallSubpoolPolicy,
+    classify_recall_subpools,
+)
 
 
 class TrendRecallSubpoolsTest(unittest.TestCase):
@@ -47,7 +50,7 @@ class TrendRecallSubpoolsTest(unittest.TestCase):
         self.assertTrue(all(not match.matched for match in result.values()))
         self.assertTrue(all("basic_liquidity_failed" in match.reasons for match in result.values()))
 
-    def test_noisy_rebound_after_ma30_break_blocks_every_subpool(self) -> None:
+    def test_signal_stage_shape_risk_does_not_delete_recall_match(self) -> None:
         result = classify_recall_subpools(
             _metric(
                 long_shadow_ratio_20d=0.57,
@@ -57,10 +60,23 @@ class TrendRecallSubpoolsTest(unittest.TestCase):
             )
         )
 
-        self.assertTrue(all(not match.matched for match in result.values()))
+        self.assertTrue(any(match.matched for match in result.values()))
         self.assertTrue(
-            all("noisy_ma30_breakdown_rebound" in match.reasons for match in result.values())
+            all("noisy_ma30_breakdown_rebound" not in match.reasons for match in result.values())
         )
+
+    def test_early_reversal_uses_configured_return_floor(self) -> None:
+        below = classify_recall_subpools(
+            _metric(return_20d=0.049, close_new_high_60d_flag=False),
+            policy=TrendRecallSubpoolPolicy(early_reversal_min_return_20d=0.05),
+        )
+        boundary = classify_recall_subpools(
+            _metric(return_20d=0.05, close_new_high_60d_flag=False),
+            policy=TrendRecallSubpoolPolicy(early_reversal_min_return_20d=0.05),
+        )
+
+        self.assertFalse(below["early_reversal"].matched)
+        self.assertTrue(boundary["early_reversal"].matched)
 
 
 def _metric(**overrides: object) -> SimpleNamespace:
