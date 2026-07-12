@@ -49,7 +49,6 @@ class SteadyUptrendV3Policy:
     max_ma30_deviation_pct: float | None = None
     max_single_bull_bar_return_share_20d: float | None = None
     top_n_per_date: int | None = 20
-    cooldown_trade_days: int = 10
     blocked_context_names: tuple[str, ...] = ()
     post_rank_no_refill_rejection_reasons: tuple[str, ...] = ()
     fading_concept_names: tuple[str, ...] = ("算力租赁", "数据中心", "储能", "华为概念")
@@ -77,7 +76,6 @@ class SteadyUptrendV3Policy:
             "max_ma30_deviation_pct": self.max_ma30_deviation_pct,
             "max_single_bull_bar_return_share_20d": self.max_single_bull_bar_return_share_20d,
             "top_n_per_date": self.top_n_per_date,
-            "cooldown_trade_days": self.cooldown_trade_days,
             "blocked_context_names": list(self.blocked_context_names),
             "post_rank_no_refill_rejection_reasons": list(self.post_rank_no_refill_rejection_reasons),
             "fading_concept_names": list(self.fading_concept_names),
@@ -347,9 +345,7 @@ def _rank_with_limits(
         by_date[candidate.trade_date].append(candidate)
 
     date_order = _date_order(by_date.keys(), trade_date_order)
-    date_index = {trade_date: index for index, trade_date in enumerate(date_order)}
     selected: list[TrendBreakoutMetrics] = []
-    last_selected_index_by_asset: dict[str, int] = {}
     for trade_date in date_order:
         date_candidates = sorted(
             by_date.get(trade_date, ()),
@@ -365,14 +361,6 @@ def _rank_with_limits(
         )
         considered_on_date = 0
         for candidate in date_candidates:
-            current_index = date_index[candidate.trade_date]
-            last_index = last_selected_index_by_asset.get(candidate.asset_id)
-            if (
-                last_index is not None
-                and policy.cooldown_trade_days > 0
-                and current_index - last_index <= policy.cooldown_trade_days
-            ):
-                continue
             considered_on_date += 1
             if _has_post_rank_no_refill_rejection(
                 candidate,
@@ -383,7 +371,6 @@ def _rank_with_limits(
                     break
                 continue
             selected.append(candidate)
-            last_selected_index_by_asset[candidate.asset_id] = current_index
             if policy.top_n_per_date is not None and considered_on_date >= policy.top_n_per_date:
                 break
     return tuple(selected)

@@ -185,7 +185,7 @@ AND not waiting_for_consolidation
 AND signal confirmation available
 -> v3 score
 -> market regime limit
--> cooldown
+-> 每日独立排序（同股可连续入选）
 -> daily TopN
 -> post-rank no-refill risk removal
 ```

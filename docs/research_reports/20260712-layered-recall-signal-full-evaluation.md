@@ -12,6 +12,7 @@
 - 历史输入：24 个已标注事件日期的全市场发布 context，日期范围 `20260105-20260707`。
 - K 线：`qfq_asof`，日线包含原始 `volume`；成交额单位为 `thousand_cny`。
 - 活跃度：普通窗口使用 `volume_ratio_5d_20d`；20 日内发生除权时使用 `turnover_ratio_5d_20d`。
+- 跨日选择：每日独立执行 TopN，同一股票可以在连续交易日入选。
 - 24 日期 context 共 131,815 行，`turnover_ratio` 缺失 423 行，`adj_factor_changed=1` 共 17,761 行。
 - 交易口径：信号后第 1 个交易日开盘买入，持有 H5/H10，退出日收盘卖出。
 - 本轮是 24 个固定研究日期的横截面验证，不是连续逐日、滚动样本外回测。
@@ -89,4 +90,3 @@ candidate_v4 Top3 的 H5 月度表现：202601 `3.43%/41.67%`，202602 `2.87%/10
 - `runtime/strategy_effect_eval/20260712_history/pre_breakout_v3_1_24_dates.json`
 - `runtime/strategy_effect_eval/20260712_history/v3_1_signal_h5_h10.json`
 - `runtime/strategy_effect_eval/20260712_history/v3_1_observation_h5_h10.json`
-

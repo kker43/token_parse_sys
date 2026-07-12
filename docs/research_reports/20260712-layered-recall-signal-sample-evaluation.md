@@ -8,8 +8,8 @@
 - candidate_v4 不把量比作为召回硬门槛；除权窗口改用 `turnover_ratio_5d_20d`，两者都缺失时只阻止最终信号。
 - `amount_ratio_20d`：包含当日的 20 日成交额均值，仅用于诊断和评分。
 - `amount_ratio_prev_20d`：不含当日的前 20 日成交额均值，仅用于诊断和评分。
-- v3/v3.1 为静态门槛结果，不包含跨日 cooldown 和全市场 TopN 位置。
-- candidate_v4 的 `final_signal` 为样本事件集合内的动态 TopN、cooldown 和 no-refill 结果，不替代全市场回测。
+- v3/v3.1 为静态门槛结果，不包含全市场 TopN 位置。
+- candidate_v4 的 `final_signal` 为样本事件集合内的每日动态 TopN 和 no-refill 结果；同股可连续交易日入选，不替代全市场回测。
 
 ## 策略结果
 
@@ -22,7 +22,7 @@
 | `pre_breakout_v3_1` | 0/23 | 1/4 |
 | `trend_recall_subpools_candidate_v1` | 20/23 | 2/4 |
 | `candidate_v4_recall_union` | 20/23 | 2/4 |
-| `candidate_v4_final_signal` | 14/23 | 0/4 |
+| `candidate_v4_final_signal` | 17/23 | 0/4 |
 
 ## pre_breakout_v1 正样本首阻断
 
@@ -56,19 +56,19 @@
 
 | 变体 | 正样本召回 | 硬负样本最终信号 | 全样本最终信号 |
 | --- | ---: | ---: | ---: |
-| `early_reversal_floor_0.03` | 20 | 0 | 16 |
-| `early_reversal_floor_0.05` | 20 | 0 | 16 |
-| `early_reversal_floor_0.08` | 19 | 0 | 15 |
-| `pullback_ma30_0.75_0.55` | 20 | 0 | 16 |
-| `pullback_ma30_0.55_0.55` | 21 | 0 | 17 |
-| `long_base_volume_bonus_1.0` | 20 | 0 | 16 |
-| `long_base_volume_bonus_1.1` | 20 | 0 | 16 |
-| `long_base_volume_bonus_1.2` | 20 | 0 | 16 |
-| `overextended_0.50_0.16` | 20 | 0 | 16 |
-| `overextended_0.60_0.18` | 20 | 0 | 16 |
-| `overextended_0.70_0.20` | 20 | 0 | 17 |
-| `post_impulse_min_return_0.04` | 20 | 0 | 16 |
-| `post_impulse_min_return_0.05` | 20 | 0 | 16 |
-| `post_impulse_min_return_0.06` | 20 | 0 | 16 |
+| `early_reversal_floor_0.03` | 20 | 0 | 19 |
+| `early_reversal_floor_0.05` | 20 | 0 | 19 |
+| `early_reversal_floor_0.08` | 19 | 0 | 18 |
+| `pullback_ma30_0.75_0.55` | 20 | 0 | 19 |
+| `pullback_ma30_0.55_0.55` | 21 | 0 | 20 |
+| `long_base_volume_bonus_1.0` | 20 | 0 | 19 |
+| `long_base_volume_bonus_1.1` | 20 | 0 | 19 |
+| `long_base_volume_bonus_1.2` | 20 | 0 | 19 |
+| `overextended_0.50_0.16` | 20 | 0 | 19 |
+| `overextended_0.60_0.18` | 20 | 0 | 19 |
+| `overextended_0.70_0.20` | 20 | 0 | 20 |
+| `post_impulse_min_return_0.04` | 20 | 0 | 19 |
+| `post_impulse_min_return_0.05` | 20 | 0 | 19 |
+| `post_impulse_min_return_0.06` | 20 | 0 | 19 |
 
 明细见 `20260712-layered-recall-signal-sample-evaluation.csv`。

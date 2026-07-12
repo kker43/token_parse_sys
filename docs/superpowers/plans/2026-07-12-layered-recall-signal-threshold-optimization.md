@@ -452,8 +452,7 @@ The config must include:
     "long_base_volume_bonus_threshold": 1.1,
     "weak_market_breadth_ma20_threshold": 0.35,
     "weak_market_top_n": 2,
-    "normal_market_top_n": 5,
-    "cooldown_trade_days": 10
+    "normal_market_top_n": 3
   }
 }
 ```

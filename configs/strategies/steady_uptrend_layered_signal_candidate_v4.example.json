@@ -29,7 +29,6 @@
     "weak_market_breadth_ma20_threshold": 0.35,
     "weak_market_top_n": 2,
     "normal_market_top_n": 3,
-    "cooldown_trade_days": 10,
     "acceleration_min_return_20d": 0.3,
     "acceleration_min_consolidation_days": 5,
     "overextended_min_return_20d": 0.6,
