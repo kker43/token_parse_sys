@@ -13,12 +13,38 @@ from stock_lobster.research import (
     TrendBreakoutScanPolicy,
     scan_trend_breakouts,
     select_candidates,
+    read_kline_tsv,
     read_stock_signal_context_tsv,
     summarize_breakout_scan,
 )
 
 
 class TrendBreakoutScanTest(unittest.TestCase):
+    def test_reads_optional_kline_volume_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "kline.tsv"
+            path.write_text(
+                "000001.SZ\t20260710\t10\t11\t9\t10.5\t200000\t3000\n",
+                encoding="utf-8",
+            )
+
+            bar = read_kline_tsv(path)[0]
+
+        self.assertEqual(200000.0, bar.amount)
+        self.assertEqual(3000.0, bar.volume)
+
+    def test_old_kline_without_volume_stays_readable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "kline.tsv"
+            path.write_text(
+                "000001.SZ\t20260710\t10\t11\t9\t10.5\t200000\n",
+                encoding="utf-8",
+            )
+
+            bar = read_kline_tsv(path)[0]
+
+        self.assertIsNone(bar.volume)
+
     def test_amount_ratio_prev_20d_excludes_signal_day(self) -> None:
         bars = _daily_breakout_bars("000099.SZ")
         previous_average = sum(bar.amount for bar in bars[-21:-1]) / 20
@@ -349,6 +375,21 @@ class TrendBreakoutScanTest(unittest.TestCase):
         self.assertFalse(contexts[0].strong_concept_hit)
         self.assertEqual(("半导体",), contexts[0].strong_industry_names)
         self.assertEqual(1.25, contexts[0].volume_ratio_5d_20d)
+
+    def test_reads_layered_volume_confirmation_context_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "context.tsv"
+            path.write_text(
+                "asset_id\ttrade_date\tmax_volume_ratio_5d_20d\tturnover_ratio_5d_20d\tadj_factor_changed_20d\n"
+                "000001.SZ\t20260710\t2.13\t1.29\t1.00000000\n",
+                encoding="utf-8",
+            )
+
+            context = read_stock_signal_context_tsv(path)[0]
+
+        self.assertEqual(2.13, context.max_volume_ratio_5d_20d)
+        self.assertEqual(1.29, context.turnover_ratio_5d_20d)
+        self.assertTrue(context.adj_factor_changed_20d)
 
     def test_select_candidates_limits_top_n_per_date_by_setup_score(self) -> None:
         candidates = (

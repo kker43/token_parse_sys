@@ -23,6 +23,7 @@ class KlineBar:
     low: float
     close: float
     amount: float
+    volume: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,6 +241,9 @@ class StockSignalContext:
     strong_industry_names: tuple[str, ...] = ()
     strong_concept_names: tuple[str, ...] = ()
     volume_ratio_5d_20d: float | None = None
+    max_volume_ratio_5d_20d: float | None = None
+    turnover_ratio_5d_20d: float | None = None
+    adj_factor_changed_20d: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,7 +267,11 @@ def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
-        asset_id, trade_date, open_value, high, low, close, amount = line.split("\t")
+        values = line.split("\t")
+        if len(values) not in {7, 8}:
+            raise ValueError(f"kline TSV row must have 7 or 8 columns, got {len(values)}")
+        asset_id, trade_date, open_value, high, low, close, amount = values[:7]
+        volume = values[7] if len(values) == 8 else None
         bars.append(
             KlineBar(
                 asset_id=asset_id,
@@ -273,6 +281,7 @@ def read_kline_tsv(path: str | Path) -> tuple[KlineBar, ...]:
                 low=float(low),
                 close=float(close),
                 amount=float(amount),
+                volume=_optional_float(volume),
             )
         )
     return tuple(bars)
@@ -308,6 +317,7 @@ def adjust_bars_to_qfq_asof(
                 low=bar.low * ratio,
                 close=bar.close * ratio,
                 amount=bar.amount,
+                volume=bar.volume,
             )
         )
     if missing:
@@ -339,6 +349,9 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
         "strong_industry_names",
         "strong_concept_names",
         "volume_ratio_5d_20d",
+        "max_volume_ratio_5d_20d",
+        "turnover_ratio_5d_20d",
+        "adj_factor_changed_20d",
     )
     has_header = rows[0].split("\t")[0] in {"asset_id", "ts_code"}
     if has_header:
@@ -370,6 +383,9 @@ def read_stock_signal_context_tsv(path: str | Path) -> tuple[StockSignalContext,
                 strong_industry_names=_split_names(row.get("strong_industry_names")),
                 strong_concept_names=_split_names(row.get("strong_concept_names")),
                 volume_ratio_5d_20d=_optional_float(row.get("volume_ratio_5d_20d")),
+                max_volume_ratio_5d_20d=_optional_float(row.get("max_volume_ratio_5d_20d")),
+                turnover_ratio_5d_20d=_optional_float(row.get("turnover_ratio_5d_20d")),
+                adj_factor_changed_20d=_truthy(row.get("adj_factor_changed_20d")),
             )
         )
     return tuple(contexts)
@@ -1088,7 +1104,13 @@ def _optional_float(value: object) -> float | None:
 def _truthy(value: object) -> bool:
     if value is None:
         return False
-    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+    text = str(value).strip().lower()
+    if text in {"true", "yes", "y"}:
+        return True
+    try:
+        return float(text) != 0
+    except ValueError:
+        return False
 
 
 def _split_names(value: object) -> tuple[str, ...]:

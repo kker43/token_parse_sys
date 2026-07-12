@@ -331,7 +331,7 @@ def _fetch_kline_rows(
         return _fetch_rows(
             connection,
             f"""
-            SELECT ts_code, trade_date, open, high, low, close, amount
+            SELECT ts_code, trade_date, open, high, low, close, amount, vol
             FROM {table_name}
             WHERE trade_date BETWEEN %s AND %s
             ORDER BY ts_code, trade_date
@@ -350,7 +350,8 @@ def _fetch_kline_rows(
           k.high * f.adj_factor / anchor.adj_factor AS high,
           k.low * f.adj_factor / anchor.adj_factor AS low,
           k.close * f.adj_factor / anchor.adj_factor AS close,
-          k.amount
+          k.amount,
+          k.vol
         FROM {table_name} k
         JOIN stock_adj_factor_daily f
           ON f.ts_code = k.ts_code
@@ -387,6 +388,9 @@ def _export_stock_context(*, connection: Any, trade_date: str, output_path: Path
             "strong_industry_names",
             "strong_concept_names",
             "volume_ratio_5d_20d",
+            "max_volume_ratio_5d_20d",
+            "turnover_ratio_5d_20d",
+            "adj_factor_changed_20d",
         ),
     )
 
@@ -558,10 +562,18 @@ amount_20d AS (
 published_volume_ratio AS (
   SELECT
     asset_id,
-    MAX(indicator_value) AS volume_ratio_5d_20d
+    MAX(CASE WHEN indicator_name = 'volume_ratio_5d_20d' THEN indicator_value END) AS volume_ratio_5d_20d,
+    MAX(CASE WHEN indicator_name = 'max_volume_ratio_5d_20d' THEN indicator_value END) AS max_volume_ratio_5d_20d,
+    MAX(CASE WHEN indicator_name = 'turnover_ratio_5d_20d' THEN indicator_value END) AS turnover_ratio_5d_20d,
+    MAX(CASE WHEN indicator_name = 'adj_factor_changed_20d' THEN indicator_value END) AS adj_factor_changed_20d
   FROM pub_stock_daily_indicator
   WHERE trade_date = {signal_expr}
-    AND indicator_name = 'volume_ratio_5d_20d'
+    AND indicator_name IN (
+      'volume_ratio_5d_20d',
+      'max_volume_ratio_5d_20d',
+      'turnover_ratio_5d_20d',
+      'adj_factor_changed_20d'
+    )
     AND indicator_version = 'legacy_v1'
     AND params_hash = 'default'
   GROUP BY asset_id
@@ -582,7 +594,10 @@ SELECT
   COALESCE(m.strong_concept_hit, 0) AS strong_concept_hit,
   COALESCE(m.strong_industry_names, '') AS strong_industry_names,
   COALESCE(m.strong_concept_names, '') AS strong_concept_names,
-  vr.volume_ratio_5d_20d
+  vr.volume_ratio_5d_20d,
+  vr.max_volume_ratio_5d_20d,
+  vr.turnover_ratio_5d_20d,
+  COALESCE(vr.adj_factor_changed_20d, 0) AS adj_factor_changed_20d
 FROM token_daily_basic db
 JOIN token_stock_basic b ON b.ts_code = db.ts_code AND b.update_date = {signal_expr}
 LEFT JOIN turnover_20d t ON t.ts_code = db.ts_code
