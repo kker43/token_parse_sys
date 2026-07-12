@@ -8,10 +8,14 @@ import math
 import unittest
 
 from stock_lobster.research.steady_uptrend_s1_s5_mvp import (
+    StageDecision,
+    SteadyUptrendMvpCandidate,
     SteadyUptrendMvpPolicy,
+    build_steady_uptrend_mvp_report,
     evaluate_stability_refinement,
     evaluate_structure_recall,
     evaluate_steady_uptrend_mvp,
+    ma20_deviation_level,
 )
 from stock_lobster.research.trend_breakout_scan import KlineBar, StockSignalContext
 
@@ -286,6 +290,87 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
         self.assertEqual(3, decision.metrics["extreme_bearish_days_10d"])
         self.assertIn("frequent_extreme_bearish_days_10d", decision.blockers)
 
+    def test_s5_accepts_either_strong_industry_or_strong_concept(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35)
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+        context = replace(
+            _context("301217.SZ", daily[-1].trade_date),
+            strong_industry_hit=False,
+            strong_concept_hit=True,
+        )
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            context,
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertTrue(result.stages["s5_entry_selection"].passed)
+        self.assertIn("ma20_deviation_pct", result.metrics)
+        self.assertIn("ma20_deviation_level", result.metrics)
+
+    def test_s5_rejects_when_neither_context_is_strong(self) -> None:
+        daily = _rising_bars("301217.SZ", 150, step=0.35)
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+        context = replace(
+            _context("301217.SZ", daily[-1].trade_date),
+            strong_industry_hit=False,
+            strong_concept_hit=False,
+        )
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            context,
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertEqual(
+            ("context_strength_unavailable",),
+            result.stages["s5_entry_selection"].blockers,
+        )
+
+    def test_ma20_deviation_boundaries_enter_the_higher_level(self) -> None:
+        self.assertEqual("normal", ma20_deviation_level(0.199999))
+        self.assertEqual("20", ma20_deviation_level(0.20))
+        self.assertEqual("30", ma20_deviation_level(0.30))
+        self.assertEqual("40", ma20_deviation_level(0.40))
+        self.assertEqual("50", ma20_deviation_level(0.50))
+        self.assertEqual("50", ma20_deviation_level(0.80))
+
+    def test_report_groups_once_by_industry_and_sorts_as_approved(self) -> None:
+        candidates = (
+            _entry_candidate("000003.SZ", "丙", "半导体", 0.08, True, ("光刻机",)),
+            _entry_candidate("000002.SZ", "乙", "半导体", 0.06, True, ()),
+            _entry_candidate("000001.SZ", "甲", "半导体", 0.04, False, ("先进封装",)),
+            _entry_candidate("000004.SZ", "丁", "电子元件", 0.03, True, ("消费电子",)),
+            _entry_candidate("000005.SZ", "戊", "电子元件", 0.02, False, ("铜箔",)),
+            _entry_candidate("000006.SZ", "己", "有色金属", 0.01, True, ()),
+        )
+
+        report = build_steady_uptrend_mvp_report(
+            candidates,
+            strategy_id="steady_uptrend_s1_s5_mvp_candidate_v1",
+            run_id="test-run",
+            signal_date="20260710",
+            data_dependency_versions={"daily": "fixture-v1"},
+        )
+
+        self.assertEqual(
+            ["半导体", "电子元件", "有色金属"],
+            [group["industry"] for group in report["industry_groups"]],
+        )
+        semiconductor = report["industry_groups"][0]
+        self.assertEqual(
+            ["000002.SZ", "000003.SZ", "000001.SZ"],
+            [stock["asset_id"] for stock in semiconductor["stocks"]],
+        )
+        self.assertEqual(6, report["stage_counts"]["s5_entry_selection"]["passed"])
+        self.assertEqual(6, len(report["candidates"]))
+        self.assertEqual(6, report["markdown"].count("（偏离"))
+        self.assertNotIn("概念：；", report["markdown"])
+
 
 def _rising_bars(
     asset_id: str,
@@ -375,6 +460,53 @@ def _noisy_shadow_bars(asset_id: str) -> tuple[KlineBar, ...]:
             low=bar.close - 0.8,
         )
     return tuple(bars)
+
+
+def _entry_candidate(
+    asset_id: str,
+    name: str,
+    industry: str,
+    deviation: float,
+    strong_industry_hit: bool,
+    concepts: tuple[str, ...],
+) -> SteadyUptrendMvpCandidate:
+    stages = {
+        stage: StageDecision(True, True)
+        for stage in (
+            "s1_quality_filter",
+            "s2_mature_trend_filter",
+            "s3_structure_recall",
+            "s4_stability_refinement",
+            "s5_entry_selection",
+        )
+    }
+    context = StockSignalContext(
+        asset_id=asset_id,
+        trade_date="20260710",
+        name=name,
+        industry=industry,
+        market="主板",
+        list_status="L",
+        total_mv=1_200_000.0,
+        avg_amount_20d=300_000.0,
+        strong_industry_hit=strong_industry_hit,
+        strong_concept_hit=bool(concepts),
+        strong_industry_names=(industry,) if strong_industry_hit else (),
+        strong_concept_names=concepts,
+    )
+    return SteadyUptrendMvpCandidate(
+        asset_id=asset_id,
+        signal_date="20260710",
+        context=context,
+        stages=stages,
+        metrics={
+            "close": 100.0 * (1 + deviation),
+            "ma20": 100.0,
+            "ma20_deviation_pct": deviation,
+            "ma20_deviation_level": ma20_deviation_level(deviation),
+        },
+        matched_structures=("s3_c_steady_ma",),
+    )
 
 
 def _with_close(bar: KlineBar, close: float) -> KlineBar:

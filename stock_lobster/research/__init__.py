@@ -78,9 +78,11 @@ from stock_lobster.research.steady_uptrend_s1_s5_mvp import (
     SteadyUptrendMvpCandidate,
     SteadyUptrendMvpPolicy,
     StructureRecallDecision,
+    build_steady_uptrend_mvp_report,
     evaluate_stability_refinement,
     evaluate_steady_uptrend_mvp,
     evaluate_structure_recall,
+    ma20_deviation_level,
 )
 
 __all__ = [
@@ -147,7 +149,9 @@ __all__ = [
     "SteadyUptrendMvpCandidate",
     "SteadyUptrendMvpPolicy",
     "StructureRecallDecision",
+    "build_steady_uptrend_mvp_report",
     "evaluate_stability_refinement",
     "evaluate_steady_uptrend_mvp",
     "evaluate_structure_recall",
+    "ma20_deviation_level",
 ]

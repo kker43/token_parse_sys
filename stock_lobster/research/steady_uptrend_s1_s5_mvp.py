@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from collections import Counter, defaultdict
 from typing import Iterable, Mapping
 
 from stock_lobster.research.trend_breakout_scan import KlineBar, StockSignalContext
@@ -45,7 +46,7 @@ class SteadyUptrendMvpCandidate:
     signal_date: str
     context: StockSignalContext | None
     stages: Mapping[str, StageDecision]
-    metrics: Mapping[str, float | int | bool | None] = field(default_factory=dict)
+    metrics: Mapping[str, float | int | bool | str | None] = field(default_factory=dict)
     matched_structures: tuple[str, ...] = ()
 
 
@@ -133,6 +134,32 @@ def evaluate_steady_uptrend_mvp(
         stability.passed,
         stability.blockers,
     )
+    if not stability.passed:
+        return SteadyUptrendMvpCandidate(
+            asset_id,
+            signal_date,
+            context,
+            stages,
+            metrics,
+            structure.matched_structures,
+        )
+
+    s5_blockers: list[str] = []
+    if context is None or not (context.strong_industry_hit or context.strong_concept_hit):
+        s5_blockers.append("context_strength_unavailable")
+    close = float(metrics["close"] or 0)
+    ma20 = float(metrics["ma20"] or 0)
+    if ma20 <= 0:
+        s5_blockers.append("ma20_deviation_unavailable")
+    else:
+        deviation = close / ma20 - 1
+        metrics["ma20_deviation_pct"] = deviation
+        metrics["ma20_deviation_level"] = ma20_deviation_level(deviation)
+    stages["s5_entry_selection"] = StageDecision(
+        True,
+        not s5_blockers,
+        tuple(s5_blockers),
+    )
     return SteadyUptrendMvpCandidate(
         asset_id,
         signal_date,
@@ -141,6 +168,162 @@ def evaluate_steady_uptrend_mvp(
         metrics,
         structure.matched_structures,
     )
+
+
+def ma20_deviation_level(deviation_pct: float) -> str:
+    """Map MA20 deviation to the approved non-filtering alert level."""
+
+    if deviation_pct >= 0.50:
+        return "50"
+    if deviation_pct >= 0.40:
+        return "40"
+    if deviation_pct >= 0.30:
+        return "30"
+    if deviation_pct >= 0.20:
+        return "20"
+    return "normal"
+
+
+def build_steady_uptrend_mvp_report(
+    evaluations: Iterable[SteadyUptrendMvpCandidate],
+    *,
+    strategy_id: str,
+    run_id: str,
+    signal_date: str,
+    data_dependency_versions: Mapping[str, str],
+) -> dict[str, object]:
+    """Build deterministic audit output and an industry-grouped Markdown view."""
+
+    items = tuple(sorted(evaluations, key=lambda item: item.asset_id))
+    stage_counts = {
+        stage: {
+            "input": sum(item.stages[stage].evaluated for item in items),
+            "passed": sum(item.stages[stage].passed for item in items),
+            "rejected": sum(
+                item.stages[stage].evaluated and not item.stages[stage].passed
+                for item in items
+            ),
+        }
+        for stage in _STAGE_NAMES
+    }
+    blocker_counts: Counter[str] = Counter()
+    evaluation_rows: list[dict[str, object]] = []
+    final_rows: list[dict[str, object]] = []
+    for item in items:
+        blockers = tuple(
+            blocker
+            for stage in _STAGE_NAMES
+            for blocker in item.stages[stage].blockers
+        )
+        blocker_counts.update(blockers)
+        first_blocking_stage = next(
+            (
+                stage
+                for stage in _STAGE_NAMES
+                if item.stages[stage].evaluated and not item.stages[stage].passed
+            ),
+            None,
+        )
+        row = _candidate_mapping(item, blockers, first_blocking_stage)
+        evaluation_rows.append(row)
+        if item.stages["s5_entry_selection"].passed:
+            final_rows.append(row)
+
+    by_industry: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for row in final_rows:
+        by_industry[str(row["industry"] or "未分类")].append(row)
+    industry_groups: list[dict[str, object]] = []
+    for industry, stocks in by_industry.items():
+        stocks.sort(
+            key=lambda row: (
+                not bool(row["strong_industry_hit"]),
+                float(row["ma20_deviation_pct"]),
+                str(row["asset_id"]),
+            )
+        )
+        industry_groups.append(
+            {
+                "industry": industry,
+                "strong_industry_candidate_count": sum(
+                    bool(stock["strong_industry_hit"]) for stock in stocks
+                ),
+                "candidate_count": len(stocks),
+                "stocks": stocks,
+            }
+        )
+    industry_groups.sort(
+        key=lambda group: (
+            -int(group["strong_industry_candidate_count"]),
+            -int(group["candidate_count"]),
+            str(group["industry"]),
+        )
+    )
+    ordered_final_rows = [
+        stock
+        for group in industry_groups
+        for stock in group["stocks"]  # type: ignore[union-attr]
+    ]
+    markdown = _render_industry_markdown(industry_groups)
+    return {
+        "strategy_id": strategy_id,
+        "run_id": run_id,
+        "signal_date": signal_date,
+        "data_dependency_versions": dict(sorted(data_dependency_versions.items())),
+        "stage_counts": stage_counts,
+        "blocker_counts": dict(sorted(blocker_counts.items())),
+        "evaluations": evaluation_rows,
+        "candidates": ordered_final_rows,
+        "industry_groups": industry_groups,
+        "markdown": markdown,
+    }
+
+
+def _candidate_mapping(
+    item: SteadyUptrendMvpCandidate,
+    blockers: tuple[str, ...],
+    first_blocking_stage: str | None,
+) -> dict[str, object]:
+    context = item.context
+    return {
+        "trade_date": item.signal_date,
+        "asset_id": item.asset_id,
+        "name": context.name if context else "",
+        "industry": context.industry if context else "",
+        "matched_structures": list(item.matched_structures),
+        "strong_industry_hit": context.strong_industry_hit if context else False,
+        "strong_industry_names": list(context.strong_industry_names) if context else [],
+        "strong_concept_hit": context.strong_concept_hit if context else False,
+        "strong_concept_names": list(context.strong_concept_names) if context else [],
+        "close": item.metrics.get("close"),
+        "ma20": item.metrics.get("ma20"),
+        "ma20_deviation_pct": item.metrics.get("ma20_deviation_pct"),
+        "ma20_deviation_level": item.metrics.get("ma20_deviation_level"),
+        "s1_pass": item.stages["s1_quality_filter"].passed,
+        "s2_pass": item.stages["s2_mature_trend_filter"].passed,
+        "s3_pass": item.stages["s3_structure_recall"].passed,
+        "s4_pass": item.stages["s4_stability_refinement"].passed,
+        "s5_pass": item.stages["s5_entry_selection"].passed,
+        "first_blocking_stage": first_blocking_stage,
+        "blockers": list(blockers),
+        "metrics": dict(item.metrics),
+    }
+
+
+def _render_industry_markdown(industry_groups: list[dict[str, object]]) -> str:
+    lines: list[str] = []
+    for group in industry_groups:
+        lines.append(f"{group['industry']}：")
+        for stock in group["stocks"]:  # type: ignore[union-attr]
+            deviation = float(stock["ma20_deviation_pct"])
+            level = str(stock["ma20_deviation_level"])
+            level_text = "正常" if level == "normal" else f"{level} 级"
+            concepts = tuple(stock["strong_concept_names"])
+            suffix = f"；概念：{'、'.join(concepts)}" if concepts else ""
+            lines.append(
+                f"{stock['name']}（偏离 {deviation * 100:.1f}%，{level_text}{suffix}）"
+            )
+        lines.append("")
+    return "\n".join(lines).rstrip() + ("\n" if lines else "")
 
 
 def evaluate_stability_refinement(
