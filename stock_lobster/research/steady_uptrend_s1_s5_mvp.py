@@ -149,6 +149,11 @@ def evaluate_steady_uptrend_mvp(
     if context is None or not (context.strong_industry_hit or context.strong_concept_hit):
         s5_blockers.append("context_strength_unavailable")
     close = float(metrics["close"] or 0)
+    ma5 = float(metrics["ma5"] or 0)
+    if ma5 <= 0:
+        s5_blockers.append("ma5_entry_unavailable")
+    elif close <= ma5:
+        s5_blockers.append("close_not_above_ma5")
     ma20 = float(metrics["ma20"] or 0)
     if ma20 <= 0:
         s5_blockers.append("ma20_deviation_unavailable")
@@ -296,6 +301,7 @@ def _candidate_mapping(
         "strong_concept_hit": context.strong_concept_hit if context else False,
         "strong_concept_names": list(context.strong_concept_names) if context else [],
         "close": item.metrics.get("close"),
+        "ma5": item.metrics.get("ma5"),
         "ma20": item.metrics.get("ma20"),
         "ma20_deviation_pct": item.metrics.get("ma20_deviation_pct"),
         "ma20_deviation_level": item.metrics.get("ma20_deviation_level"),
@@ -694,6 +700,7 @@ def _mature_trend_metrics(
 ) -> dict[str, float | int | bool | None]:
     daily_closes = [bar.close for bar in daily]
     weekly_closes = [bar.close for bar in weekly]
+    daily_ma5 = _moving_average_series(daily_closes, 5)
     daily_ma20 = _moving_average_series(daily_closes, 20)
     daily_ma60 = _moving_average_series(daily_closes, 60)
     weekly_ma10 = _moving_average_series(weekly_closes, 10)
@@ -708,6 +715,7 @@ def _mature_trend_metrics(
     )
     return {
         "close": daily_closes[-1],
+        "ma5": daily_ma5[-1],
         "ma20": daily_ma20[-1],
         "ma60": daily_ma60[-1],
         "return_60d": daily_closes[-1] / daily_closes[-61] - 1,

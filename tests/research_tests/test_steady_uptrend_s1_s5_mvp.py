@@ -409,6 +409,26 @@ class SteadyUptrendS1S5MvpTest(unittest.TestCase):
             result.stages["s5_entry_selection"].blockers,
         )
 
+    def test_s5_requires_close_strictly_above_ma5(self) -> None:
+        daily = list(_rising_bars("301217.SZ", 150, step=0.35))
+        weekly = _rising_bars("301217.SZ", 130, step=1.0, weekly=True)
+        previous_four_average = sum(bar.close for bar in daily[-5:-1]) / 4
+        daily[-1] = _with_close(daily[-1], previous_four_average)
+
+        result = evaluate_steady_uptrend_mvp(
+            daily,
+            weekly,
+            _context("301217.SZ", daily[-1].trade_date),
+            signal_date=daily[-1].trade_date,
+        )
+
+        self.assertAlmostEqual(result.metrics["close"], result.metrics["ma5"])
+        self.assertEqual(
+            ("close_not_above_ma5",),
+            result.stages["s5_entry_selection"].blockers,
+        )
+        self.assertIn("ma20_deviation_pct", result.metrics)
+
     def test_ma20_deviation_boundaries_enter_the_higher_level(self) -> None:
         self.assertEqual("normal", ma20_deviation_level(0.199999))
         self.assertEqual("20", ma20_deviation_level(0.20))
