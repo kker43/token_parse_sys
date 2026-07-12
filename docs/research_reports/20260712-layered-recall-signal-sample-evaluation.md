@@ -22,7 +22,7 @@
 | `pre_breakout_v3_1` | 0/23 | 1/4 |
 | `trend_recall_subpools_candidate_v1` | 20/23 | 2/4 |
 | `candidate_v4_recall_union` | 20/23 | 2/4 |
-| `candidate_v4_final_signal` | 10/23 | 0/4 |
+| `candidate_v4_final_signal` | 14/23 | 0/4 |
 
 ## pre_breakout_v1 正样本首阻断
 
@@ -56,16 +56,19 @@
 
 | 变体 | 正样本召回 | 硬负样本最终信号 | 全样本最终信号 |
 | --- | ---: | ---: | ---: |
-| `early_reversal_floor_0.03` | 20 | 0 | 12 |
-| `early_reversal_floor_0.05` | 20 | 0 | 12 |
-| `early_reversal_floor_0.08` | 19 | 0 | 12 |
-| `pullback_ma30_0.75_0.55` | 20 | 0 | 12 |
-| `pullback_ma30_0.55_0.55` | 21 | 0 | 12 |
-| `long_base_volume_bonus_1.0` | 20 | 0 | 12 |
-| `long_base_volume_bonus_1.1` | 20 | 0 | 12 |
-| `long_base_volume_bonus_1.2` | 20 | 0 | 12 |
-| `overextended_0.50_0.16` | 20 | 0 | 12 |
-| `overextended_0.60_0.18` | 20 | 0 | 12 |
-| `overextended_0.70_0.20` | 20 | 0 | 12 |
+| `early_reversal_floor_0.03` | 20 | 0 | 16 |
+| `early_reversal_floor_0.05` | 20 | 0 | 16 |
+| `early_reversal_floor_0.08` | 19 | 0 | 15 |
+| `pullback_ma30_0.75_0.55` | 20 | 0 | 16 |
+| `pullback_ma30_0.55_0.55` | 21 | 0 | 17 |
+| `long_base_volume_bonus_1.0` | 20 | 0 | 16 |
+| `long_base_volume_bonus_1.1` | 20 | 0 | 16 |
+| `long_base_volume_bonus_1.2` | 20 | 0 | 16 |
+| `overextended_0.50_0.16` | 20 | 0 | 16 |
+| `overextended_0.60_0.18` | 20 | 0 | 16 |
+| `overextended_0.70_0.20` | 20 | 0 | 17 |
+| `post_impulse_min_return_0.04` | 20 | 0 | 16 |
+| `post_impulse_min_return_0.05` | 20 | 0 | 16 |
+| `post_impulse_min_return_0.06` | 20 | 0 | 16 |
 
 明细见 `20260712-layered-recall-signal-sample-evaluation.csv`。

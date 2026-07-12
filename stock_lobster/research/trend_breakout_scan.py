@@ -108,6 +108,7 @@ class TrendBreakoutMetrics:
     volume_ratio_5d_20d: float | None = None
     turnover_ratio_5d_20d: float | None = None
     adj_factor_changed_20d: bool = False
+    recent_impulse_return: float | None = None
     post_impulse_followthrough_return: float | None = None
     volume_decay_after_impulse: float | None = None
     high_volume_bearish_close: bool = False
@@ -136,6 +137,7 @@ class TrendBreakoutMetrics:
             "volume_ratio_5d_20d": self.volume_ratio_5d_20d,
             "turnover_ratio_5d_20d": self.turnover_ratio_5d_20d,
             "adj_factor_changed_20d": self.adj_factor_changed_20d,
+            "recent_impulse_return": self.recent_impulse_return,
             "post_impulse_followthrough_return": self.post_impulse_followthrough_return,
             "volume_decay_after_impulse": self.volume_decay_after_impulse,
             "high_volume_bearish_close": self.high_volume_bearish_close,
@@ -616,6 +618,7 @@ def _metrics_for_index(
         turnover_ratio_5d_20d if adj_factor_changed_20d else volume_ratio_5d_20d
     )
     (
+        recent_impulse_return,
         post_impulse_followthrough_return,
         volume_decay_after_impulse,
     ) = _post_impulse_activity(bars, closes, index, 5)
@@ -707,6 +710,7 @@ def _metrics_for_index(
         volume_ratio_5d_20d=volume_ratio_5d_20d,
         turnover_ratio_5d_20d=turnover_ratio_5d_20d,
         adj_factor_changed_20d=adj_factor_changed_20d,
+        recent_impulse_return=recent_impulse_return,
         post_impulse_followthrough_return=post_impulse_followthrough_return,
         volume_decay_after_impulse=volume_decay_after_impulse,
         high_volume_bearish_close=high_volume_bearish_close,
@@ -1085,14 +1089,15 @@ def _post_impulse_activity(
     closes: list[float],
     index: int,
     window: int,
-) -> tuple[float | None, float | None]:
+) -> tuple[float | None, float | None, float | None]:
     start = max(1, index - window + 1)
     impulse_index = max(
         range(start, index + 1),
         key=lambda current_index: closes[current_index] / closes[current_index - 1] - 1,
     )
+    impulse_return = closes[impulse_index] / closes[impulse_index - 1] - 1
     if impulse_index == index or closes[impulse_index] == 0:
-        return None, None
+        return impulse_return, None, None
 
     followthrough_return = closes[index] / closes[impulse_index] - 1
     impulse_volume = bars[impulse_index].volume
@@ -1105,11 +1110,11 @@ def _post_impulse_activity(
         or not followthrough_volumes
         or any(volume is None for volume in followthrough_volumes)
     ):
-        return followthrough_return, None
+        return impulse_return, followthrough_return, None
     volume_decay = sum(float(volume) for volume in followthrough_volumes) / (
         len(followthrough_volumes) * impulse_volume
     )
-    return followthrough_return, volume_decay
+    return impulse_return, followthrough_return, volume_decay
 
 
 def _high_volume_bearish_close(

@@ -27,6 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="steady_uptrend_breakout_event_backtest")
     parser.add_argument("--kline-tsv-path", required=True)
     parser.add_argument("--scan-result-path", required=True)
+    parser.add_argument("--candidate-key", default="breakout_candidates")
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--holding-horizon", action="append", type=int, dest="holding_horizons")
     parser.add_argument("--entry-offset", type=int, default=1)
@@ -44,7 +45,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     holding_horizons = tuple(args.holding_horizons or (5, 10, 20))
     bars = _read_price_bars(args.kline_tsv_path)
-    events = _read_events(args.scan_result_path)
+    events = _read_events(args.scan_result_path, candidate_key=args.candidate_key)
     reports = []
     for holding_horizon in holding_horizons:
         report = run_event_backtest(
@@ -66,6 +67,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "schema_version": 1,
         "job_name": "steady_uptrend_breakout_event_backtest",
         "source_scan_result_path": args.scan_result_path,
+        "source_candidate_key": args.candidate_key,
         "kline_tsv_path": args.kline_tsv_path,
         "event_count": len(events),
         "reports": reports,
@@ -103,9 +105,15 @@ def _read_price_bars(path: str | Path) -> tuple[PriceBar, ...]:
     return tuple(bars)
 
 
-def _read_events(path: str | Path) -> tuple[BacktestEvent, ...]:
+def _read_events(
+    path: str | Path,
+    *,
+    candidate_key: str = "breakout_candidates",
+) -> tuple[BacktestEvent, ...]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    candidates = payload.get("breakout_candidates", ())
+    candidates = payload.get(candidate_key, ())
+    if not isinstance(candidates, Sequence) or isinstance(candidates, (str, bytes)):
+        raise ValueError(f"{candidate_key} must be a JSON array")
     events: list[BacktestEvent] = []
     for candidate in candidates:
         if not isinstance(candidate, Mapping):

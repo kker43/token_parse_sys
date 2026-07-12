@@ -44,12 +44,13 @@ class LayeredSignalPolicy:
     long_base_volume_bonus_threshold: float = 1.1
     weak_market_breadth_ma20_threshold: float = 0.35
     weak_market_top_n: int = 2
-    normal_market_top_n: int = 5
+    normal_market_top_n: int = 3
     cooldown_trade_days: int = 10
     acceleration_min_return_20d: float = 0.30
     acceleration_min_consolidation_days: int = 5
     overextended_min_return_20d: float = 0.60
     overextended_min_convergence_pct: float = 0.18
+    post_impulse_min_return: float = 0.04
     blocked_context_names: tuple[str, ...] = ()
     post_rank_no_refill_rejection_reasons: tuple[str, ...] = ()
 
@@ -132,7 +133,9 @@ def assess_signal_state(
     ):
         waiting_reasons.append("overextended_wide_ma_needs_rest")
     if (
-        metric.post_impulse_followthrough_return is not None
+        metric.recent_impulse_return is not None
+        and metric.recent_impulse_return >= active_policy.post_impulse_min_return
+        and metric.post_impulse_followthrough_return is not None
         and metric.post_impulse_followthrough_return <= 0
     ):
         waiting_reasons.append("post_impulse_no_followthrough")
@@ -288,13 +291,13 @@ def _rank_topn(
         by_date[candidate.decision.metric.trade_date].append(candidate)
     dates = set(by_date)
     provided_date_order = tuple(trade_date_order or ())
-    ordered_dates = (
+    full_date_order = (
         tuple(sorted(dates))
         if not provided_date_order
-        else tuple(date for date in provided_date_order if date in dates)
-        + tuple(sorted(dates.difference(provided_date_order)))
+        else provided_date_order + tuple(sorted(dates.difference(provided_date_order)))
     )
-    date_index = {trade_date: index for index, trade_date in enumerate(ordered_dates)}
+    ordered_dates = tuple(date for date in full_date_order if date in dates)
+    date_index = {trade_date: index for index, trade_date in enumerate(full_date_order)}
     selected: list[LayeredCandidate] = []
     last_selected_by_asset: dict[str, int] = {}
     for trade_date in ordered_dates:

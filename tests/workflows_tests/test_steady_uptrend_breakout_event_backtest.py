@@ -7,10 +7,29 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from workflows.jobs.steady_uptrend_breakout_event_backtest import main
+from workflows.jobs.steady_uptrend_breakout_event_backtest import _read_events, main
 
 
 class SteadyUptrendBreakoutEventBacktestJobTest(unittest.TestCase):
+    def test_reads_configured_v4_candidate_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "scan.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "final_signals": [
+                            {"asset_id": "000001.SZ", "trade_date": "20260101"}
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            events = _read_events(path, candidate_key="final_signals")
+
+        self.assertEqual(1, len(events))
+        self.assertEqual("000001.SZ.20260101", events[0].event_id)
+
     def test_runs_event_backtest_job(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

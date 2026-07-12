@@ -48,6 +48,32 @@ class LayeredRecallSignalTest(unittest.TestCase):
         self.assertFalse(state.signal_eligible)
         self.assertIn("post_impulse_no_followthrough", state.waiting_reasons)
 
+    def test_small_recent_gain_is_not_treated_as_impulse_stall(self) -> None:
+        state = assess_signal_state(
+            _recall(
+                _metric(
+                    recent_impulse_return=0.03,
+                    post_impulse_followthrough_return=-0.01,
+                )
+            )
+        )
+
+        self.assertNotIn("post_impulse_no_followthrough", state.waiting_reasons)
+        self.assertTrue(state.signal_eligible)
+
+    def test_four_percent_impulse_reversal_waits(self) -> None:
+        state = assess_signal_state(
+            _recall(
+                _metric(
+                    recent_impulse_return=0.049,
+                    post_impulse_followthrough_return=-0.04,
+                )
+            )
+        )
+
+        self.assertIn("post_impulse_no_followthrough", state.waiting_reasons)
+        self.assertFalse(state.signal_eligible)
+
     def test_valid_high_volume_breakout_is_not_rejected(self) -> None:
         state = assess_signal_state(
             _recall(
@@ -131,6 +157,7 @@ def _metric(**overrides: object) -> SimpleNamespace:
         "ma30_deviation_pct": 0.08,
         "ma5_10_20_30_convergence_pct": 0.10,
         "post_impulse_followthrough_return": 0.05,
+        "recent_impulse_return": 0.10,
         "volume_decay_after_impulse": 0.80,
         "high_volume_bearish_close": False,
     }

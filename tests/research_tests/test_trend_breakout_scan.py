@@ -81,6 +81,7 @@ class TrendBreakoutScanTest(unittest.TestCase):
         )[-1]
 
         self.assertLess(latest.post_impulse_followthrough_return, 0)
+        self.assertGreater(latest.recent_impulse_return, 0.05)
         self.assertAlmostEqual(0.4, latest.volume_decay_after_impulse, places=6)
 
     def test_same_day_impulse_has_no_followthrough_judgement(self) -> None:

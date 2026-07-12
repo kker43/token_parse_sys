@@ -83,6 +83,22 @@ class LayeredRecallSignalResearchScanTest(unittest.TestCase):
         self.assertEqual(4, payload["stage_counts"]["final_signal"])
         self.assertNotIn("000006.SZ", [item["asset_id"] for item in payload["final_signals"]])
 
+    def test_cooldown_counts_actual_trade_days(self) -> None:
+        trade_dates = tuple(f"202607{index:02d}" for index in range(1, 13))
+        metrics = (
+            replace(_metric("000001.SZ"), trade_date=trade_dates[0]),
+            replace(_metric("000001.SZ"), trade_date=trade_dates[-1]),
+        )
+
+        payload = build_stage_payload(
+            metrics,
+            market_temperatures={date: replace(_temperature(), trade_date=date) for date in trade_dates},
+            config={"signal_policy": {"normal_market_top_n": 5, "cooldown_trade_days": 10}},
+            trade_date_order=trade_dates,
+        )
+
+        self.assertEqual(2, payload["stage_counts"]["final_signal"])
+
 
 def _temperature() -> MarketTemperature:
     return MarketTemperature(
@@ -142,6 +158,7 @@ def _metric(asset_id: str, *, setup_score: float = 80.0) -> TrendBreakoutMetrics
         ma5_10_20_30_convergence_pct=0.10,
         volume_ratio_5d_20d=1.0,
         turnover_ratio_5d_20d=1.0,
+        recent_impulse_return=0.10,
         post_impulse_followthrough_return=0.05,
     )
 

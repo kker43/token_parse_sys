@@ -156,6 +156,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     asset_ids = {event.asset_id for event in events}
     min_event_date = min(_date_key(event.trade_date) for event in events)
     bars = _read_filtered_kline(Path(args.kline_tsv_path), asset_ids)
+    trade_date_order = tuple(sorted({bar.trade_date for bar in bars}))
     weekly_bars = _read_filtered_kline(Path(args.weekly_kline_tsv_path), asset_ids)
     contexts = tuple(
         context
@@ -230,7 +231,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         market_temperatures=market_temperatures,
         recall_policy=recall_policy,
         signal_policy=signal_policy,
-        trade_date_order=sorted(market_temperatures),
+        trade_date_order=trade_date_order,
     )
     candidate_by_key = {
         (candidate.decision.metric.asset_id, candidate.decision.metric.trade_date): candidate
@@ -263,6 +264,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         market_temperatures=market_temperatures,
         base_recall_policy=recall_policy,
         base_signal_policy=signal_policy,
+        trade_date_order=trade_date_order,
         target_by_key={
             (event.asset_id, _date_key(event.trade_date)): classify_target(event)
             for event in events
@@ -571,6 +573,7 @@ def _build_v4_sensitivity(
     base_recall_policy: TrendRecallSubpoolPolicy,
     base_signal_policy: LayeredSignalPolicy,
     target_by_key: Mapping[tuple[str, str], str],
+    trade_date_order: Sequence[str],
 ) -> list[dict[str, object]]:
     variants: list[tuple[str, TrendRecallSubpoolPolicy, LayeredSignalPolicy]] = []
     for floor in (0.03, 0.05, 0.08):
@@ -624,6 +627,17 @@ def _build_v4_sensitivity(
                 ),
             )
         )
+    for impulse_threshold in (0.04, 0.05, 0.06):
+        variants.append(
+            (
+                f"post_impulse_min_return_{impulse_threshold:.2f}",
+                base_recall_policy,
+                _signal_policy_with(
+                    base_signal_policy,
+                    post_impulse_min_return=impulse_threshold,
+                ),
+            )
+        )
 
     rows: list[dict[str, object]] = []
     for name, recall_policy, signal_policy in variants:
@@ -632,7 +646,7 @@ def _build_v4_sensitivity(
             market_temperatures=market_temperatures,
             recall_policy=recall_policy,
             signal_policy=signal_policy,
-            trade_date_order=sorted(market_temperatures),
+            trade_date_order=trade_date_order,
         )
         positive_recall = sum(
             target_by_key.get(
