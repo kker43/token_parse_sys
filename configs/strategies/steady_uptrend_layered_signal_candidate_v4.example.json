@@ -1,0 +1,49 @@
+{
+  "strategy_id": "strategy.steady_uptrend_layered_signal",
+  "version": "candidate_v4",
+  "status": "research_only",
+  "name": "分层召回与信号确认策略 v4",
+  "description": "最低数据质量和基础流动性之后，先合并五类结构召回，再依次执行等待、硬风险、量价确认、动态 TopN 和不补位过滤。",
+  "candidate_scan_policy": {
+    "min_volume_ratio_5d_20d": 1.2,
+    "max_abs_drawdown_60d": 0.4,
+    "max_abs_drawdown_120d": 0.55,
+    "require_close_above_ma30": true,
+    "require_weekly_uptrend": true,
+    "require_normal_listing": true,
+    "min_total_mv": 1000000,
+    "min_avg_amount_20d": 200000,
+    "max_turnover_rate_20d": 20,
+    "require_context_strength": true,
+    "enable_weak_shape_filter": false,
+    "start_date": null
+  },
+  "recall_policy": {
+    "early_reversal_min_return_20d": 0.05,
+    "pullback_min_ma30_hold_ratio_30d": 0.75,
+    "pullback_min_ma30_hold_ratio_60d": 0.55
+  },
+  "signal_policy": {
+    "volume_ratio_is_hard_gate": false,
+    "long_base_volume_bonus_threshold": 1.1,
+    "weak_market_breadth_ma20_threshold": 0.35,
+    "weak_market_top_n": 2,
+    "normal_market_top_n": 5,
+    "cooldown_trade_days": 10,
+    "blocked_context_names": [
+      "液冷服务器",
+      "第三代半导体"
+    ],
+    "post_rank_no_refill_rejection_reasons": [
+      "blocked_risk_context"
+    ]
+  },
+  "evaluation_profile": {
+    "primary_holding_horizon": 5,
+    "secondary_holding_horizons": [10],
+    "acceptance_target": {
+      "positive_recall_min": "17/23",
+      "hard_negative_final_signal_max": "0/4"
+    }
+  }
+}
