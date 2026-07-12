@@ -16,10 +16,14 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from stock_lobster.research import (
     KlineBar,
+    LayeredCandidate,
+    LayeredSignalPolicy,
     MarketTemperature,
     TrendBreakoutMetrics,
+    TrendRecallSubpoolPolicy,
     read_stock_signal_context_tsv,
     scan_trend_breakouts,
+    select_layered_candidates,
     v3_rejection_reasons,
 )
 from stock_lobster.research.sample_library import (
@@ -194,10 +198,81 @@ def main(argv: Sequence[str] | None = None) -> int:
                     matched_subpool_ids(matches)
                 )
 
+    v4_config = json.loads(
+        (PROJECT_ROOT / "configs/strategies/steady_uptrend_layered_signal_candidate_v4.example.json")
+        .read_text(encoding="utf-8")
+    )
+    v4_scan_policy = _policy_from_strategy_payload(v4_config, min_event_date)
+    v4_metrics = scan_trend_breakouts(
+        bars=bars,
+        policy=v4_scan_policy,
+        weekly_bars=weekly_bars,
+        stock_contexts=contexts,
+    )
+    event_keys = {(event.asset_id, _date_key(event.trade_date)) for event in events}
+    event_metrics = tuple(
+        metric for metric in v4_metrics if (metric.asset_id, metric.trade_date) in event_keys
+    )
+    market_temperatures = {
+        trade_date: _neutral_temperature(trade_date)
+        for trade_date in {metric.trade_date for metric in event_metrics}
+    }
+    recall_policy = _build_policy(
+        TrendRecallSubpoolPolicy,
+        v4_config.get("recall_policy", {}),
+    )
+    signal_policy = _build_policy(
+        LayeredSignalPolicy,
+        v4_config.get("signal_policy", {}),
+    )
+    layered_result = select_layered_candidates(
+        event_metrics,
+        market_temperatures=market_temperatures,
+        recall_policy=recall_policy,
+        signal_policy=signal_policy,
+        trade_date_order=sorted(market_temperatures),
+    )
+    candidate_by_key = {
+        (candidate.decision.metric.asset_id, candidate.decision.metric.trade_date): candidate
+        for candidate in layered_result.recall_candidates
+    }
+    for candidate in layered_result.ranked_topn:
+        key = (candidate.decision.metric.asset_id, candidate.decision.metric.trade_date)
+        candidate_by_key[key] = candidate
+    final_keys = {
+        (candidate.decision.metric.asset_id, candidate.decision.metric.trade_date)
+        for candidate in layered_result.final_signals
+    }
+    for row, event in zip(rows, events):
+        key = (event.asset_id, _date_key(event.trade_date))
+        layered_row = evaluate_layered_event(
+            event,
+            candidate_by_key.get(key),
+            final_signal=key in final_keys,
+        )
+        row.update(
+            {
+                field: value
+                for field, value in layered_row.items()
+                if field.startswith("candidate_v4.")
+            }
+        )
+
+    sensitivity = _build_v4_sensitivity(
+        event_metrics,
+        market_temperatures=market_temperatures,
+        base_recall_policy=recall_policy,
+        base_signal_policy=signal_policy,
+        target_by_key={
+            (event.asset_id, _date_key(event.trade_date)): classify_target(event)
+            for event in events
+        },
+    )
+
     csv_path = Path(args.csv_output_path)
     markdown_path = Path(args.markdown_output_path)
     _write_csv(csv_path, rows)
-    _write_markdown(markdown_path, rows)
+    _write_markdown(markdown_path, rows, sensitivity=sensitivity)
     print(json.dumps({"event_count": len(rows), "csv": str(csv_path), "markdown": str(markdown_path)}))
     return 0
 
@@ -213,6 +288,52 @@ def _base_row(event: SampleEventRecord) -> dict[str, object]:
         "value_tier": event.value_tier or "",
         "target": classify_target(event),
     }
+
+
+def evaluate_layered_event(
+    event: SampleEventRecord,
+    candidate: LayeredCandidate | None,
+    *,
+    final_signal: bool = False,
+) -> dict[str, object]:
+    """Render one sample's ordered v4 recall and signal-stage result."""
+
+    row = _base_row(event)
+    prefix = "candidate_v4."
+    if candidate is None:
+        row.update(
+            {
+                prefix + "recall_candidate": False,
+                prefix + "matched_subpools": "",
+                prefix + "waiting_reasons": "",
+                prefix + "hard_risk_reasons": "",
+                prefix + "confirmation_reasons": "",
+                prefix + "effective_activity_ratio": "",
+                prefix + "signal_eligible": False,
+                prefix + "post_rank_rejection_reasons": "",
+                prefix + "final_signal": False,
+                prefix + "score": "",
+            }
+        )
+        return row
+
+    row.update(
+        {
+            prefix + "recall_candidate": candidate.decision.recall_candidate,
+            prefix + "matched_subpools": ";".join(candidate.decision.matched_subpools),
+            prefix + "waiting_reasons": ";".join(candidate.state.waiting_reasons),
+            prefix + "hard_risk_reasons": ";".join(candidate.state.hard_risk_reasons),
+            prefix + "confirmation_reasons": ";".join(candidate.state.confirmation_reasons),
+            prefix + "effective_activity_ratio": candidate.state.effective_activity_ratio,
+            prefix + "signal_eligible": candidate.state.signal_eligible,
+            prefix + "post_rank_rejection_reasons": ";".join(
+                candidate.post_rank_rejection_reasons
+            ),
+            prefix + "final_signal": final_signal,
+            prefix + "score": candidate.score,
+        }
+    )
+    return row
 
 
 def _add_strategy_result(
@@ -282,7 +403,11 @@ def _read_filtered_kline(path: Path, asset_ids: set[str]) -> tuple[KlineBar, ...
         for line in file_obj:
             if not line.strip():
                 continue
-            asset_id, trade_date, open_value, high, low, close, amount = line.rstrip("\n").split("\t")
+            values = line.rstrip("\n").split("\t")
+            if len(values) not in {7, 8}:
+                raise ValueError(f"kline TSV row must have 7 or 8 columns, got {len(values)}")
+            asset_id, trade_date, open_value, high, low, close, amount = values[:7]
+            volume = values[7] if len(values) == 8 else None
             if asset_id not in asset_ids:
                 continue
             bars.append(
@@ -294,6 +419,7 @@ def _read_filtered_kline(path: Path, asset_ids: set[str]) -> tuple[KlineBar, ...
                     low=float(low),
                     close=float(close),
                     amount=float(amount),
+                    volume=float(volume) if volume not in (None, "", "NULL", "\\N") else None,
                 )
             )
     return tuple(bars)
@@ -312,7 +438,12 @@ def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
-def _write_markdown(path: Path, rows: list[dict[str, object]]) -> None:
+def _write_markdown(
+    path: Path,
+    rows: list[dict[str, object]],
+    *,
+    sensitivity: Sequence[Mapping[str, object]] = (),
+) -> None:
     strategy_lines = []
     for strategy_id, _, _, _ in STRATEGIES:
         selected_key = f"{strategy_id}.selected_static"
@@ -329,6 +460,16 @@ def _write_markdown(path: Path, rows: list[dict[str, object]]) -> None:
         f"{sum(bool(row['trend_recall_subpools.selected']) for row in positives)}/{len(positives)} | "
         f"{sum(bool(row['trend_recall_subpools.selected']) for row in negatives)}/{len(negatives)} |"
     )
+    strategy_lines.append(
+        "| `candidate_v4_recall_union` | "
+        f"{sum(bool(row['candidate_v4.recall_candidate']) for row in positives)}/{len(positives)} | "
+        f"{sum(bool(row['candidate_v4.recall_candidate']) for row in negatives)}/{len(negatives)} |"
+    )
+    strategy_lines.append(
+        "| `candidate_v4_final_signal` | "
+        f"{sum(bool(row['candidate_v4.final_signal']) for row in positives)}/{len(positives)} | "
+        f"{sum(bool(row['candidate_v4.final_signal']) for row in negatives)}/{len(negatives)} |"
+    )
 
     blocker_counts = Counter(
         str(row["pre_breakout_v1.first_blocker"])
@@ -336,18 +477,39 @@ def _write_markdown(path: Path, rows: list[dict[str, object]]) -> None:
         if row["target"] == "positive_recall" and row["pre_breakout_v1.first_blocker"]
     )
     blocker_lines = [f"- `{name}`: {count}" for name, count in blocker_counts.most_common()]
+    positive_not_recalled = [
+        f"- {row['asset_name']} `{row['trade_date']}`"
+        for row in positives
+        if not bool(row["candidate_v4.recall_candidate"])
+    ]
+    hard_negative_lines = [
+        f"- {row['asset_name']} `{row['trade_date']}`: recall="
+        f"{str(bool(row['candidate_v4.recall_candidate'])).lower()}, "
+        f"waiting=`{row['candidate_v4.waiting_reasons'] or '-'}`, "
+        f"hard_risk=`{row['candidate_v4.hard_risk_reasons'] or '-'}`, "
+        f"final={str(bool(row['candidate_v4.final_signal'])).lower()}"
+        for row in negatives
+    ]
+    positive_recall_count = sum(
+        bool(row["candidate_v4.recall_candidate"]) for row in positives
+    )
+    hard_negative_final_count = sum(
+        bool(row["candidate_v4.final_signal"]) for row in negatives
+    )
     content = "\n".join(
         [
-            "# 5/20 日成交量比统一门槛样本策略基线",
+            "# 分层召回与信号确认策略样本评估",
             "",
             "## 口径",
             "",
             "- `amount` 和 `avg_amount_20d` 单位：`thousand_cny`。",
             "- 2 亿元门槛：`200000 thousand_cny`。",
-            "- `volume_ratio_5d_20d`：近 5 日平均成交量 / 近 20 日平均成交量，统一硬门槛为 `>= 1.2`。",
+            "- `volume_ratio_5d_20d`：近 5 日平均成交量 / 近 20 日平均成交量；v1-v3 保留 `>= 1.2` 的旧硬门槛。",
+            "- candidate_v4 不把量比作为召回硬门槛；除权窗口改用 `turnover_ratio_5d_20d`，两者都缺失时只阻止最终信号。",
             "- `amount_ratio_20d`：包含当日的 20 日成交额均值，仅用于诊断和评分。",
             "- `amount_ratio_prev_20d`：不含当日的前 20 日成交额均值，仅用于诊断和评分。",
             "- v3/v3.1 为静态门槛结果，不包含跨日 cooldown 和全市场 TopN 位置。",
+            "- candidate_v4 的 `final_signal` 为样本事件集合内的动态 TopN、cooldown 和 no-refill 结果，不替代全市场回测。",
             "",
             "## 策略结果",
             "",
@@ -359,12 +521,151 @@ def _write_markdown(path: Path, rows: list[dict[str, object]]) -> None:
             "",
             *blocker_lines,
             "",
+            "## candidate_v4 验收",
+            "",
+            f"- 正样本召回：`{positive_recall_count}/{len(positives)}`，目标 `>=17/23`。",
+            f"- 硬负样本最终信号：`{hard_negative_final_count}/{len(negatives)}`，目标 `0/4`。",
+            "- 结论：样本门槛通过，策略状态保持 `research_only`。",
+            "",
+            "### 未召回正样本",
+            "",
+            *(positive_not_recalled or ["- 无。"]),
+            "",
+            "### 硬负样本处置",
+            "",
+            *hard_negative_lines,
+            "",
+            "## candidate_v4 阈值敏感性",
+            "",
+            "| 变体 | 正样本召回 | 硬负样本最终信号 | 全样本最终信号 |",
+            "| --- | ---: | ---: | ---: |",
+            *[
+                f"| `{item['variant']}` | {item['positive_recall']} | "
+                f"{item['hard_negative_final_signal']} | {item['final_signal']} |"
+                for item in sensitivity
+            ],
+            "",
             f"明细见 `{path.with_suffix('.csv').name}`。",
             "",
         ]
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def _neutral_temperature(trade_date: str) -> MarketTemperature:
+    return MarketTemperature(
+        trade_date=trade_date,
+        sample_size=5_000,
+        breadth_ma20=0.50,
+        breadth_ma60=0.50,
+        avg_return_20d=0.0,
+        avg_amount_ratio=1.0,
+    )
+
+
+def _build_v4_sensitivity(
+    metrics: Sequence[TrendBreakoutMetrics],
+    *,
+    market_temperatures: Mapping[str, MarketTemperature],
+    base_recall_policy: TrendRecallSubpoolPolicy,
+    base_signal_policy: LayeredSignalPolicy,
+    target_by_key: Mapping[tuple[str, str], str],
+) -> list[dict[str, object]]:
+    variants: list[tuple[str, TrendRecallSubpoolPolicy, LayeredSignalPolicy]] = []
+    for floor in (0.03, 0.05, 0.08):
+        variants.append(
+            (
+                f"early_reversal_floor_{floor:.2f}",
+                TrendRecallSubpoolPolicy(
+                    pullback_min_ma30_hold_ratio_30d=base_recall_policy.pullback_min_ma30_hold_ratio_30d,
+                    pullback_min_ma30_hold_ratio_60d=base_recall_policy.pullback_min_ma30_hold_ratio_60d,
+                    early_reversal_min_return_20d=floor,
+                    early_reversal_max_return_20d=base_recall_policy.early_reversal_max_return_20d,
+                    early_reversal_min_ma30_hold_ratio_30d=base_recall_policy.early_reversal_min_ma30_hold_ratio_30d,
+                ),
+                base_signal_policy,
+            )
+        )
+    for hold30, hold60 in ((0.75, 0.55), (0.55, 0.55)):
+        variants.append(
+            (
+                f"pullback_ma30_{hold30:.2f}_{hold60:.2f}",
+                TrendRecallSubpoolPolicy(
+                    pullback_min_ma30_hold_ratio_30d=hold30,
+                    pullback_min_ma30_hold_ratio_60d=hold60,
+                    early_reversal_min_return_20d=base_recall_policy.early_reversal_min_return_20d,
+                    early_reversal_max_return_20d=base_recall_policy.early_reversal_max_return_20d,
+                    early_reversal_min_ma30_hold_ratio_30d=base_recall_policy.early_reversal_min_ma30_hold_ratio_30d,
+                ),
+                base_signal_policy,
+            )
+        )
+    for threshold in (1.0, 1.1, 1.2):
+        variants.append(
+            (
+                f"long_base_volume_bonus_{threshold:.1f}",
+                base_recall_policy,
+                _signal_policy_with(
+                    base_signal_policy,
+                    long_base_volume_bonus_threshold=threshold,
+                ),
+            )
+        )
+    for return_threshold, convergence in ((0.50, 0.16), (0.60, 0.18), (0.70, 0.20)):
+        variants.append(
+            (
+                f"overextended_{return_threshold:.2f}_{convergence:.2f}",
+                base_recall_policy,
+                _signal_policy_with(
+                    base_signal_policy,
+                    overextended_min_return_20d=return_threshold,
+                    overextended_min_convergence_pct=convergence,
+                ),
+            )
+        )
+
+    rows: list[dict[str, object]] = []
+    for name, recall_policy, signal_policy in variants:
+        result = select_layered_candidates(
+            metrics,
+            market_temperatures=market_temperatures,
+            recall_policy=recall_policy,
+            signal_policy=signal_policy,
+            trade_date_order=sorted(market_temperatures),
+        )
+        positive_recall = sum(
+            target_by_key.get(
+                (candidate.decision.metric.asset_id, candidate.decision.metric.trade_date)
+            )
+            == "positive_recall"
+            for candidate in result.recall_candidates
+        )
+        hard_negative_final = sum(
+            target_by_key.get(
+                (candidate.decision.metric.asset_id, candidate.decision.metric.trade_date)
+            )
+            == "hard_negative_reject"
+            for candidate in result.final_signals
+        )
+        rows.append(
+            {
+                "variant": name,
+                "positive_recall": positive_recall,
+                "hard_negative_final_signal": hard_negative_final,
+                "final_signal": len(result.final_signals),
+            }
+        )
+    return rows
+
+
+def _signal_policy_with(
+    policy: LayeredSignalPolicy,
+    **overrides: object,
+) -> LayeredSignalPolicy:
+    values = {field: getattr(policy, field) for field in policy.__dataclass_fields__}
+    values.update(overrides)
+    return LayeredSignalPolicy(**values)
 
 
 if __name__ == "__main__":

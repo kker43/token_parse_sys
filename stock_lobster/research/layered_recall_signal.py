@@ -46,6 +46,10 @@ class LayeredSignalPolicy:
     weak_market_top_n: int = 2
     normal_market_top_n: int = 5
     cooldown_trade_days: int = 10
+    acceleration_min_return_20d: float = 0.30
+    acceleration_min_consolidation_days: int = 5
+    overextended_min_return_20d: float = 0.60
+    overextended_min_convergence_pct: float = 0.18
     blocked_context_names: tuple[str, ...] = ()
     post_rank_no_refill_rejection_reasons: tuple[str, ...] = ()
 
@@ -102,19 +106,29 @@ def build_layered_recall_decision(
     )
 
 
-def assess_signal_state(decision: LayeredRecallDecision) -> SignalStateAssessment:
+def assess_signal_state(
+    decision: LayeredRecallDecision,
+    *,
+    policy: LayeredSignalPolicy | None = None,
+) -> SignalStateAssessment:
     """Classify waiting, risk, and confirmation states after recall."""
 
     metric = decision.metric
+    active_policy = policy or LayeredSignalPolicy()
     waiting_reasons: list[str] = []
     hard_risk_reasons: list[str] = []
     confirmation_reasons: list[str] = []
 
-    if metric.return_20d > 0.30 and metric.impulse_consolidation_days < 5:
+    if (
+        metric.return_20d > active_policy.acceleration_min_return_20d
+        and metric.impulse_consolidation_days
+        < active_policy.acceleration_min_consolidation_days
+    ):
         waiting_reasons.append("acceleration_needs_consolidation")
     if (
-        metric.return_20d > 0.60
-        and metric.ma5_10_20_30_convergence_pct > 0.18
+        metric.return_20d > active_policy.overextended_min_return_20d
+        and metric.ma5_10_20_30_convergence_pct
+        > active_policy.overextended_min_convergence_pct
     ):
         waiting_reasons.append("overextended_wide_ma_needs_rest")
     if (
@@ -180,7 +194,7 @@ def select_layered_candidates(
         decision = build_layered_recall_decision(metric, policy=recall_policy)
         if not decision.recall_candidate:
             continue
-        state = assess_signal_state(decision)
+        state = assess_signal_state(decision, policy=active_signal_policy)
         recall_candidates.append(
             LayeredCandidate(
                 decision=decision,

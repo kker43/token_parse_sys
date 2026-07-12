@@ -31,6 +31,7 @@ class ResearchKlineBatchExportTest(unittest.TestCase):
                             "low": 9,
                             "close": 10.5,
                             "amount": 100,
+                            "vol": 3000,
                         },
                     )
                 return (
@@ -42,6 +43,7 @@ class ResearchKlineBatchExportTest(unittest.TestCase):
                         "low": 7,
                         "close": 10,
                         "amount": 500,
+                        "vol": 12000,
                     },
                     {
                         "ts_code": "000001.SZ",
@@ -51,6 +53,7 @@ class ResearchKlineBatchExportTest(unittest.TestCase):
                         "low": 9,
                         "close": 12,
                         "amount": 600,
+                        "vol": 13000,
                     },
                 )
 
@@ -72,11 +75,16 @@ class ResearchKlineBatchExportTest(unittest.TestCase):
                 ],
                 calls,
             )
-            self.assertEqual("000001.SZ\t20250102\t10\t11\t9\t10.5\t100", daily_path.read_text(encoding="utf-8").strip())
+            self.assertEqual(
+                "000001.SZ\t20250102\t10\t11\t9\t10.5\t100\t3000",
+                daily_path.read_text(encoding="utf-8").strip(),
+            )
             self.assertEqual(2, len(weekly_path.read_text(encoding="utf-8").splitlines()))
             self.assertEqual(1, manifest["daily_row_count"])
             self.assertEqual(2, manifest["weekly_row_count"])
             self.assertEqual("20240101", manifest["weekly_start_date"])
+            self.assertEqual("qfq_asof", manifest["price_basis"])
+            self.assertEqual("vol", manifest["columns"][-1])
             self.assertEqual(manifest, json.loads(manifest_path.read_text(encoding="utf-8")))
 
 

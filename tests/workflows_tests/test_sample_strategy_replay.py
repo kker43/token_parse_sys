@@ -1,9 +1,20 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 
+from stock_lobster.research.layered_recall_signal import (
+    LayeredCandidate,
+    LayeredRecallDecision,
+    SignalStateAssessment,
+)
 from stock_lobster.research.sample_library import SampleEventRecord
-from workflows.jobs.sample_strategy_replay import _read_filtered_kline, classify_target, ordered_blockers
+from workflows.jobs.sample_strategy_replay import (
+    _read_filtered_kline,
+    classify_target,
+    evaluate_layered_event,
+    ordered_blockers,
+)
 
 
 class SampleStrategyReplayTest(unittest.TestCase):
@@ -68,6 +79,43 @@ class SampleStrategyReplayTest(unittest.TestCase):
             bars = _read_filtered_kline(path, {"000001.SZ"})
 
         self.assertEqual(1, len(bars))
+
+    def test_kline_reader_preserves_optional_volume(self) -> None:
+        with TemporaryDirectory() as tempdir:
+            path = Path(tempdir) / "kline.tsv"
+            path.write_text("000001.SZ\t20260710\t1\t2\t1\t2\t100\t3000\n", encoding="utf-8")
+
+            bar = _read_filtered_kline(path, {"000001.SZ"})[0]
+
+        self.assertEqual(3000.0, bar.volume)
+
+    def test_sample_report_separates_recall_and_signal_results(self) -> None:
+        metric = SimpleNamespace(asset_id="000001.SZ", trade_date="20260710")
+        candidate = LayeredCandidate(
+            decision=LayeredRecallDecision(
+                metric=metric,
+                matched_subpools=("pullback_reacceleration",),
+                recall_candidate=True,
+            ),
+            state=SignalStateAssessment(
+                recall_candidate=True,
+                waiting_reasons=("post_impulse_no_followthrough",),
+                hard_risk_reasons=(),
+                confirmation_reasons=(),
+                effective_activity_ratio=0.84,
+                signal_eligible=False,
+            ),
+            score=72.0,
+        )
+
+        row = evaluate_layered_event(_event("positive_attention_high_value", "high"), candidate)
+
+        self.assertTrue(row["candidate_v4.recall_candidate"])
+        self.assertFalse(row["candidate_v4.signal_eligible"])
+        self.assertEqual(
+            "post_impulse_no_followthrough",
+            row["candidate_v4.waiting_reasons"],
+        )
 
 
 def _event(event_class: str, value_tier: str) -> SampleEventRecord:
