@@ -221,27 +221,17 @@ class DailySteadyUptrendMvpTrackingTest(unittest.TestCase):
             )
             self.assertEqual("initialize", failure["failed_stage"])
 
-    def test_quality_reader_uses_exact_daily_gate_and_bounded_weekly_queries(self) -> None:
-        daily_rows = tuple(
-            _quality(product, "20260710") for product in DAILY_PRODUCTS
+    def test_quality_reader_gets_all_five_products_from_exact_upstream_gate(self) -> None:
+        upstream_rows = (
+            *(_quality(product, "20260710") for product in DAILY_PRODUCTS),
+            _quality("pub_stock_weekly_kline", "20260710"),
         )
         calls: list[tuple[str, object]] = []
 
         def fetch_rows(connection: object, sql: str, params: object):
             calls.append((sql, params))
             if "FROM pub_data_quality_status" in sql:
-                return daily_rows
-            if "MAX(period_end_date)" in sql:
-                return ({"weekly_date": "20260710"},)
-            if "COUNT(*) AS record_count" in sql:
-                return (
-                    {
-                        "record_count": 5605,
-                        "min_data_version": "v1",
-                        "max_data_version": "v1",
-                        "published_at": "2026-07-10 23:59:59",
-                    },
-                )
+                return upstream_rows
             raise AssertionError(sql)
 
         with mock.patch(
@@ -253,12 +243,43 @@ class DailySteadyUptrendMvpTrackingTest(unittest.TestCase):
         self.assertEqual(5, len(rows))
         weekly = rows[-1]
         self.assertEqual("pub_stock_weekly_kline", weekly["data_product"])
-        self.assertEqual(5605, weekly["record_count"])
+        self.assertNotIn("evidence_source", weekly)
+        self.assertEqual(1, len(calls))
         sql_text = "\n".join(sql for sql, _ in calls)
         self.assertNotIn("data_date <=", sql_text)
         self.assertIn("data_date = %s", sql_text)
-        self.assertIn("MAX(period_end_date)", sql_text)
-        self.assertIn("period_end_date = %s", sql_text)
+        self.assertNotIn("FROM pub_stock_weekly_kline", sql_text)
+        self.assertIn("pub_stock_weekly_kline", calls[0][1])
+
+    def test_quality_reader_gets_prior_weekly_date_from_upstream_gate(self) -> None:
+        daily_rows = tuple(
+            _quality(product, "20260709") for product in DAILY_PRODUCTS
+        )
+        weekly_row = _quality("pub_stock_weekly_kline", "20260703")
+        calls: list[tuple[str, object]] = []
+
+        def fetch_rows(connection: object, sql: str, params: object):
+            calls.append((sql, params))
+            if params[0] == "20260709":
+                return daily_rows
+            if params[0] == "pub_stock_weekly_kline":
+                return (weekly_row,)
+            raise AssertionError((sql, params))
+
+        with mock.patch(
+            "workflows.jobs.daily_steady_uptrend_mvp_tracking._fetch_rows",
+            side_effect=fetch_rows,
+        ):
+            rows = _fetch_quality_status_rows(object(), "20260709")
+
+        self.assertEqual(5, len(rows))
+        self.assertEqual("20260703", rows[-1]["data_date"])
+        self.assertTrue(
+            all("FROM pub_data_quality_status" in sql for sql, _ in calls)
+        )
+        self.assertTrue(
+            all("FROM pub_stock_weekly_kline" not in sql for sql, _ in calls)
+        )
 
 
 def _quality(

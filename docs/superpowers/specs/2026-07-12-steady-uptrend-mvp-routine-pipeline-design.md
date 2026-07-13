@@ -42,8 +42,8 @@
 - 显式传入 `--date YYYYMMDD` 时使用指定日期。
 - 未传日期时，从外部 `pub_data_quality_status` 中选择最新交易日。
 - 该日期的日线、日基础、日指标和资产基础产品必须在外部 `pub_data_quality_status` 中为 `CN_A/stock + ready/pass`，并使用精确日期查询，禁止范围扫描质量视图。
-- 由于当前外部 `pub_data_quality_status` 未发布 `pub_stock_weekly_kline` 项，周线使用不晚于目标日期的最新 `pub_stock_weekly_kline.period_end_date`，并检查该周期记录数大于零且 `data_version` 唯一非空。
-- 周线检查结果标记为 `consumer_observed_published_product`，仅作为本次分析输入证据，不写回外部系统，也不作为上游权威质量状态。
+- 外部 `pub_data_quality_status` 正式发布 `pub_stock_weekly_kline` 质量项。若目标日期本身是周线周期结束日，精确日期查询直接取得五个产品；否则从同一质量视图读取不晚于目标日期的最近周线质量行。
+- 周线质量行必须保持真实 `period_end_date`，不得把日频信号日期伪装成周线周期结束日；下游不再自行统计周线记录或构造质量状态。
 - 任一必要产品缺失、重复、版本不一致或状态失败时，任务停止，不沿用上一日结果冒充当日结果。
 
 ## 输入窗口
