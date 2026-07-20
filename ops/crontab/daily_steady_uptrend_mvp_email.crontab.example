@@ -1,0 +1,2 @@
+# Send the latest published steady-uptrend MVP tracking report after selection.
+50 0 * * 2-6 cd /home/ubuntu/token_parse_sys_mvp && /usr/bin/python3 workflows/jobs/daily_steady_uptrend_mvp_email.py --schedule-config-path configs/schedules/daily_steady_uptrend_mvp_email.json >> /home/ubuntu/token_parse_sys/runtime/strategy_tracking/email_cron.log 2>&1

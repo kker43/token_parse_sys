@@ -67,6 +67,65 @@ cd /home/ubuntu/token_parse_sys_mvp
 
 任务使用非阻塞独占锁。同一交易日重复执行会重建相同版本目录并原子替换报告；第二个并发任务会失败退出。
 
+## HTML 邮件推送
+
+邮件任务独立于选股计算，只消费 `reports/latest.json`、对应的 `job_result.json` 和运行目录中的 `result.json`。SMTP 失败不会修改选股 artifact，也不会把已成功的选股运行改成失败。
+
+手动发送最新一份尚未投递的报告：
+
+```bash
+cd /home/ubuntu/token_parse_sys_mvp
+/usr/bin/python3 workflows/jobs/daily_steady_uptrend_mvp_email.py \
+  --schedule-config-path configs/schedules/daily_steady_uptrend_mvp_email.json
+```
+
+邮件包含 S1-S5 分层数量、按行业分组的最终候选、股票代码、强势概念和 MA20 偏离度。MA20 偏离度仅作诊断与排序，不单独过滤。最终候选为零时仍会发送，正文展示完整分层数量和以下 S5 介入阻断统计：
+
+```text
+context_strength_unavailable
+close_not_above_ma5
+close_too_far_below_prior_high_20d
+```
+
+成功发送的唯一键为 `strategy_id + strategy_version + trade_date + run_id`。发送状态写入：
+
+```text
+/home/ubuntu/token_parse_sys/runtime/strategy_tracking/email_delivery/YYYYMMDD.json
+```
+
+状态含义：
+
+- `sending`：已开始发送但尚未确认成功；为避免重复邮件，人工核查前不自动重发该不确定状态。
+- `sent`：SMTP 已确认发送，后续相同唯一键返回 `already_sent`。
+- `failed`：有限次数重试后失败，可在查明 SMTP 或网络原因后再次运行。
+
+每次任务结果另存于 `email_job_results/YYYYMMDD.json`。日志和结果只记录错误类型与固定失败文案，不记录 SMTP 底层异常内容。
+
+SMTP 凭据只允许保存在远端私有文件：
+
+```text
+/home/ubuntu/token_parse_sys/ops/env/steady_uptrend_email.json
+```
+
+文件格式：
+
+```json
+{
+  "username": "sender@163.com",
+  "authorization_code": "由运维人员在服务器上填写"
+}
+```
+
+必须执行 `chmod 600`。该文件不得加入 Git、复制到报告目录或输出到终端。授权码轮换后只修改该私有文件，不修改版本化配置。
+
+邮件任务在选股任务之后运行：
+
+```cron
+50 0 * * 2-6 cd /home/ubuntu/token_parse_sys_mvp && /usr/bin/python3 workflows/jobs/daily_steady_uptrend_mvp_email.py --schedule-config-path configs/schedules/daily_steady_uptrend_mvp_email.json >> /home/ubuntu/token_parse_sys/runtime/strategy_tracking/email_cron.log 2>&1
+```
+
+如果非交易日的最新报告仍指向已成功发送的 `run_id`，任务正常跳过，不重复发送旧结果。
+
 ## 输出检查
 
 每次运行至少检查：
