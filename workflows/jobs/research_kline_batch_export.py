@@ -21,6 +21,7 @@ from workflows.jobs.daily_strategy_signal_production import _fetch_rows, _write_
 from workflows.jobs.support import write_json_payload
 
 KLINE_COLUMNS = ("ts_code", "trade_date", "open", "high", "low", "close", "amount", "vol")
+QFQ_SYMBOL_BATCH_SIZE = 200
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -158,30 +159,49 @@ def _fetch_kline_rows(
         )
     if price_basis != "qfq_asof":
         raise ValueError("price_basis must be raw or qfq_asof")
-    return _fetch_rows(
+    anchor_rows = _fetch_rows(
         connection,
-        f"""
-        SELECT
-          k.ts_code,
-          k.trade_date,
-          k.open * f.adj_factor / anchor.adj_factor AS open,
-          k.high * f.adj_factor / anchor.adj_factor AS high,
-          k.low * f.adj_factor / anchor.adj_factor AS low,
-          k.close * f.adj_factor / anchor.adj_factor AS close,
-          k.amount,
-          k.vol
-        FROM {table_name} k
-        JOIN stock_adj_factor_daily f
-          ON f.ts_code = k.ts_code
-         AND f.trade_date = k.trade_date
-        JOIN stock_adj_factor_daily anchor
-          ON anchor.ts_code = k.ts_code
-         AND anchor.trade_date = %s
-        WHERE k.trade_date BETWEEN %s AND %s
-        ORDER BY k.ts_code, k.trade_date
+        """
+        SELECT ts_code
+        FROM stock_adj_factor_daily
+        WHERE trade_date = %s
+        ORDER BY ts_code
         """,
-        (end_date, start_date, end_date),
+        (end_date,),
     )
+    symbols = tuple(str(row["ts_code"]) for row in anchor_rows)
+    rows: list[Mapping[str, object]] = []
+    for offset in range(0, len(symbols), QFQ_SYMBOL_BATCH_SIZE):
+        symbol_batch = symbols[offset : offset + QFQ_SYMBOL_BATCH_SIZE]
+        placeholders = ", ".join("%s" for _ in symbol_batch)
+        rows.extend(
+            _fetch_rows(
+                connection,
+                f"""
+                SELECT
+                  k.ts_code,
+                  k.trade_date,
+                  k.open * f.adj_factor / anchor.adj_factor AS open,
+                  k.high * f.adj_factor / anchor.adj_factor AS high,
+                  k.low * f.adj_factor / anchor.adj_factor AS low,
+                  k.close * f.adj_factor / anchor.adj_factor AS close,
+                  k.amount,
+                  k.vol
+                FROM {table_name} k
+                JOIN stock_adj_factor_daily f
+                  ON f.ts_code = k.ts_code
+                 AND f.trade_date = k.trade_date
+                JOIN stock_adj_factor_daily anchor
+                  ON anchor.ts_code = k.ts_code
+                 AND anchor.trade_date = %s
+                WHERE k.trade_date BETWEEN %s AND %s
+                  AND k.ts_code IN ({placeholders})
+                ORDER BY k.ts_code, k.trade_date
+                """,
+                (end_date, start_date, end_date, *symbol_batch),
+            )
+        )
+    return tuple(rows)
 
 
 def _normalize_kline_rows(rows: Sequence[Mapping[str, object]]) -> tuple[dict[str, object], ...]:

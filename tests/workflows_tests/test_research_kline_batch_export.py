@@ -7,10 +7,32 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from workflows.jobs.research_kline_batch_export import export_kline_batch
+from workflows.jobs.research_kline_batch_export import _fetch_kline_rows, export_kline_batch
 
 
 class ResearchKlineBatchExportTest(unittest.TestCase):
+    def test_fetches_qfq_rows_in_bounded_symbol_batches(self) -> None:
+        symbols = [f"{index:06d}.SZ" for index in range(201)]
+        connection = _ScriptedConnection(symbols)
+
+        rows = _fetch_kline_rows(
+            connection=connection,
+            table_name="token_daily_details",
+            start_date="20250101",
+            end_date="20260721",
+            price_basis="qfq_asof",
+        )
+
+        self.assertEqual(3, len(connection.calls))
+        self.assertIn("FROM stock_adj_factor_daily", connection.calls[0][0])
+        self.assertEqual(("20260721",), connection.calls[0][1])
+        self.assertEqual(203, len(connection.calls[1][1]))
+        self.assertEqual(4, len(connection.calls[2][1]))
+        self.assertEqual(
+            [symbols[0], symbols[-1]],
+            [row["ts_code"] for row in rows],
+        )
+
     def test_exports_daily_and_weekly_kline_with_manifest(self) -> None:
         with TemporaryDirectory() as tempdir:
             root = Path(tempdir)
@@ -97,6 +119,38 @@ class ResearchKlineBatchExportTest(unittest.TestCase):
             self.assertEqual("20240112", manifest["weekly_latest_trade_date"])
             self.assertEqual("vol", manifest["columns"][-1])
             self.assertEqual(manifest, json.loads(manifest_path.read_text(encoding="utf-8")))
+
+
+class _ScriptedConnection:
+    def __init__(self, symbols: list[str]) -> None:
+        self.symbols = symbols
+        self.calls: list[tuple[str, tuple[object, ...]]] = []
+
+    def cursor(self) -> "_ScriptedCursor":
+        return _ScriptedCursor(self)
+
+
+class _ScriptedCursor:
+    def __init__(self, connection: _ScriptedConnection) -> None:
+        self.connection = connection
+        self.rows: list[dict[str, object]] = []
+
+    def execute(self, sql: str, params: object) -> None:
+        if not isinstance(params, tuple):
+            raise TypeError("expected tuple query parameters")
+        normalized_params = params
+        self.connection.calls.append((sql, normalized_params))
+        if "FROM stock_adj_factor_daily" in sql and "JOIN" not in sql:
+            self.rows = [{"ts_code": symbol} for symbol in self.connection.symbols]
+            return
+        batch_symbols = normalized_params[3:]
+        self.rows = [{"ts_code": batch_symbols[0], "trade_date": "20260721"}]
+
+    def fetchall(self) -> list[dict[str, object]]:
+        return self.rows
+
+    def close(self) -> None:
+        return None
 
 
 if __name__ == "__main__":
