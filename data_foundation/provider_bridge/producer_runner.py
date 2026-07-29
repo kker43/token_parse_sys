@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import os
 from pathlib import Path
+import signal
 import subprocess
 
 
@@ -12,11 +14,38 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _tail_lines(text: str | None, limit: int = 40) -> tuple[str, ...]:
+def _tail_lines(text: str | bytes | None, limit: int = 40) -> tuple[str, ...]:
     if not text:
         return ()
+    if isinstance(text, bytes):
+        text = text.decode("utf-8", errors="replace")
     lines = [line for line in text.splitlines() if line.strip()]
     return tuple(lines[-limit:])
+
+
+def _terminate_process_group(
+    process: subprocess.Popen[str],
+    grace_seconds: float = 2.0,
+) -> None:
+    """Terminate the isolated process group created for one producer run."""
+
+    process_group_id = process.pid
+    try:
+        os.killpg(process_group_id, signal.SIGTERM)
+    except ProcessLookupError:
+        process.wait()
+        return
+
+    try:
+        process.wait(timeout=grace_seconds)
+    except subprocess.TimeoutExpired:
+        pass
+
+    try:
+        os.killpg(process_group_id, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    process.wait()
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,44 +119,49 @@ class ExternalFactProductionRunner:
         started_at = _utc_now_iso()
 
         try:
-            completed = subprocess.run(
+            process = subprocess.Popen(
                 resolved_command,
                 cwd=self.producer_root,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=timeout_seconds,
-                check=False,
+                start_new_session=True,
             )
+            try:
+                stdout, stderr = process.communicate(timeout=timeout_seconds)
+            except subprocess.TimeoutExpired:
+                _terminate_process_group(process)
+                stdout, stderr = process.communicate()
+                finished_at = _utc_now_iso()
+                return ExternalFactProductionRunResult(
+                    success=False,
+                    command=resolved_command,
+                    returncode=None,
+                    started_at=started_at,
+                    finished_at=finished_at,
+                    producer_name=metadata.producer_name,
+                    producer_root=metadata.producer_root,
+                    producer_branch=metadata.producer_branch,
+                    producer_commit=metadata.producer_commit,
+                    stdout_tail=_tail_lines(stdout),
+                    stderr_tail=_tail_lines(stderr),
+                    error_message=f"timeout_after_seconds:{timeout_seconds}",
+                )
+
             finished_at = _utc_now_iso()
             return ExternalFactProductionRunResult(
-                success=completed.returncode == 0,
+                success=process.returncode == 0,
                 command=resolved_command,
-                returncode=completed.returncode,
+                returncode=process.returncode,
                 started_at=started_at,
                 finished_at=finished_at,
                 producer_name=metadata.producer_name,
                 producer_root=metadata.producer_root,
                 producer_branch=metadata.producer_branch,
                 producer_commit=metadata.producer_commit,
-                stdout_tail=_tail_lines(completed.stdout),
-                stderr_tail=_tail_lines(completed.stderr),
-                error_message=None if completed.returncode == 0 else f"producer_returncode:{completed.returncode}",
-            )
-        except subprocess.TimeoutExpired as exc:
-            finished_at = _utc_now_iso()
-            return ExternalFactProductionRunResult(
-                success=False,
-                command=resolved_command,
-                returncode=None,
-                started_at=started_at,
-                finished_at=finished_at,
-                producer_name=metadata.producer_name,
-                producer_root=metadata.producer_root,
-                producer_branch=metadata.producer_branch,
-                producer_commit=metadata.producer_commit,
-                stdout_tail=_tail_lines(exc.stdout),
-                stderr_tail=_tail_lines(exc.stderr),
-                error_message=f"timeout_after_seconds:{timeout_seconds}",
+                stdout_tail=_tail_lines(stdout),
+                stderr_tail=_tail_lines(stderr),
+                error_message=None if process.returncode == 0 else f"producer_returncode:{process.returncode}",
             )
         except Exception as exc:
             finished_at = _utc_now_iso()
