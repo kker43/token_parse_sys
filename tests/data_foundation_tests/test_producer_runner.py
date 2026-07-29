@@ -96,7 +96,8 @@ class ExternalFactProductionRunnerTest(unittest.TestCase):
                 "import sys\n"
                 "import time\n"
                 "child = subprocess.Popen([sys.executable, '-c', "
-                "'import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(60)'])\n"
+                "'import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(60)'], "
+                "start_new_session=sys.platform.startswith('linux'))\n"
                 f"pathlib.Path({str(child_pid_path)!r}).write_text(str(child.pid))\n"
                 "print('started child', flush=True)\n"
                 "time.sleep(60)\n",

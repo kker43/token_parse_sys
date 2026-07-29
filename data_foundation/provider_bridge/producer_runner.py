@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import time
 
 
 def _utc_now_iso() -> str:
@@ -23,21 +24,91 @@ def _tail_lines(text: str | bytes | None, limit: int = 40) -> tuple[str, ...]:
     return tuple(lines[-limit:])
 
 
-def _terminate_process_group(
+def _linux_descendant_pids(root_pid: int) -> tuple[int, ...]:
+    proc_root = Path("/proc")
+    if not proc_root.is_dir():
+        return ()
+
+    children_by_parent: dict[int, list[int]] = {}
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            stat = (entry / "stat").read_text(encoding="utf-8")
+            fields = stat[stat.rfind(")") + 2 :].split()
+            parent_pid = int(fields[1])
+        except (FileNotFoundError, IndexError, PermissionError, ValueError):
+            continue
+        children_by_parent.setdefault(parent_pid, []).append(int(entry.name))
+
+    descendants: list[int] = []
+    pending = list(children_by_parent.get(root_pid, ()))
+    while pending:
+        pid = pending.pop()
+        descendants.append(pid)
+        pending.extend(children_by_parent.get(pid, ()))
+    return tuple(descendants)
+
+
+def _pid_exists(pid: int) -> bool:
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+        if stat[stat.rfind(")") + 2 :].split()[0] == "Z":
+            return False
+    except FileNotFoundError:
+        return False
+    except (IndexError, PermissionError):
+        pass
+
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _terminate_process_tree(
     process: subprocess.Popen[str],
     grace_seconds: float = 2.0,
 ) -> None:
-    """Terminate the isolated process group created for one producer run."""
+    """Terminate one producer process and descendants, including nested groups."""
+
+    descendant_pids = _linux_descendant_pids(process.pid)
+    if descendant_pids:
+        target_pids = (*descendant_pids, process.pid)
+        for pid in target_pids:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+
+        deadline = time.monotonic() + grace_seconds
+        while time.monotonic() < deadline:
+            process.poll()
+            if not any(_pid_exists(pid) for pid in target_pids):
+                return
+            try:
+                process.wait(timeout=0.05)
+            except subprocess.TimeoutExpired:
+                pass
+
+        for pid in target_pids:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        process.wait()
+        return
 
     process_group_id = process.pid
     try:
         os.killpg(process_group_id, signal.SIGTERM)
+        process.wait(timeout=grace_seconds)
     except ProcessLookupError:
         process.wait()
         return
-
-    try:
-        process.wait(timeout=grace_seconds)
     except subprocess.TimeoutExpired:
         pass
 
@@ -130,7 +201,7 @@ class ExternalFactProductionRunner:
             try:
                 stdout, stderr = process.communicate(timeout=timeout_seconds)
             except subprocess.TimeoutExpired:
-                _terminate_process_group(process)
+                _terminate_process_tree(process)
                 stdout, stderr = process.communicate()
                 finished_at = _utc_now_iso()
                 return ExternalFactProductionRunResult(
